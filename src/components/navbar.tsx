@@ -5,7 +5,7 @@ import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 
 const linkClass =
-  "uppercase font-semibold tracking-wide text-[#531A1A] transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
+  "uppercase font-bold text-xl tracking-wide text-[#531A1A] transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
 
 const hamburgerVariants = {
   closed: { rotate: 0, transition: { duration: 0.3 } },
@@ -118,7 +118,7 @@ const Navbar = () => {
     <>
       {/* Desktop Navbar */}
       <nav className="w-full bg-white hidden md:block">
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between py-4 px-6">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between py-6 px-6">
           {/* Left menu */}
           <div className="flex gap-10">
             <a href="#" className={linkClass}>
