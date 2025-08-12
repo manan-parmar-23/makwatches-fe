@@ -9,13 +9,15 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@types/js-cookie": "^3.0.6",
     "axios": "^1.11.0",
     "framer-motion": "^12.23.12",
     "js-cookie": "^3.0.5",
     "next": "15.4.5",
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "swr": "^2.3.6"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
