@@ -1,7 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
+import { useAuth } from "@/context/AuthContext";
 import Image from "next/image";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 const linkClass =
@@ -12,27 +14,15 @@ const hamburgerVariants = {
   open: { rotate: 90, transition: { duration: 0.3 } },
 };
 
-const menuVariants = {
-  closed: {
-    opacity: 0,
-    y: -20,
-    pointerEvents: "none",
-    transition: { duration: 0.25 },
-  },
-  open: {
-    opacity: 1,
-    y: 0,
-    pointerEvents: "auto",
-    transition: { duration: 0.35 },
-  },
-};
-
 // Mobile Navbar Component
 const MobileNavbar = () => {
   const [open, setOpen] = useState(false);
+  const [showSearch, setShowSearch] = useState(false);
+  const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const { user, role, logout } = useAuth();
 
   return (
-    <nav className="w-screen bg-white md:hidden shadow">
+    <nav className="fixed top-0 left-0 w-full bg-white md:hidden shadow z-9999">
       <div className="flex items-center justify-between px-4 py-3">
         {/* Logo */}
         <div className="flex items-center">
@@ -79,33 +69,202 @@ const MobileNavbar = () => {
           </svg>
         </motion.button>
       </div>
+      {/* Search Bar (Mobile) */}
+      <AnimatePresence>
+        {showSearch && (
+          <motion.div
+            key="mobile-search"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="px-4 pb-2 pt-2 bg-white shadow-md flex items-center gap-2"
+          >
+            <input
+              type="text"
+              placeholder="Search..."
+              className="flex-1 border rounded px-3 py-2 focus:outline-none"
+              autoFocus
+            />
+            <button
+              className="text-[#531A1A] font-bold px-3 py-2"
+              onClick={() => setShowSearch(false)}
+            >
+              Close
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Mobile Menu */}
       <AnimatePresence>
         {open && (
           <motion.div
             key="mobile-menu"
-            initial="closed"
-            animate="open"
-            exit="closed"
-            variants={menuVariants}
-            className="px-4 pb-4 pt-2 space-y-2 bg-white shadow-md rounded-b-lg"
+            initial={{ opacity: 0, y: -20, pointerEvents: "none" }}
+            animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
+            exit={{ opacity: 0, y: -20, pointerEvents: "none" }}
+            transition={{ duration: 0.35 }}
+            className="fixed top-12 left-0 w-full h-100px px-4 pb-4 pt-12 space-y-2 bg-white shadow-md z-40 rounded-b-lg overflow-y-hidden"
           >
-            <a href="#" className={linkClass + " block py-2"}>
+            <Link href="/" className={linkClass + " block py-2"}>
               Home
-            </a>
-            <a href="#" className={linkClass + " block py-2"}>
+            </Link>
+            <button
+              className={linkClass + " block py-2 text-left w-full"}
+              onClick={() =>
+                setExpandedMenu(expandedMenu === "men" ? null : "men")
+              }
+            >
               Men
-            </a>
-            <a href="#" className={linkClass + " block py-2"}>
+            </button>
+            <AnimatePresence>
+              {expandedMenu === "men" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="pl-4"
+                >
+                  <Link href="/men" className="block py-2 text-[#531A1A]">
+                    All Men
+                  </Link>
+                  <Link
+                    href="/men/shirts"
+                    className="block py-2 text-[#531A1A]"
+                  >
+                    Shirts
+                  </Link>
+                  <Link href="/men/pants" className="block py-2 text-[#531A1A]">
+                    Pants
+                  </Link>
+                  {/* Add more sub-options as needed */}
+                </motion.div>
+              )}
+            </AnimatePresence>
+            <button
+              className={linkClass + " block py-2 text-left w-full"}
+              onClick={() =>
+                setExpandedMenu(expandedMenu === "women" ? null : "women")
+              }
+            >
               Women
-            </a>
+            </button>
+            <AnimatePresence>
+              {expandedMenu === "women" && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="pl-4"
+                >
+                  <Link href="/women" className="block py-2 text-[#531A1A]">
+                    All Women
+                  </Link>
+                  <Link
+                    href="/women/dresses"
+                    className="block py-2 text-[#531A1A]"
+                  >
+                    Dresses
+                  </Link>
+                  <Link
+                    href="/women/tops"
+                    className="block py-2 text-[#531A1A]"
+                  >
+                    Tops
+                  </Link>
+                  {/* Add more sub-options as needed */}
+                </motion.div>
+              )}
+            </AnimatePresence>
             <hr className="border-[#531A1A]/20" />
-            <a href="#" className={linkClass + " block py-2"}>
+            <button
+              className={linkClass + " block py-2 text-left w-full"}
+              onClick={() => setShowSearch(true)}
+            >
+              Search
+            </button>
+            <Link href="#" className={linkClass + " block py-2"}>
               Cart
-            </a>
-            <a href="#" className={linkClass + " block py-2"}>
-              Account
-            </a>
+            </Link>
+            {/* Account Button Logic */}
+            <div>
+              <button
+                className={linkClass + " block py-2 text-left w-full"}
+                onClick={() =>
+                  setExpandedMenu(expandedMenu === "account" ? null : "account")
+                }
+              >
+                {role === "customer" && user
+                  ? "Account"
+                  : role === "admin" && user
+                  ? "Dashboard"
+                  : "Login"}
+              </button>
+              <AnimatePresence>
+                {expandedMenu === "account" && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="pl-4"
+                  >
+                    {(!user || !role) && (
+                      <div className="py-1">
+                        <Link
+                          href="/login"
+                          className="block py-2 text-[#531A1A]"
+                        >
+                          Customer Login
+                        </Link>
+                        <Link
+                          href="/admin/login"
+                          className="block py-2 text-[#531A1A]"
+                        >
+                          Admin Login
+                        </Link>
+                        <Link href="/" className="block py-2 text-[#531A1A]">
+                          Explore as Guest
+                        </Link>
+                      </div>
+                    )}
+                    {role === "customer" && user && (
+                      <div className="py-1">
+                        <Link
+                          href="/account"
+                          className="block py-2 text-[#531A1A]"
+                        >
+                          Account
+                        </Link>
+                        <button
+                          className="block w-full text-left py-2 text-[#531A1A]"
+                          onClick={logout}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                    {role === "admin" && user && (
+                      <div className="py-1">
+                        <Link
+                          href="/admin/dashboard"
+                          className="block py-2 text-[#531A1A]"
+                        >
+                          Dashboard
+                        </Link>
+                        <button
+                          className="block w-full text-left py-2 text-[#531A1A]"
+                          onClick={logout}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -114,6 +273,9 @@ const MobileNavbar = () => {
 };
 
 const Navbar = () => {
+  const [showSearch, setShowSearch] = useState(false);
+  const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const { user, role, logout } = useAuth();
   return (
     <>
       {/* Desktop Navbar */}
@@ -121,15 +283,15 @@ const Navbar = () => {
         <div className="max-w-screen-xl mx-auto flex items-center justify-between py-6 px-6">
           {/* Left menu */}
           <div className="flex gap-10">
-            <a href="#" className={linkClass}>
+            <Link href="/" className={linkClass}>
               Home
-            </a>
-            <a href="#" className={linkClass}>
+            </Link>
+            <Link href="#" className={linkClass}>
               Men
-            </a>
-            <a href="#" className={linkClass}>
+            </Link>
+            <Link href="#" className={linkClass}>
               Women
-            </a>
+            </Link>
           </div>
           {/* Center logo */}
           <div className="flex-1 flex justify-center">
@@ -142,15 +304,130 @@ const Navbar = () => {
             />
           </div>
           {/* Right menu */}
-          <div className="flex gap-10">
-            <a href="#" className={linkClass}>
+          <div className="flex gap-10 items-center">
+            <button className={linkClass} onClick={() => setShowSearch(true)}>
+              Search
+            </button>
+            <Link href="#" className={linkClass}>
               Cart
-            </a>
-            <a href="#" className={linkClass}>
-              Account
-            </a>
+            </Link>
+            {/* Account Button Logic */}
+            <div className="relative">
+              <button
+                className={linkClass}
+                onClick={() => setShowAccountMenu((v) => !v)}
+              >
+                {role === "customer" && user
+                  ? "Account"
+                  : role === "admin" && user
+                  ? "Dashboard"
+                  : "Login"}
+              </button>
+              <AnimatePresence>
+                {showAccountMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                    className="absolute right-0 mt-2 w-56 bg-white border rounded-lg shadow-lg z-50 overflow-hidden"
+                  >
+                    {(!user || !role) && (
+                      <div className="py-1">
+                        <Link
+                          href="/login"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Customer Login
+                        </Link>
+                        <Link
+                          href="/admin/login"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Admin Login
+                        </Link>
+                        <Link
+                          href="/"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Explore as Guest
+                        </Link>
+                      </div>
+                    )}
+                    {role === "customer" && user && (
+                      <div className="py-1">
+                        <Link
+                          href="/account"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Account
+                        </Link>
+                        <button
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => {
+                            logout();
+                            setShowAccountMenu(false);
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                    {role === "admin" && user && (
+                      <div className="py-1">
+                        <Link
+                          href="/admin/dashboard"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Dashboard
+                        </Link>
+                        <button
+                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => {
+                            logout();
+                            setShowAccountMenu(false);
+                          }}
+                        >
+                          Logout
+                        </button>
+                      </div>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
+        {/* Search Bar (Desktop) */}
+        <AnimatePresence>
+          {showSearch && (
+            <motion.div
+              key="desktop-search"
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="max-w-screen-xl mx-auto px-6 pb-4 flex items-center gap-2"
+            >
+              <input
+                type="text"
+                placeholder="Search..."
+                className="flex-1 border rounded px-3 py-2 focus:outline-none"
+                autoFocus
+              />
+              <button
+                className="text-[#531A1A] font-bold px-3 py-2"
+                onClick={() => setShowSearch(false)}
+              >
+                Close
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </nav>
       {/* Mobile Navbar */}
       <MobileNavbar />
