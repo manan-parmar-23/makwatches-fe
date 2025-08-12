@@ -152,6 +152,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const tokenKey = userRole === "admin" ? "adminToken" : "customerToken";
       Cookies.set(tokenKey, token, { expires: 7 });
       localStorage.setItem(tokenKey, token);
+      if (userRole === "admin") {
+        sessionStorage.setItem("adminAuthToken", token);
+      }
       setRole(userRole);
       setUser(loggedInUser);
       if (userRole === "customer") {
@@ -213,10 +216,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const tokenKey = role === "customer" ? "customerToken" : "adminToken";
       Cookies.remove(tokenKey);
       localStorage.removeItem(tokenKey);
+      if (role === "admin") {
+        sessionStorage.removeItem("adminAuthToken");
+      }
     }
     setUser(null);
     setRole(null);
-    router.push("/login");
+    if (role === "admin") {
+      router.push("/admin/login");
+    } else {
+      router.push("/login");
+    }
   };
 
   return (
