@@ -1,6 +1,10 @@
+import CategoryHome from "@/components/category-home";
 import Footer from "@/components/footer";
 import Hero from "@/components/hero";
 import Navbar from "@/components/navbar";
+import ProductCarousel from "@/components/product_carousel";
+import Banner from "@/components/banner";
+import Gallery from "@/components/gallery";
 
 export default function Home() {
   return (
@@ -9,7 +13,18 @@ export default function Home() {
       <div className="py-12">
         <Hero />
       </div>
-
+      <div className="px-4 py-8">
+        <ProductCarousel />
+      </div>
+      <div className="px-4 py-8">
+        <CategoryHome />
+      </div>
+      <div className="px-4 py-8">
+        <Banner />
+      </div>
+      <div className="px-4 py-8">
+        <Gallery />
+      </div>
       <Footer />
     </>
   );

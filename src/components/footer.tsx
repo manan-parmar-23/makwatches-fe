@@ -1,4 +1,7 @@
+"use client";
+
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 
 // Professional footer columns with relevant links
 const columns = [
@@ -71,7 +74,7 @@ const linkClass =
 // Desktop Footer
 function FooterDesktop() {
   return (
-    <div className="relative w-full flex justify-center items-center px-4 md:px-12 pb-6 pt-106">
+    <div className="relative w-full flex justify-center items-center px-4 md:px-12 pb-6 pt-106 mb-8">
       {/* Background Image */}
       <div className="absolute inset-0 left-1/2 -translate-x-1/2 w-[98%] h-full rounded-[2.5rem] overflow-hidden">
         <Image
@@ -238,15 +241,27 @@ function FooterMobile() {
   );
 }
 
-const Footer = () => (
-  <>
-    <div className="hidden md:block">
-      <FooterDesktop />
-    </div>
-    <div className="block md:hidden">
-      <FooterMobile />
-    </div>
-  </>
-);
+const Footer = () => {
+  const pathname = usePathname();
+
+  // Check if current route is admin
+  const isAdminRoute = pathname?.startsWith("/admin");
+
+  // Don't render footer for admin routes
+  if (isAdminRoute) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="hidden md:block">
+        <FooterDesktop />
+      </div>
+      <div className="block md:hidden">
+        <FooterMobile />
+      </div>
+    </>
+  );
+};
 
 export default Footer;
