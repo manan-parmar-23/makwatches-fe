@@ -52,8 +52,8 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       setLoading(true);
-      // Admin can fetch all orders by user ID
-      const res = await api.get("/admin/orders");
+      // Admin can fetch all orders (requires backend route /orders for admin)
+      const res = await api.get("/orders");
 
       // Normalize date strings to Date objects
       const normalized = res.data.data.map(

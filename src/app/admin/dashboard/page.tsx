@@ -1,6 +1,7 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
+import api from "@/lib/api";
 import {
   UserGroupIcon,
   ShoppingBagIcon,
@@ -8,72 +9,166 @@ import {
   CubeIcon,
 } from "@heroicons/react/24/outline";
 
-const stats = [
-  {
-    name: "Total Users",
-    value: "1,245",
-    icon: UserGroupIcon,
-    color: "bg-blue-100 text-blue-600",
-  },
-  {
-    name: "Orders",
-    value: "320",
-    icon: ShoppingBagIcon,
-    color: "bg-green-100 text-green-600",
-  },
-  {
-    name: "Revenue",
-    value: "$12,400",
-    icon: CurrencyDollarIcon,
-    color: "bg-yellow-100 text-yellow-600",
-  },
-  {
-    name: "Products",
-    value: "87",
-    icon: CubeIcon,
-    color: "bg-purple-100 text-purple-600",
-  },
-];
+// statIcons removed (unused)
 
-const recentOrders = [
-  {
-    id: "ORD-1001",
-    customer: "John Doe",
-    date: "2025-08-10",
-    amount: "$120.00",
-    status: "Completed",
-  },
-  {
-    id: "ORD-1002",
-    customer: "Jane Smith",
-    date: "2025-08-09",
-    amount: "$75.50",
-    status: "Pending",
-  },
-  {
-    id: "ORD-1003",
-    customer: "Alice Brown",
-    date: "2025-08-08",
-    amount: "$210.00",
-    status: "Completed",
-  },
-  {
-    id: "ORD-1004",
-    customer: "Bob Lee",
-    date: "2025-08-07",
-    amount: "$55.00",
-    status: "Cancelled",
-  },
-];
+const statusColors: Record<string, string> = {
+  completed: "bg-green-100 text-green-700",
+  pending: "bg-yellow-100 text-yellow-700",
+  cancelled: "bg-red-100 text-red-700",
+  processing: "bg-blue-100 text-blue-700",
+  shipped: "bg-indigo-100 text-indigo-700",
+  delivered: "bg-green-100 text-green-700",
+};
 
-const AdminDashboardPage: React.FC = () => {
+function AdminDashboardPage() {
+  const [stats, setStats] = useState([
+    {
+      name: "Total Users",
+      value: "-",
+      icon: UserGroupIcon,
+      color: "bg-blue-100 text-blue-600",
+    },
+    {
+      name: "Orders",
+      value: "-",
+      icon: ShoppingBagIcon,
+      color: "bg-green-100 text-green-600",
+    },
+    {
+      name: "Revenue",
+      value: "-",
+      icon: CurrencyDollarIcon,
+      color: "bg-yellow-100 text-yellow-600",
+    },
+    {
+      name: "Products",
+      value: "-",
+      icon: CubeIcon,
+      color: "bg-purple-100 text-purple-600",
+    },
+  ]);
+  interface Order {
+    id: string;
+    userId: string;
+    createdAt: string;
+    total: number;
+    status: string;
+  }
+  const [recentOrders, setRecentOrders] = useState<
+    Array<{
+      id: string;
+      customer: string;
+      date: string;
+      amount: string;
+      status: string;
+    }>
+  >([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchStats() {
+      setLoading(true);
+      try {
+        // Fetch stats
+        const [usersRes, ordersRes, productsRes] = await Promise.all([
+          api.get("/admin/accounts"),
+          api.get("/orders"),
+          api.get("/products"),
+        ]);
+        const users = usersRes.data.data || [];
+        const orders = ordersRes.data.data || [];
+        const products = productsRes.data.data || [];
+        // Calculate revenue
+        const revenue = orders.reduce(
+          (sum: number, o: Order) => sum + (o.total || 0),
+          0
+        );
+        setStats([
+          {
+            name: "Total Users",
+            value: users.length.toLocaleString(),
+            icon: UserGroupIcon,
+            color: "bg-blue-100 text-blue-600",
+          },
+          {
+            name: "Orders",
+            value: orders.length.toLocaleString(),
+            icon: ShoppingBagIcon,
+            color: "bg-green-100 text-green-600",
+          },
+          {
+            name: "Revenue",
+            value: `₹${revenue.toLocaleString()}`,
+            icon: CurrencyDollarIcon,
+            color: "bg-yellow-100 text-yellow-600",
+          },
+          {
+            name: "Products",
+            value: products.length.toLocaleString(),
+            icon: CubeIcon,
+            color: "bg-purple-100 text-purple-600",
+          },
+        ]);
+        // Recent orders (latest 5)
+        setRecentOrders(
+          orders
+            .sort(
+              (a: Order, b: Order) =>
+                new Date(b.createdAt).getTime() -
+                new Date(a.createdAt).getTime()
+            )
+            .slice(0, 5)
+            .map((o: Order) => ({
+              id: o.id,
+              customer: o.userId,
+              date: o.createdAt
+                ? new Date(o.createdAt).toLocaleDateString()
+                : "",
+              amount: `₹${o.total.toFixed(2)}`,
+              status: o.status.charAt(0).toUpperCase() + o.status.slice(1),
+            }))
+        );
+      } catch {
+        // fallback to dashes
+        setStats([
+          {
+            name: "Total Users",
+            value: "-",
+            icon: UserGroupIcon,
+            color: "bg-blue-100 text-blue-600",
+          },
+          {
+            name: "Orders",
+            value: "-",
+            icon: ShoppingBagIcon,
+            color: "bg-green-100 text-green-600",
+          },
+          {
+            name: "Revenue",
+            value: "-",
+            icon: CurrencyDollarIcon,
+            color: "bg-yellow-100 text-yellow-600",
+          },
+          {
+            name: "Products",
+            value: "-",
+            icon: CubeIcon,
+            color: "bg-purple-100 text-purple-600",
+          },
+        ]);
+        setRecentOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchStats();
+  }, []);
+
   return (
     <div className="space-y-8">
-      {/* Page Title */}
       <h1 className="text-2xl md:text-3xl font-bold text-[#531A1A] mb-2">
         Admin Dashboard
       </h1>
-
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {stats.map((stat) => (
@@ -97,7 +192,6 @@ const AdminDashboardPage: React.FC = () => {
           </div>
         ))}
       </div>
-
       {/* Recent Activity Table */}
       <div className="bg-white rounded-xl shadow-sm p-6 overflow-x-auto">
         <div className="flex items-center justify-between mb-4">
@@ -123,39 +217,48 @@ const AdminDashboardPage: React.FC = () => {
             </tr>
           </thead>
           <tbody>
-            {recentOrders.map((order) => (
-              <tr
-                key={order.id}
-                className="border-b hover:bg-gray-50 transition duration-150"
-              >
-                <td className="py-2 px-3 font-mono text-[#531A1A]">
-                  {order.id}
-                </td>
-                <td className="py-2 px-3">{order.customer}</td>
-                <td className="py-2 px-3">{order.date}</td>
-                <td className="py-2 px-3 font-semibold">{order.amount}</td>
-                <td className="py-2 px-3">
-                  <span
-                    className={`px-2 py-1 rounded text-xs font-semibold
-                      ${
-                        order.status === "Completed"
-                          ? "bg-green-100 text-green-700"
-                          : order.status === "Pending"
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-red-100 text-red-700"
-                      }
-                    `}
-                  >
-                    {order.status}
-                  </span>
+            {loading ? (
+              <tr>
+                <td colSpan={5} className="py-4 text-center text-gray-400">
+                  Loading…
                 </td>
               </tr>
-            ))}
+            ) : recentOrders.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-4 text-center text-gray-400">
+                  No recent orders
+                </td>
+              </tr>
+            ) : (
+              recentOrders.map((order) => (
+                <tr
+                  key={order.id}
+                  className="border-b hover:bg-gray-50 transition duration-150"
+                >
+                  <td className="py-2 px-3 font-mono text-[#531A1A]">
+                    {order.id}
+                  </td>
+                  <td className="py-2 px-3">{order.customer}</td>
+                  <td className="py-2 px-3">{order.date}</td>
+                  <td className="py-2 px-3 font-semibold">{order.amount}</td>
+                  <td className="py-2 px-3">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${
+                        statusColors[order.status.toLowerCase()] ||
+                        "bg-gray-100 text-gray-700"
+                      }`}
+                    >
+                      {order.status}
+                    </span>
+                  </td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
     </div>
   );
-};
+}
 
 export default AdminDashboardPage;
