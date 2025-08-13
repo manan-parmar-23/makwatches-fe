@@ -1,9 +1,23 @@
 "use client";
-
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-const PRIMARY = "#531A1A";
+const COLORS = {
+  primary: "#531A1A", // Deep maroon
+  primaryDark: "#3B1212", // Darker shade
+  primaryLight: "#A45A5A", // Lighter shade
+  secondary: "#BFA5A5", // Soft accent
+  background: "#FFFFFF", // Clean white
+  surface: "#F5F5F5", // Soft gray
+  surfaceLight: "#E5E5E5",
+  text: "#2D1B1B", // Deep brown for text
+  textMuted: "#7C5C5C",
+  error: "#B3261E",
+  success: "#388E3C",
+  inputBg: "#F9F6F6",
+  inputBorder: "#BFA5A5",
+  inputFocus: "#531A1A",
+};
 
 export default function AdminAuthPage() {
   const { login, register, loading } = useAuth();
@@ -43,71 +57,223 @@ export default function AdminAuthPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-      <div className="w-full max-w-md p-8 bg-white rounded shadow-md">
-        <h2
-          className="text-3xl font-bold mb-6 text-center"
-          style={{ color: PRIMARY }}
+    <div className="min-h-screen flex items-center justify-center bg-white relative overflow-hidden">
+      {/* Background decorative elements */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div
+          className="absolute -top-40 -right-40 w-80 h-80 rounded-full opacity-5 animate-pulse"
+          style={{ backgroundColor: COLORS.primary }}
+        />
+        <div
+          className="absolute -bottom-40 -left-40 w-96 h-96 rounded-full opacity-3"
+          style={{ backgroundColor: COLORS.primaryLight }}
+        />
+      </div>
+
+      {/* Main container */}
+      <div className="relative w-full max-w-md mx-4">
+        {/* Card */}
+        <div
+          className="backdrop-blur-sm border border-opacity-20 rounded-2xl shadow-2xl p-8 transform transition-all duration-300 hover:scale-[1.02] hover:shadow-3xl"
+          style={{
+            backgroundColor: COLORS.background,
+            borderColor: COLORS.secondary,
+            boxShadow: `0 25px 50px -12px ${COLORS.primary}20, 0 0 0 1px ${COLORS.secondary}30`,
+          }}
         >
-          {isLogin ? "Admin Login" : "Admin Register"}
-        </h2>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
-            <input
-              type="text"
-              name="name"
-              placeholder="Name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full px-4 py-2 border rounded focus:outline-none"
-              required
-            />
-          )}
-          <input
-            type="email"
-            name="email"
-            placeholder="Email"
-            value={form.email}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none"
-            required
-          />
-          <input
-            type="password"
-            name="password"
-            placeholder="Password"
-            value={form.password}
-            onChange={handleChange}
-            className="w-full px-4 py-2 border rounded focus:outline-none"
-            required
-          />
-          {error && (
-            <div className="text-red-600 text-sm text-center">{error}</div>
-          )}
-          <button
-            type="submit"
-            disabled={submitting || loading}
-            className="w-full py-2 font-bold rounded text-white"
-            style={{ background: PRIMARY }}
-          >
-            {submitting || loading
-              ? "Please wait..."
-              : isLogin
-              ? "Login"
-              : "Register"}
-          </button>
-        </form>
-        <div className="mt-6 text-center">
-          <button
-            type="button"
-            className="text-sm underline"
-            style={{ color: PRIMARY }}
-            onClick={() => setIsLogin((v) => !v)}
-          >
-            {isLogin
-              ? "Don't have an account? Register"
-              : "Already have an account? Login"}
-          </button>
+          {/* Header */}
+          <div className="text-center mb-8">
+            {/* Logo/Icon placeholder */}
+            <div
+              className="w-16 h-16 mx-auto rounded-2xl mb-6 flex items-center justify-center transform transition-transform duration-300 hover:rotate-6"
+              style={{ backgroundColor: `${COLORS.primary}10` }}
+            >
+              <div
+                className="w-8 h-8 rounded-lg"
+                style={{ backgroundColor: COLORS.primary }}
+              />
+            </div>
+
+            <h1
+              className="text-3xl font-bold mb-2 transition-colors duration-300"
+              style={{ color: COLORS.text }}
+            >
+              Admin {isLogin ? "Login" : "Register"}
+            </h1>
+
+            <p
+              className="text-sm transition-colors duration-300"
+              style={{ color: COLORS.textMuted }}
+            >
+              {isLogin
+                ? "Welcome back! Please sign in to continue."
+                : "Create your admin account to get started."}
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* Name field for registration */}
+            <div
+              className={`transform transition-all duration-500 ${
+                isLogin
+                  ? "max-h-0 opacity-0 overflow-hidden"
+                  : "max-h-20 opacity-100"
+              }`}
+            >
+              <div className="relative">
+                <input
+                  type="text"
+                  name="name"
+                  placeholder="Full Name"
+                  value={form.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-4 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:scale-[1.02] placeholder-opacity-70"
+                  style={{
+                    backgroundColor: COLORS.inputBg,
+                    borderColor: COLORS.inputBorder,
+                    color: COLORS.text,
+                  }}
+                  onFocus={(e) => {
+                    e.target.style.borderColor = COLORS.inputFocus;
+                    e.target.style.boxShadow = `0 0 0 3px ${COLORS.inputFocus}20`;
+                  }}
+                  onBlur={(e) => {
+                    e.target.style.borderColor = COLORS.inputBorder;
+                    e.target.style.boxShadow = "none";
+                  }}
+                  required={!isLogin}
+                />
+              </div>
+            </div>
+
+            {/* Email field */}
+            <div className="relative">
+              <input
+                type="email"
+                name="email"
+                placeholder="Email Address"
+                value={form.email}
+                onChange={handleChange}
+                className="w-full px-4 py-4 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:scale-[1.02] placeholder-opacity-70"
+                style={{
+                  backgroundColor: COLORS.inputBg,
+                  borderColor: COLORS.inputBorder,
+                  color: COLORS.text,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = COLORS.inputFocus;
+                  e.target.style.boxShadow = `0 0 0 3px ${COLORS.inputFocus}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = COLORS.inputBorder;
+                  e.target.style.boxShadow = "none";
+                }}
+                required
+              />
+            </div>
+
+            {/* Password field */}
+            <div className="relative">
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={form.password}
+                onChange={handleChange}
+                className="w-full px-4 py-4 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:scale-[1.02] placeholder-opacity-70"
+                style={{
+                  backgroundColor: COLORS.inputBg,
+                  borderColor: COLORS.inputBorder,
+                  color: COLORS.text,
+                }}
+                onFocus={(e) => {
+                  e.target.style.borderColor = COLORS.inputFocus;
+                  e.target.style.boxShadow = `0 0 0 3px ${COLORS.inputFocus}20`;
+                }}
+                onBlur={(e) => {
+                  e.target.style.borderColor = COLORS.inputBorder;
+                  e.target.style.boxShadow = "none";
+                }}
+                required
+              />
+            </div>
+
+            {/* Error message */}
+            {error && (
+              <div
+                className="p-3 rounded-lg text-sm text-center animate-shake border-l-4 transition-all duration-300"
+                style={{
+                  backgroundColor: `${COLORS.error}10`,
+                  color: COLORS.error,
+                  borderLeftColor: COLORS.error,
+                }}
+              >
+                {error}
+              </div>
+            )}
+
+            {/* Submit button */}
+            <button
+              type="submit"
+              disabled={submitting || loading}
+              className="w-full py-4 font-semibold rounded-xl text-white transition-all duration-300 transform hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none relative overflow-hidden group"
+              style={{
+                backgroundColor:
+                  submitting || loading ? COLORS.textMuted : COLORS.primary,
+              }}
+              onMouseEnter={(e) => {
+                if (!submitting && !loading) {
+                  e.currentTarget.style.backgroundColor = COLORS.primaryDark;
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!submitting && !loading) {
+                  e.currentTarget.style.backgroundColor = COLORS.primary;
+                }
+              }}
+            >
+              <span className="relative z-10">
+                {submitting || loading ? (
+                  <span className="flex items-center justify-center">
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Please wait...
+                  </span>
+                ) : (
+                  <span>{isLogin ? "Sign In" : "Create Account"}</span>
+                )}
+              </span>
+              {!submitting && !loading && (
+                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-10 transform -skew-x-12 transition-all duration-700 group-hover:translate-x-full" />
+              )}
+            </button>
+          </form>
+
+          {/* Toggle authentication mode */}
+          <div className="mt-8 text-center">
+            <button
+              type="button"
+              className="text-sm transition-all duration-300 hover:underline focus:outline-none focus:underline relative group"
+              style={{ color: COLORS.primary }}
+              onClick={() => setIsLogin((v) => !v)}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = COLORS.primaryDark;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = COLORS.primary;
+              }}
+            >
+              <span className="relative">
+                {isLogin
+                  ? "Don't have an account? Create one"
+                  : "Already have an account? Sign in"}
+                <span
+                  className="absolute bottom-0 left-0 w-0 h-0.5 transition-all duration-300 group-hover:w-full"
+                  style={{ backgroundColor: COLORS.primary }}
+                />
+              </span>
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
+import Link from "next/link";
 import {
   fetchPublicCategories,
   Category,
@@ -87,26 +88,31 @@ function CategoriesClient() {
 // Carousel product data
 const PRODUCTS = [
   {
+    id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt1.png",
   },
   {
+    id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt2.png",
   },
   {
+    id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
   },
   {
+    id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
   },
   {
+    id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
@@ -126,7 +132,7 @@ const COLORS = {
 };
 
 function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
-  return (
+  const content = (
     <div
       className="flex flex-col items-center px-4 md:px-8"
       style={{
@@ -152,11 +158,7 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
           width={340}
           height={340}
           className="mt-8 mb-4 w-[340px] h-[340px] object-contain transition-transform duration-300 group-hover:scale-105"
-          style={{
-            display: "block",
-            background: "none",
-            border: "none",
-          }}
+          style={{ display: "block", background: "none", border: "none" }}
         />
       </div>
       <div
@@ -171,10 +173,15 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
       </div>
     </div>
   );
+  return product.id ? (
+    <Link href={`/product_details?id=${product.id}`}>{content}</Link>
+  ) : (
+    content
+  );
 }
 
 function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
-  return (
+  const content = (
     <div className="flex flex-col items-center px-2 w-full">
       <div className="relative flex flex-col items-center group w-full">
         <div
@@ -194,11 +201,7 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
           width={220}
           height={220}
           className="mt-6 mb-2 w-[220px] h-[220px] object-contain transition-transform duration-300 group-hover:scale-105"
-          style={{
-            display: "block",
-            background: "none",
-            border: "none",
-          }}
+          style={{ display: "block", background: "none", border: "none" }}
         />
       </div>
       <div
@@ -212,6 +215,11 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
         {product.name}
       </div>
     </div>
+  );
+  return product.id ? (
+    <Link href={`/product_details?id=${product.id}`}>{content}</Link>
+  ) : (
+    content
   );
 }
 
@@ -243,7 +251,14 @@ function ProductCarousel() {
           ? (data.data as ApiProductLite[])
           : [];
         // Transform to local PRODUCT shape (name, price string, image)
-        const transformed = apiItems.map((p) => ({
+        type ApiItem = {
+          id?: string;
+          name?: string;
+          price?: number;
+          images?: string[];
+        };
+        const transformed = apiItems.map((p: ApiItem) => ({
+          id: p.id,
           name: p.name || "Unnamed Product",
           price:
             typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",

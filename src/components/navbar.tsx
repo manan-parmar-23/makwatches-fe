@@ -185,7 +185,7 @@ const MobileNavbar = () => {
             >
               Search
             </button>
-            <Link href="#" className={linkClass + " block py-2"}>
+            <Link href="/cart" className={linkClass + " block py-2"}>
               Cart
             </Link>
             {/* Account Button Logic */}
@@ -319,7 +319,7 @@ const Navbar = () => {
             <button className={linkClass} onClick={() => setShowSearch(true)}>
               Search
             </button>
-            <Link href="#" className={linkClass}>
+            <Link href="/cart" className={linkClass}>
               Cart
             </Link>
             {/* Account Button Logic */}
