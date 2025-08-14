@@ -27,6 +27,13 @@ const storeImpl: StateCreator<ProductsState> = (set, get) => ({
       const { data } = await fetchProducts();
       set({ products: data.data, loading: false });
     } catch (e) {
+      // If unauthorized, clear token and propagate to caller
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 401 && typeof window !== 'undefined') {
+        sessionStorage.removeItem('adminAuthToken');
+        set({ loading: false, error: 'Unauthorized. Please login again.' });
+        throw e;
+      }
       console.warn('Fetch products failed, using placeholder list', e);
       // Placeholder data if backend unreachable
       set({
@@ -60,6 +67,11 @@ const storeImpl: StateCreator<ProductsState> = (set, get) => ({
     } catch (e: unknown) {
       console.error('Create product failed', e);
       let message = 'Create product failed';
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 401 && typeof window !== 'undefined') {
+        sessionStorage.removeItem('adminAuthToken');
+        message = 'Unauthorized. Please login again.';
+      }
       if (typeof e === 'object' && e) {
         const err = e as HttpErrorLike;
         if (err.response?.data?.message) message = err.response.data.message;
@@ -81,6 +93,11 @@ const storeImpl: StateCreator<ProductsState> = (set, get) => ({
     } catch (e: unknown) {
       console.error('Update product failed', e);
       let message = 'Update product failed';
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 401 && typeof window !== 'undefined') {
+        sessionStorage.removeItem('adminAuthToken');
+        message = 'Unauthorized. Please login again.';
+      }
       if (typeof e === 'object' && e) {
         const err = e as HttpErrorLike;
         if (err.response?.data?.message) message = err.response.data.message;
@@ -100,7 +117,13 @@ const storeImpl: StateCreator<ProductsState> = (set, get) => ({
     try {
       await deleteProduct(id);
     } catch (e: unknown) {
-      // Log but ignore (404 etc.)
+      // 401: clear token and propagate; others: ignore and still remove locally
+      const status = (e as { response?: { status?: number } })?.response?.status;
+      if (status === 401 && typeof window !== 'undefined') {
+        sessionStorage.removeItem('adminAuthToken');
+        set({ error: 'Unauthorized. Please login again.' });
+        throw e;
+      }
       console.warn('Delete product API error (ignoring, removing locally):', e);
     }
     set({ products: current.filter(p => p.id !== id) });

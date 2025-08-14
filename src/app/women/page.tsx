@@ -11,6 +11,7 @@ import Image from "next/image";
 // Components
 import HeroBanner from "@/components/women/HeroBanner";
 import CategoriesSection from "@/components/women/CategoriesSection";
+import SubcategoryCarousel from "@/components/women/SubCategoryCarousel";
 
 // Loading Skeletons
 function CategorySkeleton() {
@@ -26,7 +27,8 @@ function CategorySkeleton() {
 }
 
 // Client-side categories fetcher (handles 401 gracefully without infinite re-renders under Suspense)
-function CategoriesClient() {
+// Now accepts an optional onLoad callback to expose categories to parent
+function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,7 +39,9 @@ function CategoriesClient() {
       try {
         const { data } = await fetchPublicCategories("Women");
         if (!cancelled) {
-          setCategories(data.data || []);
+          const list = data.data || [];
+          setCategories(list);
+          onLoad?.(list);
         }
       } catch (e: unknown) {
         if (!cancelled) {
@@ -55,12 +59,14 @@ function CategoriesClient() {
                 err?.message ||
                 "Failed to load categories";
           setError(msg);
-          // Optional fallback (static) categories so UI isn\'t empty
-          setCategories([
+          // Optional fallback (static) categories so UI isn't empty
+          const fallback = [
             { id: "women-tops", name: "Tops", subcategories: [] },
             { id: "women-bottoms", name: "Bottoms", subcategories: [] },
             { id: "women-outerwear", name: "Outerwear", subcategories: [] },
-          ]);
+          ];
+          setCategories(fallback);
+          onLoad?.(fallback);
           console.warn("Categories fetch failed", e);
         }
       } finally {
@@ -70,7 +76,7 @@ function CategoriesClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onLoad]);
 
   if (loading) return <CategorySkeleton />;
   return (
@@ -86,36 +92,41 @@ function CategoriesClient() {
 }
 
 // Carousel product data
-const PRODUCTS = [
+export const PRODUCTS = [
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt1.png",
+    subcategory: null,
   },
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt2.png",
+    subcategory: null,
   },
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
+    subcategory: null,
   },
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
+    subcategory: null,
   },
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
     price: "1799/-",
     image: "/tshirt3.png",
+    subcategory: null,
   },
 ];
 
@@ -131,13 +142,17 @@ const COLORS = {
   progressActive: "#531A1A",
 };
 
-function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
+export function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
   const content = (
     <div
       className="flex flex-col items-center px-4 md:px-8"
       style={{
-        minWidth: `calc(100%/3)`,
+        // fixed card width to match default products and avoid variable calc
+        minWidth: "340px",
+        maxWidth: "340px",
+        flexShrink: 0,
         transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
+        scrollSnapAlign: "start",
       }}
     >
       <div className="relative flex flex-col items-center group w-full">
@@ -155,9 +170,9 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
         <Image
           src={product.image}
           alt={product.name}
-          width={340}
-          height={340}
-          className="mt-8 mb-4 w-[340px] h-[340px] object-contain transition-transform duration-300 group-hover:scale-105"
+          width={320}
+          height={320}
+          className="mt-8 mb-4 w-[320px] h-[320px] object-contain transition-transform duration-300 group-hover:scale-105"
           style={{ display: "block", background: "none", border: "none" }}
         />
       </div>
@@ -180,9 +195,23 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
   );
 }
 
-function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
+export function ProductCardMobile({
+  product,
+}: {
+  product: (typeof PRODUCTS)[0];
+}) {
   const content = (
-    <div className="flex flex-col items-center px-2 w-full">
+    <div
+      className="flex flex-col items-center px-2"
+      style={{
+        // fixed mobile card width to match default mobile product sizing
+        minWidth: "220px",
+        maxWidth: "220px",
+        flexShrink: 0,
+        transition: "transform 0.2s",
+        scrollSnapAlign: "start",
+      }}
+    >
       <div className="relative flex flex-col items-center group w-full">
         <div
           className="absolute top-2 left-2 px-4 py-1 rounded-full border text-sm font-semibold z-10 bg-white"
@@ -198,9 +227,9 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
         <Image
           src={product.image}
           alt={product.name}
-          width={220}
-          height={220}
-          className="mt-6 mb-2 w-[220px] h-[220px] object-contain transition-transform duration-300 group-hover:scale-105"
+          width={200}
+          height={200}
+          className="mt-6 mb-2 w-[200px] h-[200px] object-contain transition-transform duration-300 group-hover:scale-105"
           style={{ display: "block", background: "none", border: "none" }}
         />
       </div>
@@ -223,13 +252,21 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
   );
 }
 
-function ProductCarousel() {
+// Modify ProductCarousel to accept onLoad and include subcategory when transforming
+function ProductCarousel({
+  onLoad,
+}: {
+  onLoad?: (
+    items: Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
+  ) => void;
+}) {
   const [scrollIndex, setScrollIndex] = useState(0);
-  const visibleCount = 3;
   const carouselRef = useRef<HTMLDivElement>(null);
 
   // Dynamic products fetched from public API
-  const [fetched, setFetched] = useState<typeof PRODUCTS | null>(null);
+  const [fetched, setFetched] = useState<Array<
+    (typeof PRODUCTS)[0] & { subcategory?: string | null }
+  > | null>(null);
 
   // Fetch products only for women category (page specific)
   useEffect(() => {
@@ -243,45 +280,89 @@ function ProductCarousel() {
         };
         const { data } = await fetchPublicProducts(params);
         type ApiProductLite = {
-          name?: string;
-          price?: number;
-          images?: string[];
-        };
-        const apiItems: ApiProductLite[] = Array.isArray(data.data)
-          ? (data.data as ApiProductLite[])
-          : [];
-        // Transform to local PRODUCT shape (name, price string, image)
-        type ApiItem = {
           id?: string;
           name?: string;
           price?: number;
           images?: string[];
+          // try to pick common subcategory fields
+          subcategory?: string;
+          subcategoryId?: string;
+          subCategory?: string;
+          subCategories?: Array<string | { id?: string; name?: string }>;
         };
-        const transformed = apiItems.map((p: ApiItem) => ({
-          id: p.id,
-          name: p.name || "Unnamed Product",
-          price:
-            typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",
-          image:
-            p.images && p.images.length > 0 ? p.images[0] : "/placeholder.png",
-        })) as typeof PRODUCTS;
+        const apiItems: ApiProductLite[] = Array.isArray(data.data)
+          ? (data.data as ApiProductLite[])
+          : [];
+        // Transform to local PRODUCT shape (name, price string, image, optional subcategory)
+        const transformed = apiItems.map((p) => {
+          // normalize subcategory: check multiple possible fields
+          let sub: string | null = null;
+          if (p.subcategory) sub = p.subcategory;
+          else if (p.subcategoryId) sub = p.subcategoryId;
+          else if (p.subCategory) sub = p.subCategory;
+          else if (
+            Array.isArray(p.subCategories) &&
+            p.subCategories.length > 0
+          ) {
+            const first = p.subCategories[0];
+            sub =
+              typeof first === "string"
+                ? first
+                : (first && (first.id || first.name)) || null;
+          }
+          return {
+            id: p.id,
+            name: p.name || "Unnamed Product",
+            price:
+              typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",
+            image:
+              p.images && p.images.length > 0
+                ? p.images[0]
+                : "/placeholder.png",
+            subcategory: sub,
+          } as (typeof PRODUCTS)[0] & { subcategory?: string | null };
+        });
 
-        let finalList: typeof PRODUCTS;
+        let finalList: Array<
+          (typeof PRODUCTS)[0] & { subcategory?: string | null }
+        >;
         if (transformed.length === 0) {
-          finalList = PRODUCTS; // no products -> fallback entirely
+          finalList = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
         } else if (transformed.length < 5) {
           // append static to reach at least 5 (preserve order: real first)
-          finalList = [...transformed, ...PRODUCTS].slice(
-            0,
-            5
-          ) as typeof PRODUCTS;
+          const appended = [
+            ...transformed,
+            ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
+          ]
+            .slice(0, 5)
+            .map((p) => ({ ...p, subcategory: p.subcategory ?? null }));
+          finalList = appended;
         } else {
-          // 5 or more
-          finalList = transformed; // real data only
+          finalList = transformed;
         }
-        if (!cancelled) setFetched(finalList);
+        if (!cancelled) {
+          // ensure finalList typed consistently with subcategory optional
+          const normalized = finalList as Array<
+            (typeof PRODUCTS)[0] & { subcategory?: string | null }
+          >;
+          setFetched(normalized);
+          onLoad?.(normalized);
+        }
       } catch (e) {
-        if (!cancelled) setFetched(PRODUCTS); // fallback on error
+        if (!cancelled) {
+          // fallback: attach undefined subcategory to static products
+          const fallback = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+          setFetched(
+            fallback as Array<
+              (typeof PRODUCTS)[0] & { subcategory?: string | null }
+            >
+          );
+          onLoad?.(
+            fallback as Array<
+              (typeof PRODUCTS)[0] & { subcategory?: string | null }
+            >
+          );
+        }
         console.warn("Failed to fetch public products (women)", e);
       } finally {
         // no-op
@@ -290,9 +371,9 @@ function ProductCarousel() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onLoad]);
 
-  const items = fetched || PRODUCTS; // while loading use static
+  const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null })); // while loading use static
 
   // Autoscroll logic (depends on items length)
   useEffect(() => {
@@ -302,12 +383,15 @@ function ProductCarousel() {
     return () => clearInterval(interval);
   }, [items.length]);
 
-  // Scroll to item when scrollIndex changes
+  // Scroll to item when scrollIndex changes - use child's offsetLeft so fixed widths align
   useEffect(() => {
-    if (carouselRef.current) {
-      const cardWidth = carouselRef.current.offsetWidth / visibleCount;
+    if (!carouselRef.current) return;
+    const children = carouselRef.current.children;
+    const idx = Math.max(0, Math.min(scrollIndex, children.length - 1));
+    const target = children[idx] as HTMLElement | undefined;
+    if (target) {
       carouselRef.current.scrollTo({
-        left: scrollIndex * cardWidth,
+        left: target.offsetLeft,
         behavior: "smooth",
       });
     }
@@ -328,12 +412,16 @@ function ProductCarousel() {
     <div className="w-full flex flex-col items-center py-8">
       <div
         ref={carouselRef}
-        className={`flex ${
-          isMobile ? "flex-col items-center" : "flex-row"
-        } overflow-x-hidden ${
-          isMobile ? "w-full max-w-full" : "w-full max-w-[1800px]"
-        }`}
-        style={{ scrollBehavior: "smooth" }}
+        className="flex flex-row items-center overflow-x-auto no-scrollbar"
+        style={{
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
+          // enable scroll snapping for a nicer manual scroll experience
+          scrollSnapType: "x mandatory",
+          width: "100%",
+          maxWidth: "1800px",
+          gap: "0",
+        }}
       >
         {items.map((product, idx) =>
           isMobile ? (
@@ -343,30 +431,108 @@ function ProductCarousel() {
           )
         )}
       </div>
-      <style>{`.group:hover { transform: translateY(-4px); }`}</style>
+      <style>{`
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .group:hover { transform: translateY(-4px); }
+      `}</style>
     </div>
   );
 }
 
 export default function WomenPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  // products loaded by the primary carousel (includes subcategory when present)
+  const [productsLoaded, setProductsLoaded] = useState<
+    Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
+  >([]);
+
+  // keep original first carousel as "fixed" featured one and capture loaded products
   return (
-    <main className="container mx-auto px-2 md:py-2 max-w-7xl">
+    <main className="container px-2 md:py-2 max-w-7xl mx-auto">
       {/* Hero Banner */}
-      <div className="max-w-lg md:max-w-4xl mx-0">
+      <div className="max-w-lg md:max-w-4xl">
         <HeroBanner />
       </div>
       {/* Bestsellers Section */}
       <section className="mt-12 md:mt-16">
-        {/* Categories Section */}
-        <CategoriesClient />
+        {/* Categories Section (now passes loaded categories up) */}
+        <CategoriesClient onLoad={(cats) => setCategories(cats)} />
         <h3 className="text-2xl md:text-3xl font-semibold text-[#531A1A] mb-8">
           Bestsellers
         </h3>
         <div className="space-y-16">
-          <ProductCarousel />
-          <ProductCarousel />
+          {/* fixed primary carousel (works as before) */}
+          <ProductCarousel onLoad={(items) => setProductsLoaded(items || [])} />
+
+          {/* For each category render per-subcategory carousels.
+              If no subcategories exist, render a carousel for the category itself. */}
+          {categories &&
+            categories.map((cat) => {
+              const subs = Array.isArray(cat.subcategories)
+                ? cat.subcategories
+                : [];
+              if (subs.length > 0) {
+                return subs.map(
+                  (sub: string | { id?: string; name?: string }) => {
+                    const subId = typeof sub === "string" ? sub : sub?.id;
+                    const subName =
+                      typeof sub === "string" ? sub : sub?.name || sub?.id;
+                    const title = `${cat.name} — ${subName}`;
+                    const key = `${cat.id || cat.name}-${subId || subName}`;
+                    // filter productsLoaded for this subcategory (match id or name)
+                    const filtered = productsLoaded.filter((p) => {
+                      if (!p.subcategory) return false;
+                      return (
+                        p.subcategory === subId ||
+                        p.subcategory === subName ||
+                        p.subcategory === (subId ?? subName)
+                      );
+                    });
+                    return (
+                      <SubcategoryCarousel
+                        key={key}
+                        mainCategory="Women"
+                        categoryId={cat.id}
+                        categoryName={cat.name}
+                        subcategoryId={subId}
+                        subcategoryName={subName}
+                        title={title}
+                        items={filtered.length > 0 ? filtered : undefined}
+                      />
+                    );
+                  }
+                );
+              }
+              // No subcategories -> render a carousel for the category itself, pass filtered products for the category (if any)
+              const key = `${cat.id || cat.name}-category`;
+              return (
+                <SubcategoryCarousel
+                  key={key}
+                  mainCategory="Women"
+                  categoryId={cat.id}
+                  categoryName={cat.name}
+                  title={cat.name}
+                />
+              );
+            })}
         </div>
       </section>
+      <style>{`
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .group:hover { transform: translateY(-4px); }
+      `}</style>
     </main>
   );
 }

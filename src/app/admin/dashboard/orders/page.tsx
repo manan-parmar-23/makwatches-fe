@@ -3,6 +3,38 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { format } from "date-fns";
+import {
+  MagnifyingGlassIcon,
+  ArrowPathIcon,
+  ChevronDownIcon,
+  XMarkIcon,
+  EyeIcon,
+  PencilSquareIcon,
+  CreditCardIcon,
+  MapPinIcon,
+  ShoppingBagIcon,
+  DocumentTextIcon,
+  UserIcon,
+  CalendarIcon,
+} from "@heroicons/react/24/outline";
+
+// Enhanced Color constants - matching dashboard theme
+const COLORS = {
+  primary: "#531A1A",
+  primaryDark: "#3B1212",
+  primaryLight: "#A45A5A",
+  secondary: "#BFA5A5",
+  background: "#FFFFFF",
+  surface: "#F5F5F5",
+  surfaceLight: "#E5E5E5",
+  text: "#2D1B1B",
+  textMuted: "#7C5C5C",
+  error: "#B3261E",
+  success: "#388E3C",
+  inputBg: "#F9F6F6",
+  inputBorder: "#BFA5A5",
+  inputFocus: "#531A1A",
+};
 
 interface OrderItem {
   productId: string;
@@ -143,289 +175,786 @@ export default function OrdersPage() {
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case "pending":
-        return "bg-yellow-100 text-yellow-800";
+        return { bg: "#FEF3C7", text: "#B45309", border: "#F59E0B" };
       case "processing":
-        return "bg-blue-100 text-blue-800";
+        return { bg: "#DBEAFE", text: "#1E40AF", border: "#3B82F6" };
       case "shipped":
-        return "bg-indigo-100 text-indigo-800";
+        return { bg: "#E0E7FF", text: "#4338CA", border: "#6366F1" };
       case "delivered":
-        return "bg-green-100 text-green-800";
+        return { bg: "#D1FAE5", text: "#065F46", border: "#10B981" };
       case "cancelled":
-        return "bg-red-100 text-red-800";
+        return { bg: "#FEE2E2", text: "#B91C1C", border: "#EF4444" };
       default:
-        return "bg-gray-100 text-gray-800";
+        return { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF" };
     }
   };
 
-  if (loading) return <p className="p-4">Loading orders...</p>;
-
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6 text-[#531A1A]">
-        Order Management
-      </h1>
-
-      {/* Filters and Search */}
-      <div className="mb-6 grid grid-cols-1 md:grid-cols-3 gap-4">
-        <input
-          type="text"
-          placeholder="Search orders by ID, customer, or product"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#531A1A]"
+    <div className="space-y-5">
+      {/* Header with animation */}
+      <div className="mb-6 animate-fade-in-up">
+        <div className="flex items-center mb-3 group">
+          <div
+            className="w-1 h-8 rounded-full mr-3 transform group-hover:scale-y-110 transition-transform duration-300"
+            style={{ backgroundColor: COLORS.primary }}
+          />
+          <div>
+            <h1
+              className="text-2xl sm:text-3xl font-bold tracking-tight mb-1 hover:tracking-wide transition-all duration-300"
+              style={{ color: COLORS.primary }}
+            >
+              Order Management
+            </h1>
+            <p
+              className="text-xs sm:text-sm"
+              style={{ color: COLORS.textMuted }}
+            >
+              Track, view and update customer orders
+            </p>
+          </div>
+        </div>
+        <div
+          className="w-24 h-1 rounded-full transform hover:w-32 transition-all duration-500"
+          style={{
+            background: `linear-gradient(90deg, ${COLORS.primary}, ${COLORS.secondary})`,
+          }}
         />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border p-2 rounded focus:outline-none focus:ring-2 focus:ring-[#531A1A]"
-        >
-          <option value="">All Statuses</option>
-          <option value="pending">Pending</option>
-          <option value="processing">Processing</option>
-          <option value="shipped">Shipped</option>
-          <option value="delivered">Delivered</option>
-          <option value="cancelled">Cancelled</option>
-        </select>
+      </div>
+
+      {/* Enhanced Filters and Search */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+        {/* Search box */}
+        <div className="relative">
+          <MagnifyingGlassIcon
+            className="w-5 h-5 absolute top-2.5 left-3"
+            style={{ color: COLORS.textMuted }}
+          />
+          <input
+            type="text"
+            placeholder="Search orders by ID, customer, or product"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 pr-4 py-2.5 w-full rounded-lg text-sm transition-all duration-300 focus:ring-2"
+            style={{
+              backgroundColor: COLORS.inputBg,
+              borderColor: COLORS.inputBorder,
+              border: `1px solid ${COLORS.inputBorder}`,
+              color: COLORS.text,
+              outline: "none",
+            }}
+          />
+        </div>
+
+        {/* Status filter */}
+        <div className="relative">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="pl-4 pr-10 py-2.5 w-full appearance-none rounded-lg text-sm transition-all duration-300 focus:ring-2"
+            style={{
+              backgroundColor: COLORS.inputBg,
+              borderColor: COLORS.inputBorder,
+              border: `1px solid ${COLORS.inputBorder}`,
+              color: COLORS.text,
+              outline: "none",
+            }}
+          >
+            <option value="">All Statuses</option>
+            <option value="pending">Pending</option>
+            <option value="processing">Processing</option>
+            <option value="shipped">Shipped</option>
+            <option value="delivered">Delivered</option>
+            <option value="cancelled">Cancelled</option>
+          </select>
+          <ChevronDownIcon
+            className="w-4 h-4 absolute top-3 right-3 pointer-events-none"
+            style={{ color: COLORS.textMuted }}
+          />
+        </div>
+
+        {/* Refresh button */}
         <button
           onClick={fetchOrders}
-          className="bg-[#531A1A] text-white px-4 py-2 rounded hover:bg-red-900 transition"
+          className="group flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-white text-sm transition-all duration-300 hover:scale-105 hover:shadow-md"
+          style={{ background: COLORS.primary }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.backgroundColor = COLORS.primaryDark;
+            e.currentTarget.style.boxShadow = `0 4px 12px ${COLORS.primary}40`;
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.backgroundColor = COLORS.primary;
+            e.currentTarget.style.boxShadow = "none";
+          }}
         >
-          Refresh Orders
+          <ArrowPathIcon className="w-4 h-4 group-hover:rotate-180 transition-transform duration-700" />
+          <span>Refresh Orders</span>
         </button>
       </div>
 
-      {/* Order Status Update Form */}
+      {/* Enhanced Order Status Update Form */}
       {updateOrder && (
-        <form
-          onSubmit={handleUpdateStatus}
-          className="mb-6 bg-white shadow-md p-4 rounded-lg border-l-4 border-[#531A1A]"
+        <div
+          className="mb-5 rounded-xl shadow-md overflow-hidden border animate-fade-in"
+          style={{
+            backgroundColor: COLORS.background,
+            borderColor: `${COLORS.surfaceLight}60`,
+          }}
         >
-          <h3 className="font-semibold mb-2">Update Order Status</h3>
-          <p className="mb-2 text-sm text-gray-600">Order ID: {updateOrder}</p>
-
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="flex-1">
-              <label className="block text-gray-700 text-sm font-bold mb-2">
-                New Status
-              </label>
-              <select
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                className="border p-2 rounded w-full focus:outline-none focus:ring-2 focus:ring-[#531A1A]"
+          <div
+            className="px-4 py-3 border-b flex justify-between items-center"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: `${COLORS.surfaceLight}80`,
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <DocumentTextIcon
+                className="w-4 h-4"
+                style={{ color: COLORS.primary }}
+              />
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: COLORS.primary }}
               >
-                <option value="pending">Pending</option>
-                <option value="processing">Processing</option>
-                <option value="shipped">Shipped</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
+                Update Order Status
+              </h3>
             </div>
-
-            <div className="flex gap-2">
-              <button
-                type="submit"
-                className="bg-[#531A1A] text-white px-4 py-2 rounded hover:bg-red-900 transition"
-              >
-                Update Status
-              </button>
-              <button
-                type="button"
-                onClick={() => setUpdateOrder(null)}
-                className="bg-gray-300 text-gray-700 px-4 py-2 rounded hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-            </div>
+            <button
+              onClick={() => setUpdateOrder(null)}
+              className="p-1 rounded-full hover:bg-gray-200 transition-colors"
+            >
+              <XMarkIcon
+                className="w-4 h-4"
+                style={{ color: COLORS.textMuted }}
+              />
+            </button>
           </div>
-        </form>
+
+          <form onSubmit={handleUpdateStatus} className="p-4">
+            <div className="mb-3">
+              <p className="text-xs mb-1" style={{ color: COLORS.textMuted }}>
+                Order ID
+              </p>
+              <p className="text-sm font-mono" style={{ color: COLORS.text }}>
+                {updateOrder}
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
+              <div className="sm:col-span-2">
+                <label
+                  className="block text-xs mb-1.5"
+                  style={{ color: COLORS.textMuted }}
+                >
+                  New Status
+                </label>
+                <select
+                  value={newStatus}
+                  onChange={(e) => setNewStatus(e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-all duration-300"
+                  style={{
+                    backgroundColor: COLORS.inputBg,
+                    borderColor: COLORS.inputBorder,
+                    border: `1px solid ${COLORS.inputBorder}`,
+                    color: COLORS.text,
+                    outline: "none",
+                  }}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="processing">Processing</option>
+                  <option value="shipped">Shipped</option>
+                  <option value="delivered">Delivered</option>
+                  <option value="cancelled">Cancelled</option>
+                </select>
+              </div>
+
+              <div className="flex gap-2 sm:justify-end">
+                <button
+                  type="button"
+                  onClick={() => setUpdateOrder(null)}
+                  className="px-3 py-2 rounded-lg border text-sm"
+                  style={{
+                    borderColor: COLORS.inputBorder,
+                    color: COLORS.textMuted,
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-3 py-2 rounded-lg text-white text-sm transition-all duration-300 hover:shadow"
+                  style={{ backgroundColor: COLORS.primary }}
+                >
+                  Update
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
       )}
 
-      {/* Order Detail View */}
+      {/* Enhanced Order Detail View */}
       {viewOrder && (
-        <div className="mb-6 bg-white shadow-md p-4 rounded-lg">
-          <div className="flex justify-between items-start mb-4">
-            <h3 className="text-lg font-semibold">Order Details</h3>
+        <div
+          className="mb-5 rounded-xl shadow-md overflow-hidden border animate-fade-in"
+          style={{
+            backgroundColor: COLORS.background,
+            borderColor: `${COLORS.surfaceLight}60`,
+          }}
+        >
+          <div
+            className="px-4 py-3 border-b flex justify-between items-center"
+            style={{
+              backgroundColor: COLORS.surface,
+              borderColor: `${COLORS.surfaceLight}80`,
+            }}
+          >
+            <div className="flex items-center space-x-2">
+              <EyeIcon className="w-4 h-4" style={{ color: COLORS.primary }} />
+              <h3
+                className="text-sm font-semibold"
+                style={{ color: COLORS.primary }}
+              >
+                Order Details
+              </h3>
+            </div>
             <button
               onClick={() => setViewOrder(null)}
-              className="text-gray-500 hover:text-gray-700"
+              className="p-1 rounded-full hover:bg-gray-200 transition-colors"
             >
-              <span className="text-xl">&times;</span>
+              <XMarkIcon
+                className="w-4 h-4"
+                style={{ color: COLORS.textMuted }}
+              />
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <h4 className="font-medium text-gray-700">Order Information</h4>
-              <p className="text-sm">Order ID: {viewOrder.id}</p>
-              <p className="text-sm">Customer ID: {viewOrder.userId}</p>
-              <p className="text-sm">Date: {formatDate(viewOrder.createdAt)}</p>
-              <p className="text-sm">
-                Total: {formatCurrency(viewOrder.total)}
-              </p>
-              <p className="text-sm">
-                Status:{" "}
-                <span
-                  className={`px-2 py-1 rounded text-xs ${getStatusColor(
-                    viewOrder.status
-                  )}`}
-                >
-                  {viewOrder.status.toUpperCase()}
-                </span>
-              </p>
-              <p className="text-sm">
-                Payment Method: {viewOrder.paymentInfo.method}
-              </p>
-              {viewOrder.paymentInfo.razorpayOrderId && (
-                <p className="text-sm">
-                  Razorpay Order: {viewOrder.paymentInfo.razorpayOrderId}
-                </p>
-              )}
-            </div>
-
-            <div>
-              <h4 className="font-medium text-gray-700">Shipping Address</h4>
-              <p className="text-sm">{viewOrder.shippingAddress.street}</p>
-              <p className="text-sm">
-                {viewOrder.shippingAddress.city},{" "}
-                {viewOrder.shippingAddress.state}{" "}
-                {viewOrder.shippingAddress.zipCode}
-              </p>
-              <p className="text-sm">{viewOrder.shippingAddress.country}</p>
-            </div>
-          </div>
-
-          <h4 className="font-medium text-gray-700 mb-2">Order Items</h4>
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Product
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Price
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Qty
-                  </th>
-                  <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Subtotal
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {viewOrder.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm">
-                      {item.productName}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm">
-                      {formatCurrency(item.price)}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm">
-                      {item.quantity}
-                    </td>
-                    <td className="px-3 py-2 whitespace-nowrap text-sm">
-                      {formatCurrency(item.subtotal)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td
-                    colSpan={3}
-                    className="px-3 py-2 text-right text-sm font-medium"
+          <div className="p-4">
+            {/* Order info cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+              {/* Order information */}
+              <div
+                className="p-3 rounded-lg border"
+                style={{
+                  borderColor: `${COLORS.surfaceLight}80`,
+                  backgroundColor: COLORS.surface,
+                }}
+              >
+                <div className="flex items-center space-x-2 mb-2">
+                  <DocumentTextIcon
+                    className="w-4 h-4"
+                    style={{ color: COLORS.primary }}
+                  />
+                  <h4
+                    className="text-sm font-medium"
+                    style={{ color: COLORS.text }}
                   >
-                    Total:
-                  </td>
-                  <td className="px-3 py-2 text-sm font-medium">
-                    {formatCurrency(viewOrder.total)}
-                  </td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
+                    Order Information
+                  </h4>
+                </div>
 
-          <div className="mt-4 flex justify-end">
-            <button
-              onClick={() => {
-                setUpdateOrder(viewOrder.id);
-                setNewStatus(viewOrder.status);
-                setViewOrder(null);
-              }}
-              className="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700 mr-2"
+                <div className="space-y-1.5 text-xs">
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Order ID:
+                    </span>
+                    <span className="font-mono" style={{ color: COLORS.text }}>
+                      {viewOrder.id}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Customer ID:
+                    </span>
+                    <span className="font-mono" style={{ color: COLORS.text }}>
+                      {viewOrder.userId}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Date:
+                    </span>
+                    <span style={{ color: COLORS.text }}>
+                      {formatDate(viewOrder.createdAt)}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Total:
+                    </span>
+                    <span
+                      className="font-semibold"
+                      style={{ color: COLORS.primary }}
+                    >
+                      {formatCurrency(viewOrder.total)}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Status:
+                    </span>
+                    <span
+                      className="px-2 rounded-full text-xs"
+                      style={{
+                        backgroundColor: getStatusColor(viewOrder.status).bg,
+                        color: getStatusColor(viewOrder.status).text,
+                      }}
+                    >
+                      {viewOrder.status.toUpperCase()}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Payment & Shipping */}
+              <div className="space-y-3">
+                {/* Payment info */}
+                <div
+                  className="p-3 rounded-lg border"
+                  style={{
+                    borderColor: `${COLORS.surfaceLight}80`,
+                    backgroundColor: COLORS.surface,
+                  }}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <CreditCardIcon
+                      className="w-4 h-4"
+                      style={{ color: COLORS.primary }}
+                    />
+                    <h4
+                      className="text-sm font-medium"
+                      style={{ color: COLORS.text }}
+                    >
+                      Payment Details
+                    </h4>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs">
+                    <div className="flex">
+                      <span
+                        className="w-24"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        Method:
+                      </span>
+                      <span style={{ color: COLORS.text }}>
+                        {viewOrder.paymentInfo.method}
+                      </span>
+                    </div>
+                    {viewOrder.paymentInfo.razorpayOrderId && (
+                      <div className="flex">
+                        <span
+                          className="w-24"
+                          style={{ color: COLORS.textMuted }}
+                        >
+                          Razorpay ID:
+                        </span>
+                        <span
+                          className="font-mono text-[10px]"
+                          style={{ color: COLORS.text }}
+                        >
+                          {viewOrder.paymentInfo.razorpayOrderId}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Shipping info */}
+                <div
+                  className="p-3 rounded-lg border"
+                  style={{
+                    borderColor: `${COLORS.surfaceLight}80`,
+                    backgroundColor: COLORS.surface,
+                  }}
+                >
+                  <div className="flex items-center space-x-2 mb-2">
+                    <MapPinIcon
+                      className="w-4 h-4"
+                      style={{ color: COLORS.primary }}
+                    />
+                    <h4
+                      className="text-sm font-medium"
+                      style={{ color: COLORS.text }}
+                    >
+                      Shipping Address
+                    </h4>
+                  </div>
+
+                  <div className="text-xs" style={{ color: COLORS.text }}>
+                    <p>{viewOrder.shippingAddress.street}</p>
+                    <p>
+                      {viewOrder.shippingAddress.city},{" "}
+                      {viewOrder.shippingAddress.state}{" "}
+                      {viewOrder.shippingAddress.zipCode}
+                    </p>
+                    <p>{viewOrder.shippingAddress.country}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Order items */}
+            <div
+              className="rounded-lg border overflow-hidden"
+              style={{ borderColor: `${COLORS.surfaceLight}80` }}
             >
-              Update Status
-            </button>
+              <div
+                className="px-3 py-2 border-b"
+                style={{
+                  backgroundColor: COLORS.surface,
+                  borderColor: `${COLORS.surfaceLight}80`,
+                }}
+              >
+                <div className="flex items-center space-x-2">
+                  <ShoppingBagIcon
+                    className="w-4 h-4"
+                    style={{ color: COLORS.primary }}
+                  />
+                  <h4
+                    className="text-sm font-medium"
+                    style={{ color: COLORS.text }}
+                  >
+                    Order Items
+                  </h4>
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <table
+                  className="min-w-full divide-y"
+                  style={{ borderColor: `${COLORS.surfaceLight}60` }}
+                >
+                  <thead style={{ backgroundColor: `${COLORS.surface}50` }}>
+                    <tr>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-medium tracking-wider"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        Product
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-medium tracking-wider"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        Price
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-medium tracking-wider"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        Qty
+                      </th>
+                      <th
+                        className="px-3 py-2 text-right text-xs font-medium tracking-wider"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        Subtotal
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    className="divide-y"
+                    style={{ borderColor: `${COLORS.surfaceLight}40` }}
+                  >
+                    {viewOrder.items.map((item, index) => (
+                      <tr
+                        key={index}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td
+                          className="px-3 py-2 whitespace-nowrap text-xs"
+                          style={{ color: COLORS.text }}
+                        >
+                          {item.productName}
+                        </td>
+                        <td
+                          className="px-3 py-2 whitespace-nowrap text-xs text-right"
+                          style={{ color: COLORS.textMuted }}
+                        >
+                          {formatCurrency(item.price)}
+                        </td>
+                        <td
+                          className="px-3 py-2 whitespace-nowrap text-xs text-right"
+                          style={{ color: COLORS.textMuted }}
+                        >
+                          {item.quantity}
+                        </td>
+                        <td
+                          className="px-3 py-2 whitespace-nowrap text-xs font-medium text-right"
+                          style={{ color: COLORS.primary }}
+                        >
+                          {formatCurrency(item.subtotal)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot style={{ backgroundColor: `${COLORS.surface}30` }}>
+                    <tr>
+                      <td
+                        colSpan={3}
+                        className="px-3 py-2 text-right text-xs font-medium"
+                        style={{ color: COLORS.text }}
+                      >
+                        Total:
+                      </td>
+                      <td
+                        className="px-3 py-2 text-xs font-bold text-right"
+                        style={{ color: COLORS.primary }}
+                      >
+                        {formatCurrency(viewOrder.total)}
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => {
+                  setUpdateOrder(viewOrder.id);
+                  setNewStatus(viewOrder.status);
+                  setViewOrder(null);
+                }}
+                className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs text-white transition-all duration-300 hover:scale-105"
+                style={{ backgroundColor: COLORS.primary }}
+              >
+                <PencilSquareIcon className="w-3.5 h-3.5" />
+                <span>Update Status</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
 
-      {/* Orders List */}
-      <div className="overflow-x-auto bg-white shadow-md rounded-lg">
-        <table className="min-w-full border">
-          <thead className="bg-[#531A1A] text-white">
-            <tr>
-              <th className="p-3 border">Order ID</th>
-              <th className="p-3 border">Customer ID</th>
-              <th className="p-3 border">Date</th>
-              <th className="p-3 border">Items</th>
-              <th className="p-3 border">Total</th>
-              <th className="p-3 border">Status</th>
-              <th className="p-3 border">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredOrders.map((order) => (
-              <tr key={order.id} className="text-center border-b">
-                <td className="p-3 border text-xs">
-                  {order.id.substring(0, 10)}...
-                </td>
-                <td className="p-3 border text-xs">
-                  {order.userId.substring(0, 10)}...
-                </td>
-                <td className="p-3 border">{formatDate(order.createdAt)}</td>
-                <td className="p-3 border">{order.items.length} items</td>
-                <td className="p-3 border">{formatCurrency(order.total)}</td>
-                <td className="p-3 border">
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${getStatusColor(
-                      order.status
-                    )}`}
-                  >
-                    {order.status.toUpperCase()}
-                  </span>
-                </td>
-                <td className="p-3 border flex flex-wrap justify-center gap-2">
-                  <button
-                    onClick={() => setViewOrder(order)}
-                    className="bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-700 text-xs"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => {
-                      setUpdateOrder(order.id);
-                      setNewStatus(order.status);
-                    }}
-                    className="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-700 text-xs"
-                  >
-                    Update
-                  </button>
-                </td>
-              </tr>
-            ))}
-            {filteredOrders.length === 0 && (
-              <tr>
-                <td colSpan={7} className="p-4 text-gray-500">
-                  No orders found.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-10 space-y-3">
+          <div
+            className="w-10 h-10 border-3 rounded-full animate-spin"
+            style={{
+              borderColor: `${COLORS.secondary}40`,
+              borderTopColor: COLORS.primary,
+            }}
+          />
+          <p
+            className="text-sm animate-pulse"
+            style={{ color: COLORS.textMuted }}
+          >
+            Loading orders...
+          </p>
+        </div>
+      ) : (
+        /* Enhanced Orders List Table */
+        <div
+          className="rounded-xl shadow-md overflow-hidden border transition-all duration-300 hover:shadow-lg"
+          style={{
+            backgroundColor: COLORS.background,
+            borderColor: `${COLORS.surfaceLight}60`,
+          }}
+        >
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr style={{ backgroundColor: COLORS.primary }}>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white">
+                    Order ID
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white">
+                    Customer
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white hidden sm:table-cell">
+                    Date
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white hidden md:table-cell">
+                    Items
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white">
+                    Total
+                  </th>
+                  <th className="px-3 py-3 text-left text-xs font-medium tracking-wider text-white">
+                    Status
+                  </th>
+                  <th className="px-3 py-3 text-right text-xs font-medium tracking-wider text-white">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredOrders.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-4 py-8 text-center"
+                      style={{ color: COLORS.textMuted }}
+                    >
+                      <div className="flex flex-col items-center space-y-2">
+                        <div
+                          className="w-12 h-12 rounded-full flex items-center justify-center"
+                          style={{
+                            backgroundColor: `${COLORS.surfaceLight}50`,
+                          }}
+                        >
+                          <DocumentTextIcon
+                            className="w-6 h-6"
+                            style={{ color: COLORS.textMuted }}
+                          />
+                        </div>
+                        <p className="text-sm">No orders found</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  filteredOrders.map((order) => (
+                    <tr
+                      key={order.id}
+                      className="border-b transition-all duration-300 hover:bg-gray-50 group"
+                      style={{ borderColor: `${COLORS.surfaceLight}60` }}
+                    >
+                      <td className="px-3 py-3">
+                        <div
+                          className="font-mono text-xs px-2 py-1 rounded-lg inline-block transition-all duration-300 group-hover:scale-105"
+                          style={{
+                            backgroundColor: `${COLORS.primary}15`,
+                            color: COLORS.primary,
+                          }}
+                        >
+                          #{order.id.substring(0, 8)}...
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex items-center space-x-2">
+                          <div
+                            className="w-7 h-7 rounded-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
+                            style={{ backgroundColor: `${COLORS.secondary}40` }}
+                          >
+                            <UserIcon
+                              className="w-3.5 h-3.5"
+                              style={{ color: COLORS.primary }}
+                            />
+                          </div>
+                          <span
+                            className="text-xs font-medium overflow-hidden text-ellipsis"
+                            style={{ color: COLORS.text }}
+                          >
+                            {order.userId.substring(0, 8)}...
+                          </span>
+                        </div>
+                      </td>
+                      <td
+                        className="px-3 py-3 text-xs hidden sm:table-cell"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        <div className="flex items-center space-x-1">
+                          <CalendarIcon className="w-3 h-3" />
+                          <span>
+                            {formatDate(order.createdAt).split(",")[0]}
+                          </span>
+                        </div>
+                      </td>
+                      <td
+                        className="px-3 py-3 text-xs hidden md:table-cell"
+                        style={{ color: COLORS.textMuted }}
+                      >
+                        <div
+                          className="px-2 py-1 rounded-lg text-center"
+                          style={{
+                            backgroundColor: `${COLORS.surfaceLight}50`,
+                          }}
+                        >
+                          {order.items.length}
+                        </div>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="text-xs font-semibold group-hover:scale-105 transition-transform duration-300 inline-block"
+                          style={{ color: COLORS.primary }}
+                        >
+                          {formatCurrency(order.total)}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <span
+                          className="px-2 py-1 rounded-full text-xs font-medium inline-block"
+                          style={{
+                            backgroundColor: getStatusColor(order.status).bg,
+                            color: getStatusColor(order.status).text,
+                          }}
+                        >
+                          {order.status}
+                        </span>
+                      </td>
+                      <td className="px-3 py-3">
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => setViewOrder(order)}
+                            className="p-1.5 rounded-lg transition-all duration-300 hover:scale-110"
+                            style={{ backgroundColor: `${COLORS.primary}10` }}
+                            aria-label="View order"
+                            title="View details"
+                          >
+                            <EyeIcon
+                              className="h-3.5 w-3.5"
+                              style={{ color: COLORS.primary }}
+                            />
+                          </button>
+                          <button
+                            onClick={() => {
+                              setUpdateOrder(order.id);
+                              setNewStatus(order.status);
+                            }}
+                            className="p-1.5 rounded-lg transition-all duration-300 hover:scale-110"
+                            style={{ backgroundColor: `${COLORS.primary}10` }}
+                            aria-label="Update order"
+                            title="Update status"
+                          >
+                            <PencilSquareIcon
+                              className="h-3.5 w-3.5"
+                              style={{ color: COLORS.primary }}
+                            />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* CSS Animations */}
+      <style jsx>{`
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .animate-fade-in-up {
+          animation: fade-in-up 0.4s ease-out forwards;
+        }
+
+        @keyframes fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        .animate-fade-in {
+          animation: fade-in 0.3s ease-out forwards;
+        }
+      `}</style>
     </div>
   );
 }

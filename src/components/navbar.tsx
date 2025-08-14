@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { usePathname } from "next/navigation";
 import Image from "next/image";
@@ -10,17 +10,37 @@ import { motion, AnimatePresence } from "framer-motion";
 const linkClass =
   "uppercase font-bold text-xl tracking-wide text-[#531A1A] transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
 
-const hamburgerVariants = {
-  closed: { rotate: 0, transition: { duration: 0.3 } },
-  open: { rotate: 90, transition: { duration: 0.3 } },
-};
-
 // Mobile Navbar Component
 const MobileNavbar = () => {
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const { user, role, logout } = useAuth();
+
+  // refs to detect outside clicks
+  const menuRef = useRef<HTMLDivElement | null>(null);
+  const burgerRef = useRef<HTMLButtonElement | null>(null);
+
+  // close menu when clicking outside the menu or hamburger
+  useEffect(() => {
+    if (!open) return;
+
+    function handleOutsideClick(e: MouseEvent) {
+      const target = e.target as Node | null;
+      if (
+        menuRef.current &&
+        !menuRef.current.contains(target) &&
+        burgerRef.current &&
+        !burgerRef.current.contains(target)
+      ) {
+        setOpen(false);
+        setExpandedMenu(null);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => document.removeEventListener("mousedown", handleOutsideClick);
+  }, [open]);
 
   return (
     <nav className="fixed top-0 left-0 w-full bg-white md:hidden shadow z-9999">
@@ -37,12 +57,16 @@ const MobileNavbar = () => {
         </div>
         {/* Hamburger */}
         <motion.button
+          ref={burgerRef}
           className="text-[#531A1A] focus:outline-none"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
           initial={false}
           animate={open ? "open" : "closed"}
-          variants={hamburgerVariants}
+          variants={{
+            closed: { rotate: 0, transition: { duration: 0.3 } },
+            open: { rotate: 90, transition: { duration: 0.3 } },
+          }}
           style={{ originX: 0.5, originY: 0.5 }}
         >
           <svg
@@ -105,10 +129,19 @@ const MobileNavbar = () => {
             exit={{ opacity: 0, y: -20, pointerEvents: "none" }}
             transition={{ duration: 0.35 }}
             className="fixed top-12 left-0 w-full h-100px px-4 pb-4 pt-12 space-y-2 bg-white shadow-md z-40 rounded-b-lg overflow-y-hidden"
+            ref={menuRef}
           >
-            <Link href="/" className={linkClass + " block py-2"}>
+            <Link
+              href="/"
+              className={linkClass + " block py-2"}
+              onClick={() => {
+                setOpen(false);
+                setExpandedMenu(null);
+              }}
+            >
               Home
             </Link>
+
             <button
               className={linkClass + " block py-2 text-left w-full"}
               onClick={() =>
@@ -126,22 +159,21 @@ const MobileNavbar = () => {
                   transition={{ duration: 0.2 }}
                   className="pl-4"
                 >
-                  <Link href="/men" className="block py-2 text-[#531A1A]">
+                  {/* Only show All Men (removed sub-links) */}
+                  <Link
+                    href="/men"
+                    className="block py-2 text-[#531A1A]"
+                    onClick={() => {
+                      setOpen(false);
+                      setExpandedMenu(null);
+                    }}
+                  >
                     All Men
                   </Link>
-                  <Link
-                    href="/men/shirts"
-                    className="block py-2 text-[#531A1A]"
-                  >
-                    Shirts
-                  </Link>
-                  <Link href="/men/pants" className="block py-2 text-[#531A1A]">
-                    Pants
-                  </Link>
-                  {/* Add more sub-options as needed */}
                 </motion.div>
               )}
             </AnimatePresence>
+
             <button
               className={linkClass + " block py-2 text-left w-full"}
               onClick={() =>
@@ -159,33 +191,37 @@ const MobileNavbar = () => {
                   transition={{ duration: 0.2 }}
                   className="pl-4"
                 >
-                  <Link href="/women" className="block py-2 text-[#531A1A]">
+                  {/* Only show All Women (removed sub-links) */}
+                  <Link
+                    href="/women"
+                    className="block py-2 text-[#531A1A]"
+                    onClick={() => {
+                      setOpen(false);
+                      setExpandedMenu(null);
+                    }}
+                  >
                     All Women
                   </Link>
-                  <Link
-                    href="/women/dresses"
-                    className="block py-2 text-[#531A1A]"
-                  >
-                    Dresses
-                  </Link>
-                  <Link
-                    href="/women/tops"
-                    className="block py-2 text-[#531A1A]"
-                  >
-                    Tops
-                  </Link>
-                  {/* Add more sub-options as needed */}
                 </motion.div>
               )}
             </AnimatePresence>
+
             <hr className="border-[#531A1A]/20" />
             <button
               className={linkClass + " block py-2 text-left w-full"}
-              onClick={() => setShowSearch(true)}
+              onClick={() => {
+                setShowSearch(true);
+                setOpen(false);
+                setExpandedMenu(null);
+              }}
             >
               Search
             </button>
-            <Link href="/cart" className={linkClass + " block py-2"}>
+            <Link
+              href="/cart"
+              className={linkClass + " block py-2"}
+              onClick={() => setOpen(false)}
+            >
               Cart
             </Link>
             {/* Account Button Logic */}
@@ -216,16 +252,22 @@ const MobileNavbar = () => {
                         <Link
                           href="/login"
                           className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
                         >
                           Customer Login
                         </Link>
                         <Link
                           href="/admin/login"
                           className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
                         >
                           Admin Login
                         </Link>
-                        <Link href="/" className="block py-2 text-[#531A1A]">
+                        <Link
+                          href="/"
+                          className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
+                        >
                           Explore as Guest
                         </Link>
                       </div>
@@ -235,12 +277,25 @@ const MobileNavbar = () => {
                         <Link
                           href="/account"
                           className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
                         >
                           Account
                         </Link>
+                        {/* Orders link visible only to logged-in customers */}
+                        <Link
+                          href="/orders"
+                          className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
+                        >
+                          Orders
+                        </Link>
                         <button
                           className="block w-full text-left py-2 text-[#531A1A]"
-                          onClick={logout}
+                          onClick={() => {
+                            logout();
+                            setOpen(false);
+                            setExpandedMenu(null);
+                          }}
                         >
                           Logout
                         </button>
@@ -251,12 +306,17 @@ const MobileNavbar = () => {
                         <Link
                           href="/admin/dashboard"
                           className="block py-2 text-[#531A1A]"
+                          onClick={() => setOpen(false)}
                         >
                           Dashboard
                         </Link>
                         <button
                           className="block w-full text-left py-2 text-[#531A1A]"
-                          onClick={logout}
+                          onClick={() => {
+                            logout();
+                            setOpen(false);
+                            setExpandedMenu(null);
+                          }}
                         >
                           Logout
                         </button>
@@ -376,6 +436,14 @@ const Navbar = () => {
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Account
+                        </Link>
+                        {/* Orders link visible only to logged-in customers */}
+                        <Link
+                          href="/orders"
+                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          Orders
                         </Link>
                         <button
                           className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"

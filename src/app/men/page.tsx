@@ -1,18 +1,20 @@
 "use client";
 import { useRef, useEffect, useState } from "react";
-import Link from "next/link";
+
 import {
   fetchPublicCategories,
   Category,
   fetchPublicProducts,
   ProductQueryParams,
 } from "@/utils/api";
-import Image from "next/image";
-// Components
+
+// Reuse shared card/ui & PRODUCTS from women page so design is consistent
+import { PRODUCTS, ProductCard, ProductCardMobile } from "@/app/women/page";
+import SubcategoryCarousel from "@/components/women/SubCategoryCarousel";
 import HeroBanner from "@/components/men/HeroBanner";
 import CategoriesSection from "@/components/men/CategoriesSection";
 
-// Loading Skeletons
+// Loading skeleton (unchanged)
 function CategorySkeleton() {
   return (
     <div className="my-6 md:my-0 md:mb-8">
@@ -25,8 +27,8 @@ function CategorySkeleton() {
   );
 }
 
-// Client-side categories fetcher (handles 401 gracefully without infinite re-renders under Suspense)
-function CategoriesClient() {
+// CategoriesClient now accepts onLoad same as women page
+function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,11 +39,12 @@ function CategoriesClient() {
       try {
         const { data } = await fetchPublicCategories("Men");
         if (!cancelled) {
-          setCategories(data.data || []);
+          const list = data.data || [];
+          setCategories(list);
+          onLoad?.(list);
         }
       } catch (e: unknown) {
         if (!cancelled) {
-          // Narrow error shape
           const err = e as
             | {
                 response?: { status?: number; data?: { message?: string } };
@@ -55,12 +58,13 @@ function CategoriesClient() {
                 err?.message ||
                 "Failed to load categories";
           setError(msg);
-          // Optional fallback (static) categories so UI isn\'t empty
-          setCategories([
+          const fallback: Category[] = [
             { id: "men-shirts", name: "Shirts", subcategories: [] },
-            { id: "men-Pants", name: "Pants", subcategories: [] },
+            { id: "men-pants", name: "Pants", subcategories: [] },
             { id: "men-outerwear", name: "Outerwear", subcategories: [] },
-          ]);
+          ];
+          setCategories(fallback);
+          onLoad?.(fallback);
           console.warn("Categories fetch failed", e);
         }
       } finally {
@@ -70,7 +74,7 @@ function CategoriesClient() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onLoad]);
 
   if (loading) return <CategorySkeleton />;
   return (
@@ -85,153 +89,20 @@ function CategoriesClient() {
   );
 }
 
-// Carousel product data
-const PRODUCTS = [
-  {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt1.png",
-  },
-  {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt2.png",
-  },
-  {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-  },
-  {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-  },
-  {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-  },
-];
-
-const COLORS = {
-  primary: "#531A1A",
-  primaryLight: "#A45A5A",
-  surface: "#FFFFFF",
-  text: "#2D1B1B",
-  textMuted: "#7C5C5C",
-  badgeBg: "#fff",
-  badgeBorder: "#531A1A",
-  progressBg: "#E5E5E5",
-  progressActive: "#531A1A",
-};
-
-function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
-  const content = (
-    <div
-      className="flex flex-col items-center px-4 md:px-8"
-      style={{
-        minWidth: `calc(100%/3)`,
-        transition: "transform 0.3s cubic-bezier(.4,0,.2,1)",
-      }}
-    >
-      <div className="relative flex flex-col items-center group w-full">
-        <div
-          className="absolute top-2 left-2 px-5 py-2 rounded-full border text-base font-semibold z-10 bg-white"
-          style={{
-            border: `1.5px solid ${COLORS.badgeBorder}`,
-            color: COLORS.primary,
-            boxShadow: "0 1px 4px #531A1A10",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {product.price}
-        </div>
-        <Image
-          src={product.image}
-          alt={product.name}
-          width={340}
-          height={340}
-          className="mt-8 mb-4 w-[340px] h-[340px] object-contain transition-transform duration-300 group-hover:scale-105"
-          style={{ display: "block", background: "none", border: "none" }}
-        />
-      </div>
-      <div
-        className="mt-4 text-center font-medium w-full"
-        style={{
-          color: COLORS.text,
-          fontSize: "1.15rem",
-          letterSpacing: "0.01em",
-        }}
-      >
-        {product.name}
-      </div>
-    </div>
-  );
-  return product.id ? (
-    <Link href={`/product_details?id=${product.id}`}>{content}</Link>
-  ) : (
-    content
-  );
-}
-
-function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
-  const content = (
-    <div className="flex flex-col items-center px-2 w-full">
-      <div className="relative flex flex-col items-center group w-full">
-        <div
-          className="absolute top-2 left-2 px-4 py-1 rounded-full border text-sm font-semibold z-10 bg-white"
-          style={{
-            border: `1.5px solid ${COLORS.badgeBorder}`,
-            color: COLORS.primary,
-            boxShadow: "0 1px 4px #531A1A10",
-            whiteSpace: "nowrap",
-          }}
-        >
-          {product.price}
-        </div>
-        <Image
-          src={product.image}
-          alt={product.name}
-          width={220}
-          height={220}
-          className="mt-6 mb-2 w-[220px] h-[220px] object-contain transition-transform duration-300 group-hover:scale-105"
-          style={{ display: "block", background: "none", border: "none" }}
-        />
-      </div>
-      <div
-        className="mt-2 text-center font-medium w-full"
-        style={{
-          color: COLORS.text,
-          fontSize: "1rem",
-          letterSpacing: "0.01em",
-        }}
-      >
-        {product.name}
-      </div>
-    </div>
-  );
-  return product.id ? (
-    <Link href={`/product_details?id=${product.id}`}>{content}</Link>
-  ) : (
-    content
-  );
-}
-
-function ProductCarousel() {
+// Primary ProductCarousel for Men (same transform + subcategory extraction as women)
+function ProductCarousel({
+  onLoad,
+}: {
+  onLoad?: (
+    items: Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
+  ) => void;
+}) {
   const [scrollIndex, setScrollIndex] = useState(0);
-  const visibleCount = 3;
   const carouselRef = useRef<HTMLDivElement>(null);
+  const [fetched, setFetched] = useState<Array<
+    (typeof PRODUCTS)[0] & { subcategory?: string | null }
+  > | null>(null);
 
-  // Dynamic products fetched from public API
-  const [fetched, setFetched] = useState<typeof PRODUCTS | null>(null);
-
-  // Fetch products only for men category (page specific)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -243,58 +114,82 @@ function ProductCarousel() {
         };
         const { data } = await fetchPublicProducts(params);
         type ApiProductLite = {
-          name?: string;
-          price?: number;
-          images?: string[];
-        };
-        const apiItems: ApiProductLite[] = Array.isArray(data.data)
-          ? (data.data as ApiProductLite[])
-          : [];
-        // Transform to local PRODUCT shape (name, price string, image)
-        type ApiItem = {
           id?: string;
           name?: string;
           price?: number;
           images?: string[];
+          subcategory?: string;
+          subcategoryId?: string;
+          subCategory?: string;
+          subCategories?: Array<string | { id?: string; name?: string }>;
         };
-        const transformed = apiItems.map((p: ApiItem) => ({
-          id: p.id,
-          name: p.name || "Unnamed Product",
-          price:
-            typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",
-          image:
-            p.images && p.images.length > 0 ? p.images[0] : "/placeholder.png",
-        })) as typeof PRODUCTS;
+        const apiItems: ApiProductLite[] = Array.isArray(data.data)
+          ? (data.data as ApiProductLite[])
+          : [];
+        const transformed = apiItems.map((p) => {
+          let sub: string | null = null;
+          if (p.subcategory) sub = p.subcategory;
+          else if (p.subcategoryId) sub = p.subcategoryId;
+          else if (p.subCategory) sub = p.subCategory;
+          else if (
+            Array.isArray(p.subCategories) &&
+            p.subCategories.length > 0
+          ) {
+            const first = p.subCategories[0];
+            sub =
+              typeof first === "string"
+                ? first
+                : (first && (first.id || first.name)) || null;
+          }
+          return {
+            id: p.id,
+            name: p.name || "Unnamed Product",
+            price:
+              typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",
+            image:
+              p.images && p.images.length > 0
+                ? p.images[0]
+                : "/placeholder.png",
+            subcategory: sub,
+          } as (typeof PRODUCTS)[0] & { subcategory?: string | null };
+        });
 
-        let finalList: typeof PRODUCTS;
+        let finalList: Array<
+          (typeof PRODUCTS)[0] & { subcategory?: string | null }
+        >;
         if (transformed.length === 0) {
-          finalList = PRODUCTS; // no products -> fallback entirely
+          finalList = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
         } else if (transformed.length < 5) {
-          // append static to reach at least 5 (preserve order: real first)
-          finalList = [...transformed, ...PRODUCTS].slice(
-            0,
-            5
-          ) as typeof PRODUCTS;
+          const appended = [
+            ...transformed,
+            ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
+          ]
+            .slice(0, 5)
+            .map((p) => ({ ...p, subcategory: p.subcategory ?? null }));
+          finalList = appended;
         } else {
-          // 5 or more
-          finalList = transformed; // real data only
+          finalList = transformed;
         }
-        if (!cancelled) setFetched(finalList);
+        if (!cancelled) {
+          setFetched(finalList);
+          onLoad?.(finalList);
+        }
       } catch (e) {
-        if (!cancelled) setFetched(PRODUCTS); // fallback on error
+        if (!cancelled) {
+          const fallback = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+          setFetched(fallback);
+          onLoad?.(fallback);
+        }
         console.warn("Failed to fetch public products (men)", e);
-      } finally {
-        // no-op
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [onLoad]);
 
-  const items = fetched || PRODUCTS; // while loading use static
+  const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null }));
 
-  // Autoscroll logic (depends on items length)
   useEffect(() => {
     const interval = setInterval(() => {
       setScrollIndex((prev) => (prev + 1 >= items.length ? 0 : prev + 1));
@@ -302,18 +197,19 @@ function ProductCarousel() {
     return () => clearInterval(interval);
   }, [items.length]);
 
-  // Scroll to item when scrollIndex changes
   useEffect(() => {
-    if (carouselRef.current) {
-      const cardWidth = carouselRef.current.offsetWidth / visibleCount;
+    if (!carouselRef.current) return;
+    const children = carouselRef.current.children;
+    const idx = Math.max(0, Math.min(scrollIndex, children.length - 1));
+    const target = children[idx] as HTMLElement | undefined;
+    if (target) {
       carouselRef.current.scrollTo({
-        left: scrollIndex * cardWidth,
+        left: target.offsetLeft,
         behavior: "smooth",
       });
     }
   }, [scrollIndex]);
 
-  // Responsive check
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     function handleResize() {
@@ -328,12 +224,15 @@ function ProductCarousel() {
     <div className="w-full flex flex-col items-center py-8">
       <div
         ref={carouselRef}
-        className={`flex ${
-          isMobile ? "flex-col items-center" : "flex-row"
-        } overflow-x-hidden ${
-          isMobile ? "w-full max-w-full" : "w-full max-w-[1800px]"
-        }`}
-        style={{ scrollBehavior: "smooth" }}
+        className="flex flex-row items-center overflow-x-auto no-scrollbar"
+        style={{
+          scrollBehavior: "smooth",
+          WebkitOverflowScrolling: "touch",
+          scrollSnapType: "x mandatory",
+          width: "100%",
+          maxWidth: "1800px",
+          gap: "0",
+        }}
       >
         {items.map((product, idx) =>
           isMobile ? (
@@ -343,28 +242,81 @@ function ProductCarousel() {
           )
         )}
       </div>
-      <style>{`.group:hover { transform: translateY(-4px); }`}</style>
+      <style>{`
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .group:hover { transform: translateY(-4px); }
+      `}</style>
     </div>
   );
 }
 
 export default function MenPage() {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [productsLoaded, setProductsLoaded] = useState<
+    Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
+  >([]);
+
   return (
-    <main className="container mx-auto px-2 md:py-2 max-w-7xl">
-      {/* Hero Banner */}
-      <div className="max-w-lg md:max-w-4xl mx-0">
+    <main className="container px-2 md:py-2 max-w-7xl mx-auto">
+      <div className="max-w-lg md:max-w-4xl">
         <HeroBanner />
       </div>
-      {/* Bestsellers Section */}
       <section className="mt-12 md:mt-16">
-        {/* Categories Section */}
-        <CategoriesClient />
+        <CategoriesClient onLoad={(cats) => setCategories(cats)} />
         <h3 className="text-2xl md:text-3xl font-semibold text-[#531A1A] mb-8">
           Bestsellers
         </h3>
         <div className="space-y-16">
-          <ProductCarousel />
-          <ProductCarousel />
+          <ProductCarousel onLoad={(items) => setProductsLoaded(items || [])} />
+
+          {categories &&
+            categories.map((cat) => {
+              const subs = Array.isArray(cat.subcategories)
+                ? cat.subcategories
+                : [];
+              if (subs.length > 0) {
+                return subs.map(
+                  (sub: string | { id?: string; name?: string }) => {
+                    const subId = typeof sub === "string" ? sub : sub?.id;
+                    const subName =
+                      typeof sub === "string" ? sub : sub?.name || sub?.id;
+                    const title = `${cat.name} — ${subName}`;
+                    const key = `${cat.id || cat.name}-${subId || subName}`;
+                    const filtered = productsLoaded.filter((p) => {
+                      if (!p.subcategory) return false;
+                      return (
+                        p.subcategory === subId ||
+                        p.subcategory === subName ||
+                        p.subcategory === (subId ?? subName)
+                      );
+                    });
+                    return (
+                      <SubcategoryCarousel
+                        key={key}
+                        mainCategory="Men"
+                        categoryId={cat.id}
+                        categoryName={cat.name}
+                        subcategoryId={subId}
+                        subcategoryName={subName}
+                        title={title}
+                        items={filtered.length > 0 ? filtered : undefined}
+                      />
+                    );
+                  }
+                );
+              }
+              const key = `${cat.id || cat.name}-category`;
+              return (
+                <SubcategoryCarousel
+                  key={key}
+                  mainCategory="Men"
+                  categoryId={cat.id}
+                  categoryName={cat.name}
+                  title={cat.name}
+                />
+              );
+            })}
         </div>
       </section>
     </main>

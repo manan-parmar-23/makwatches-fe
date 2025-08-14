@@ -1,20 +1,4 @@
-import axios from 'axios';
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:8080';
-
-export const api = axios.create({
-  baseURL: API_BASE,
-});
-
-api.interceptors.request.use((config) => {
-  if (typeof window !== 'undefined') {
-    const token = localStorage.getItem('adminAuthToken') || sessionStorage.getItem('adminAuthToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
+import api from '@/lib/api';
 
 export interface ApiResponse<T> {
   success: boolean;
@@ -44,13 +28,13 @@ export interface Product {
   updatedAt?: string;
 }
 
-export const fetchCategories = () => api.get<ApiResponse<Category[]>>('/admin/categories');
+export const fetchCategories = () => api.get<ApiResponse<Category[]>>('/admin/categories/');
 // Public (unauthenticated) category endpoints
 export const fetchPublicCategories = (name?: string) =>
   api.get<ApiResponse<Category[]>>('/categories', { params: name ? { name } : undefined });
 export const fetchPublicSubcategories = (name: string, strict?: boolean) =>
   api.get<ApiResponse<{ id: string; name: string }[]>>(`/categories/${encodeURIComponent(name)}/subcategories`, { params: strict ? { strict: 1 } : undefined });
-export const fetchProducts = () => api.get<ApiResponse<Product[]>>('/products');
+export const fetchProducts = () => api.get<ApiResponse<Product[]>>('/products/');
 // Public lightweight product listing (catalog)
 export interface ProductQueryParams {
   category?: string;
@@ -64,7 +48,7 @@ export const fetchPublicProducts = (params?: ProductQueryParams) =>
 export const fetchPublicProductById = (id: string) =>
   api.get<ApiResponse<Partial<Product>>>(`/catalog/products/${id}`);
 // Admin-protected product endpoints (backend mounts auth/role on /products group)
-export const createProduct = (payload: Partial<Product>) => api.post<ApiResponse<Product>>('/products', payload);
+export const createProduct = (payload: Partial<Product>) => api.post<ApiResponse<Product>>('/products/', payload);
 export const updateProduct = (id: string, payload: Partial<Product>) => api.put<ApiResponse<Product>>(`/products/${id}`, payload);
 export const deleteProduct = (id: string) => api.delete<ApiResponse<null>>(`/products/${id}`);
 export const uploadImages = (files: File[]) => {

@@ -1,558 +1,1100 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
 import Image from "next/image";
-
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
-
-type Profile = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  createdAt: string;
-  dateOfBirth?: string;
-  gender?: string;
-  phone?: string;
-  avatarUrl?: string;
-  bio?: string;
-};
-
-type WishlistItem = {
-  wishlistId: string;
-  productId: string;
-  name: string;
-  price: number;
-  image?: string;
-  inStock: boolean;
-};
-
-type OrderItem = {
-  productId: string;
-  productName: string;
-  quantity: number;
-  price: number;
-  subtotal: number;
-  size?: string;
-};
-type Order = {
-  id: string;
-  total: number;
-  status: string;
-  createdAt: string;
-  paymentInfo: { method: string };
-  items: OrderItem[];
-};
-
-type Preferences = {
-  favoriteCategories?: string[];
-  favoriteBrands?: string[];
-  sizePreferences?: Record<string, string>;
-  colorPreferences?: string[];
-  priceRange?: number[];
-};
+import { useAccount } from "@/context/AccountContext";
+import { useEffect } from "react";
 
 export default function AccountPage() {
-  const [token, setToken] = useState<string | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
-  const [wishlist, setWishlist] = useState<WishlistItem[]>([]);
-  const [orders, setOrders] = useState<Order[]>([]);
-  // preferences persisted (optional future enhancement) -- removing unused variable to satisfy linter
-  const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | null>(null);
-  const [updatingProfile, setUpdatingProfile] = useState(false);
-  const [updatingPrefs, setUpdatingPrefs] = useState(false);
-  const [activeTab, setActiveTab] = useState<
-    "overview" | "profile" | "wishlist" | "orders" | "preferences"
-  >("overview");
+  // Replaced local state/fetch logic with the useAccount hook
+  const {
+    token,
+    profile,
+    wishlist,
+    orders,
+    reviews,
+    loading,
+    err,
+    updatingProfile,
+    updatingPrefs,
+    mobileSidebarOpen,
+    activeTab,
+    editProfile,
+    editPrefs,
+    setEditProfile,
+    setEditPrefs,
+    setActiveTab,
+    setMobileSidebarOpen,
+    saveProfile,
+    savePreferences,
+    deleteReview,
+    removeFromWishlist,
+    logout,
+  } = useAccount();
 
-  // Local editable profile fields
-  const [editProfile, setEditProfile] = useState<{
-    gender?: string;
-    phone?: string;
-    avatarUrl?: string;
-    bio?: string;
-    dateOfBirth?: string;
-  }>({});
-  // Preferences form state
-  const [editPrefs, setEditPrefs] = useState<Preferences>({});
-
+  // Smooth scroll to top when changing tabs
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    const t =
-      localStorage.getItem("customerToken") ||
-      localStorage.getItem("adminToken") ||
-      sessionStorage.getItem("adminAuthToken") ||
-      localStorage.getItem("auth_token") ||
-      localStorage.getItem("authToken");
-    setToken(t);
-  }, []);
-
-  const authHeaders = useMemo<HeadersInit | undefined>(() => {
-    if (!token) return undefined;
-    return { Authorization: `Bearer ${token}` };
-  }, [token]);
-
-  const fetchProfile = useCallback(async () => {
-    if (!token) return;
-    const r = await fetch(`${API_BASE}/profiles/`, { headers: authHeaders });
-    const j = await r.json();
-    if (r.ok && j.success) {
-      setProfile(j.data);
-      setEditProfile({
-        gender: j.data.gender || "",
-        phone: j.data.phone || "",
-        avatarUrl: j.data.avatarUrl || "",
-        bio: j.data.bio || "",
-        dateOfBirth: j.data.dateOfBirth
-          ? j.data.dateOfBirth.substring(0, 10)
-          : "",
-      });
-    } else throw new Error(j.message || "Failed profile");
-  }, [token, authHeaders]);
-
-  const fetchWishlist = useCallback(async () => {
-    if (!token) return;
-    const r = await fetch(`${API_BASE}/wishlist/`, { headers: authHeaders });
-    const j = await r.json();
-    if (r.ok && j.success) setWishlist(j.data || []);
-  }, [token, authHeaders]);
-
-  const fetchOrders = useCallback(async () => {
-    if (!token) return;
-    // Need userId stored
-    const uid =
-      localStorage.getItem("userId") || sessionStorage.getItem("userId");
-    if (!uid) return;
-    const r = await fetch(`${API_BASE}/orders/user/${uid}`, {
-      headers: authHeaders,
-    });
-    const j = await r.json();
-    if (r.ok && j.success) setOrders(j.data || []);
-  }, [token, authHeaders]);
-
-  useEffect(() => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-    (async () => {
-      try {
-        setLoading(true);
-        await Promise.all([fetchProfile(), fetchWishlist(), fetchOrders()]);
-      } catch (e) {
-        setErr(e instanceof Error ? e.message : "Failed to load account");
-      } finally {
-        setLoading(false);
-      }
-    })();
-  }, [token, fetchProfile, fetchWishlist, fetchOrders]);
-
-  async function saveProfile() {
-    if (!token) return;
-    setUpdatingProfile(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {};
-      if (editProfile.gender) body.gender = editProfile.gender;
-      if (editProfile.phone) body.phone = editProfile.phone;
-      if (editProfile.avatarUrl) body.avatarUrl = editProfile.avatarUrl;
-      if (editProfile.bio) body.bio = editProfile.bio;
-      if (editProfile.dateOfBirth)
-        body.dateOfBirth = new Date(editProfile.dateOfBirth).toISOString();
-      const r = await fetch(`${API_BASE}/profiles/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...(authHeaders || {}) },
-        body: JSON.stringify(body),
-      });
-      const j = await r.json();
-      if (!r.ok || !j.success) throw new Error(j.message || "Update failed");
-      await fetchProfile();
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Update failed");
-    } finally {
-      setUpdatingProfile(false);
-    }
-  }
-
-  async function savePreferences() {
-    if (!token) return;
-    setUpdatingPrefs(true);
-    setErr(null);
-    try {
-      const body: Record<string, unknown> = {};
-      if (editPrefs.favoriteCategories?.length)
-        body.favoriteCategories = editPrefs.favoriteCategories;
-      if (editPrefs.favoriteBrands?.length)
-        body.favoriteBrands = editPrefs.favoriteBrands;
-      if (
-        editPrefs.sizePreferences &&
-        Object.keys(editPrefs.sizePreferences).length
-      )
-        body.sizePreferences = editPrefs.sizePreferences;
-      if (editPrefs.colorPreferences?.length)
-        body.colorPreferences = editPrefs.colorPreferences;
-      if (editPrefs.priceRange?.length) body.priceRange = editPrefs.priceRange;
-      const r = await fetch(`${API_BASE}/preferences/`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json", ...(authHeaders || {}) },
-        body: JSON.stringify(body),
-      });
-      const j = await r.json();
-      if (!r.ok || !j.success)
-        throw new Error(j.message || "Preferences update failed");
-    } catch (e) {
-      setErr(e instanceof Error ? e.message : "Preferences update failed");
-    } finally {
-      setUpdatingPrefs(false);
-    }
-  }
-
-  function logout() {
-    // Clear all known tokens
-    ["customerToken", "adminToken", "auth_token", "authToken"].forEach((k) =>
-      localStorage.removeItem(k)
-    );
-    sessionStorage.removeItem("adminAuthToken");
-    // keep userId maybe or clear - clear to force login
-    localStorage.removeItem("userId");
-    window.location.href = "/";
-  }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [activeTab]);
 
   if (loading)
-    return <main className="max-w-6xl mx-auto p-6">Loading account...</main>;
-  if (err)
-    return <main className="max-w-6xl mx-auto p-6 text-red-600">{err}</main>;
-  if (!token)
     return (
-      <main className="max-w-6xl mx-auto p-6">
-        Please log in to view your account.
+      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+        <div className="flex flex-col items-center justify-center py-20">
+          <div className="w-16 h-16 rounded-full border-3 border-t-transparent border-l-transparent border-r-[#531A1A]/70 border-b-[#531A1A] animate-spin mb-4"></div>
+          <p className="text-[#531A1A] font-medium animate-pulse tracking-wide">
+            Loading your account...
+          </p>
+        </div>
       </main>
     );
 
-  const tabBtn = (id: typeof activeTab, label: string) => (
-    <button
-      onClick={() => setActiveTab(id)}
-      className={`px-4 py-2 rounded-full text-sm ${
-        activeTab === id ? "bg-[#531A1A] text-white" : "bg-neutral-100"
-      }`}
-    >
-      {label}
-    </button>
-  );
+  if (err)
+    return (
+      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-5 text-red-600 flex items-center shadow-sm animate-fade-in">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 mr-3 flex-shrink-0"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            />
+          </svg>
+          <span className="font-medium">{err}</span>
+        </div>
+      </main>
+    );
+
+  if (!token)
+    return (
+      <main className="max-w-6xl mx-auto p-4 sm:p-6">
+        <div className="bg-[#F9F6F6] rounded-xl p-8 shadow-md text-center transform transition-all duration-300 hover:shadow-lg animate-fade-in">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-16 w-16 mx-auto text-[#531A1A] mb-5 opacity-80"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
+            />
+          </svg>
+          <h2 className="text-2xl font-semibold mb-3 text-[#531A1A]">
+            Authentication Required
+          </h2>
+          <p className="text-[#7C5C5C] mb-7 max-w-md mx-auto">
+            Please log in to view and manage your account information.
+          </p>
+          <a
+            href="/login"
+            className="inline-block px-8 py-3 rounded-full bg-[#531A1A] text-white font-medium text-sm transition-all duration-300 hover:bg-[#3B1212] hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#531A1A] focus:ring-opacity-50"
+          >
+            Sign In
+          </a>
+        </div>
+      </main>
+    );
+
+  // Navigation item definition for sidebar
+  const navItems = [
+    { id: "overview", label: "Overview", icon: "🏠" },
+    { id: "profile", label: "Profile", icon: "👤" },
+    { id: "preferences", label: "Preferences", icon: "⚙️" },
+    { id: "wishlist", label: "Wishlist", icon: "❤️" },
+    { id: "orders", label: "Orders", icon: "📦" },
+    { id: "reviews", label: "Reviews", icon: "⭐" },
+  ] as const;
 
   return (
-    <main className="max-w-6xl mx-auto p-6 text-[#531A1A]">
-      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
-        <h1 className="text-3xl font-semibold">Account</h1>
-        <div className="flex gap-2 flex-wrap">
-          {tabBtn("overview", "Overview")}
-          {tabBtn("profile", "Profile")}
-          {tabBtn("preferences", "Preferences")}
-          {tabBtn("wishlist", "Wishlist")}
-          {tabBtn("orders", "Orders")}
-        </div>
-      </div>
-      <div className="mb-6 flex justify-end">
+    <main className="max-w-6xl mx-auto text-[#2D1B1B]">
+      {/* Mobile Header with hamburger */}
+      <div className="lg:hidden flex items-center justify-between p-4 border-b border-[#BFA5A5]/20 sticky top-0 bg-white z-20 shadow-sm">
+        <h1 className="text-xl font-semibold text-[#531A1A]">My Account</h1>
         <button
-          onClick={logout}
-          className="text-xs px-3 py-2 rounded-full border border-[#531A1A]"
+          onClick={() => setMobileSidebarOpen((prev) => !prev)}
+          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F9F6F6] transition-all duration-300 hover:shadow-sm"
+          aria-label="Toggle navigation"
         >
-          Logout
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            className="h-6 w-6 text-[#531A1A]"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16m-7 6h7"
+            />
+          </svg>
         </button>
       </div>
 
-      {activeTab === "overview" && (
-        <section className="grid md:grid-cols-3 gap-6">
-          <div className="p-4 border rounded-lg bg-white shadow-sm">
-            <h2 className="font-medium mb-2 text-sm">Profile</h2>
-            {profile && (
-              <div className="text-xs space-y-1">
-                <div>
-                  <span className="font-semibold">Name:</span> {profile.name}
-                </div>
-                <div>
-                  <span className="font-semibold">Email:</span> {profile.email}
-                </div>
-                <div>
-                  <span className="font-semibold">Role:</span> {profile.role}
-                </div>
-                <div>
-                  <span className="font-semibold">Joined:</span>{" "}
-                  {new Date(profile.createdAt).toLocaleDateString()}
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="p-4 border rounded-lg bg-white shadow-sm">
-            <h2 className="font-medium mb-2 text-sm">Wishlist</h2>
-            <div className="text-xs">{wishlist.length} items</div>
-          </div>
-          <div className="p-4 border rounded-lg bg-white shadow-sm">
-            <h2 className="font-medium mb-2 text-sm">Orders</h2>
-            <div className="text-xs">{orders.length} orders</div>
-          </div>
-        </section>
-      )}
+      <div className="flex flex-col lg:flex-row">
+        {/* Mobile sidebar backdrop */}
+        {mobileSidebarOpen && (
+          <div
+            className="fixed inset-0 bg-black/30 backdrop-blur-sm z-30 lg:hidden transition-opacity duration-300"
+            onClick={() => setMobileSidebarOpen(false)}
+          ></div>
+        )}
 
-      {activeTab === "profile" && profile && (
-        <section className="max-w-xl">
-          <h2 className="text-lg font-semibold mb-4">Profile Details</h2>
-          <div className="grid gap-4 text-sm">
-            <div>
-              <label className="block text-xs mb-1">Gender</label>
-              <select
-                value={editProfile.gender || ""}
-                onChange={(e) =>
-                  setEditProfile((p) => ({ ...p, gender: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
+        {/* Sidebar navigation - collapsible on mobile */}
+        <aside
+          className={`w-full lg:w-64 flex-shrink-0 bg-white lg:bg-gradient-to-br lg:from-white lg:to-[#F9F6F6]/80 p-5 border-r border-[#BFA5A5]/20 
+            fixed lg:sticky top-0 h-full lg:h-screen z-40 transform transition-all duration-300 ease-in-out
+            ${
+              mobileSidebarOpen
+                ? "translate-x-0 shadow-xl"
+                : "-translate-x-full lg:translate-x-0"
+            }`}
+        >
+          {/* User Profile Section */}
+          <div className="flex items-center space-x-3 mb-8 p-2 bg-[#F9F6F6]/50 rounded-xl transition-all duration-300 hover:bg-[#F0EBEB]/80">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#F0EBEB] flex-shrink-0 border-2 border-[#531A1A]/10 shadow-md transition-transform duration-300 hover:scale-105">
+              {profile?.avatarUrl ? (
+                <Image
+                  src={profile.avatarUrl}
+                  alt={profile.name}
+                  width={48}
+                  height={48}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center text-xl font-bold text-[#531A1A]/40">
+                  {profile?.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="overflow-hidden">
+              <h2 className="font-medium text-[#531A1A] truncate">
+                {profile?.name || "User"}
+              </h2>
+              <p className="text-xs text-[#7C5C5C] truncate">
+                {profile?.email || ""}
+              </p>
+            </div>
+
+            {/* Mobile close button */}
+            <button
+              onClick={() => setMobileSidebarOpen(false)}
+              className="lg:hidden ml-auto p-1.5 rounded-full hover:bg-[#F0EBEB] transition-all duration-300"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-[#531A1A]"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <option value="">Select</option>
-                <option value="male">Male</option>
-                <option value="female">Female</option>
-                <option value="other">Other</option>
-              </select>
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Phone</label>
-              <input
-                value={editProfile.phone || ""}
-                onChange={(e) =>
-                  setEditProfile((p) => ({ ...p, phone: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Avatar URL</label>
-              <input
-                value={editProfile.avatarUrl || ""}
-                onChange={(e) =>
-                  setEditProfile((p) => ({ ...p, avatarUrl: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Date of Birth</label>
-              <input
-                type="date"
-                value={editProfile.dateOfBirth || ""}
-                onChange={(e) =>
-                  setEditProfile((p) => ({ ...p, dateOfBirth: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">Bio</label>
-              <textarea
-                value={editProfile.bio || ""}
-                onChange={(e) =>
-                  setEditProfile((p) => ({ ...p, bio: e.target.value }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50 min-h-[80px]"
-              />
-            </div>
-            <div className="flex justify-end">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
+
+          {/* Navigation Links */}
+          <nav className="space-y-2 mb-8">
+            {navItems.map((item) => (
               <button
-                onClick={saveProfile}
-                disabled={updatingProfile}
-                className="px-5 py-2 rounded-full bg-[#531A1A] text-white text-xs disabled:opacity-50"
-              >
-                {updatingProfile ? "Saving..." : "Save"}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "preferences" && (
-        <section className="max-w-2xl">
-          <h2 className="text-lg font-semibold mb-4">Preferences</h2>
-          <div className="grid gap-4 text-sm">
-            <div>
-              <label className="block text-xs mb-1">
-                Favorite Categories (comma separated)
-              </label>
-              <input
-                value={(editPrefs.favoriteCategories || []).join(",")}
-                onChange={(e) =>
-                  setEditPrefs((p) => ({
-                    ...p,
-                    favoriteCategories: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">
-                Favorite Brands (comma separated)
-              </label>
-              <input
-                value={(editPrefs.favoriteBrands || []).join(",")}
-                onChange={(e) =>
-                  setEditPrefs((p) => ({
-                    ...p,
-                    favoriteBrands: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">
-                Colors (comma separated)
-              </label>
-              <input
-                value={(editPrefs.colorPreferences || []).join(",")}
-                onChange={(e) =>
-                  setEditPrefs((p) => ({
-                    ...p,
-                    colorPreferences: e.target.value
-                      .split(",")
-                      .map((s) => s.trim())
-                      .filter(Boolean),
-                  }))
-                }
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div>
-              <label className="block text-xs mb-1">
-                Price Range (min-max)
-              </label>
-              <input
-                placeholder="e.g. 500-2000"
-                value={
-                  editPrefs.priceRange ? editPrefs.priceRange.join("-") : ""
-                }
-                onChange={(e) => {
-                  const parts = e.target.value
-                    .split("-")
-                    .map((p) => parseFloat(p.trim()))
-                    .filter((n) => !isNaN(n));
-                  setEditPrefs((p) => ({
-                    ...p,
-                    priceRange: parts.length ? parts.slice(0, 2) : undefined,
-                  }));
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setMobileSidebarOpen(false);
                 }}
-                className="w-full border rounded-md px-3 py-2 bg-neutral-50"
-              />
-            </div>
-            <div className="flex justify-end">
-              <button
-                onClick={savePreferences}
-                disabled={updatingPrefs}
-                className="px-5 py-2 rounded-full bg-[#531A1A] text-white text-xs disabled:opacity-50"
+                className={`w-full flex items-center px-4 py-3 rounded-xl text-left transition-all duration-300
+                  ${
+                    activeTab === item.id
+                      ? "bg-gradient-to-r from-[#531A1A] to-[#3B1212] text-white font-medium shadow-md transform scale-102"
+                      : "text-[#2D1B1B] hover:bg-[#BFA5A5]/10 hover:shadow-sm"
+                  }`}
               >
-                {updatingPrefs ? "Saving..." : "Save Preferences"}
-              </button>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {activeTab === "wishlist" && (
-        <section>
-          <h2 className="text-lg font-semibold mb-4">
-            Wishlist ({wishlist.length})
-          </h2>
-          {wishlist.length === 0 && (
-            <div className="text-sm">No items yet.</div>
-          )}
-          <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {wishlist.map((w) => (
-              <div
-                key={w.wishlistId}
-                className="border rounded-lg p-3 bg-white shadow-sm text-xs flex flex-col"
-              >
-                {w.image && (
-                  <Image
-                    src={w.image}
-                    alt={w.name}
-                    width={400}
-                    height={400}
-                    className="h-32 w-full object-cover rounded mb-2"
-                  />
-                )}
-                <div className="font-medium truncate" title={w.name}>
-                  {w.name}
-                </div>
-                <div className="mt-auto flex justify-between items-center pt-2">
-                  <span>₹{w.price.toFixed(0)}</span>
-                  <span
-                    className={`text-[10px] ${
-                      w.inStock ? "text-green-600" : "text-red-500"
-                    }`}
-                  >
-                    {w.inStock ? "In Stock" : "Out"}
+                <span className="mr-3 text-lg w-6 flex-shrink-0">
+                  {item.icon}
+                </span>
+                <span className="text-sm font-medium">{item.label}</span>
+                {item.id === "wishlist" && wishlist.length > 0 && (
+                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm animate-pulse">
+                    {wishlist.length}
                   </span>
-                </div>
-              </div>
+                )}
+                {item.id === "orders" && orders.length > 0 && (
+                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm">
+                    {orders.length}
+                  </span>
+                )}
+                {item.id === "reviews" && reviews.length > 0 && (
+                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm">
+                    {reviews.length}
+                  </span>
+                )}
+              </button>
             ))}
-          </div>
-        </section>
-      )}
+          </nav>
 
-      {activeTab === "orders" && (
-        <section>
-          <h2 className="text-lg font-semibold mb-4">
-            Orders ({orders.length})
-          </h2>
-          {orders.length === 0 && <div className="text-sm">No orders yet.</div>}
-          <div className="space-y-4">
-            {orders.map((o) => (
-              <div
-                key={o.id}
-                className="border rounded-lg p-4 bg-white shadow-sm text-xs"
-              >
-                <div className="flex flex-wrap gap-4 mb-2">
-                  <div>
-                    <span className="font-medium">ID:</span> {o.id}
+          {/* Logout Button */}
+          <div className="mt-auto pt-4 border-t border-[#BFA5A5]/20">
+            <button
+              onClick={logout}
+              className="w-full flex items-center px-4 py-3 rounded-xl text-left text-[#B3261E] hover:bg-[#B3261E]/10 transition-all duration-300 group"
+            >
+              <span className="mr-3 text-lg group-hover:rotate-12 transition-transform duration-300">
+                🚪
+              </span>
+              <span className="text-sm font-medium">Logout</span>
+            </button>
+          </div>
+        </aside>
+
+        {/* Main content area */}
+        <div className="flex-1 p-4 lg:p-6 overflow-hidden">
+          <div className="mb-8">
+            <h1 className="text-2xl font-bold text-[#531A1A] hidden lg:block mb-2 animate__animated animate__fadeIn">
+              {navItems.find((item) => item.id === activeTab)?.label}
+            </h1>
+            <div className="h-1 w-24 bg-gradient-to-r from-[#531A1A] to-[#BFA5A5] rounded-full hidden lg:block transform transition-all duration-500"></div>
+          </div>
+
+          {/* Tab Content - Adding transition animations */}
+          <div className="transition-all duration-500 transform animate-fade-in">
+            {activeTab === "overview" && (
+              <section className="grid gap-6">
+                {/* Profile card with avatar */}
+                {profile && (
+                  <div className="p-6 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 flex flex-col sm:flex-row items-center gap-5">
+                    <div className="w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-[#F0EBEB] to-[#F9F6F6] flex-shrink-0 border-2 border-[#531A1A]/10 shadow-md transition-transform duration-300 hover:scale-105">
+                      {profile.avatarUrl ? (
+                        <Image
+                          src={profile.avatarUrl}
+                          alt={profile.name}
+                          width={96}
+                          height={96}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[#531A1A]/30">
+                          {profile.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="flex-grow text-center sm:text-left">
+                      <h2 className="text-2xl font-semibold text-[#531A1A]">
+                        {profile.name}
+                      </h2>
+                      <div className="text-sm text-[#7C5C5C] mt-1">
+                        {profile.email}
+                      </div>
+                      <div className="text-xs text-[#7C5C5C]/80 mt-1">
+                        Member since{" "}
+                        {new Date(profile.createdAt).toLocaleDateString()}
+                      </div>
+                      {profile.bio && (
+                        <p className="text-sm mt-3 text-[#2D1B1B]">
+                          {profile.bio}
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0">
+                      <button
+                        onClick={() => setActiveTab("profile")}
+                        className="text-sm px-6 py-2.5 rounded-full border border-[#531A1A] hover:bg-[#531A1A] hover:text-white transition-all duration-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-[#531A1A] focus:ring-opacity-50"
+                      >
+                        Edit Profile
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Placed:</span>{" "}
-                    {new Date(o.createdAt).toLocaleDateString()}
+                )}
+
+                {/* Activity cards */}
+                <div className="grid md:grid-cols-4 gap-4">
+                  <div
+                    onClick={() => setActiveTab("wishlist")}
+                    className="p-5 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:border-[#531A1A]/20"
+                  >
+                    <div className="font-medium mb-2 text-sm flex justify-between items-center">
+                      <span>Wishlist</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-red-500"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-3xl font-bold text-[#531A1A]">
+                      {wishlist.length}
+                    </div>
+                    <div className="text-xs text-[#7C5C5C] mt-1">
+                      saved items
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Status:</span> {o.status}
+
+                  <div
+                    onClick={() => setActiveTab("orders")}
+                    className="p-5 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:border-[#531A1A]/20"
+                  >
+                    <div className="font-medium mb-2 text-sm flex justify-between items-center">
+                      <span>Orders</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-[#531A1A]"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M4 3a2 2 0 100 4h12a2 2 0 100-4H4z" />
+                        <path
+                          fillRule="evenodd"
+                          d="M3 8h14v7a2 2 0 01-2 2H5a2 2 0 01-2-2V8zm5 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-3xl font-bold text-[#531A1A]">
+                      {orders.length}
+                    </div>
+                    <div className="text-xs text-[#7C5C5C] mt-1">
+                      placed orders
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Total:</span> ₹
-                    {o.total.toFixed(2)}
+
+                  <div
+                    onClick={() => setActiveTab("reviews")}
+                    className="p-5 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:border-[#531A1A]/20"
+                  >
+                    <div className="font-medium mb-2 text-sm flex justify-between items-center">
+                      <span>Reviews</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-yellow-500"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                      </svg>
+                    </div>
+                    <div className="text-3xl font-bold text-[#531A1A]">
+                      {reviews.length}
+                    </div>
+                    <div className="text-xs text-[#7C5C5C] mt-1">
+                      product reviews
+                    </div>
                   </div>
-                  <div>
-                    <span className="font-medium">Pay:</span>{" "}
-                    {o.paymentInfo.method}
+
+                  <div
+                    onClick={() => setActiveTab("preferences")}
+                    className="p-5 border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 cursor-pointer transform hover:-translate-y-1 hover:border-[#531A1A]/20"
+                  >
+                    <div className="font-medium mb-2 text-sm flex justify-between items-center">
+                      <span>Preferences</span>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="h-5 w-5 text-blue-500"
+                        viewBox="0 0 20 20"
+                        fill="currentColor"
+                      >
+                        <path
+                          fillRule="evenodd"
+                          d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z"
+                          clipRule="evenodd"
+                        />
+                      </svg>
+                    </div>
+                    <div className="text-3xl font-bold text-[#531A1A]">
+                      Settings
+                    </div>
+                    <div className="text-xs text-[#7C5C5C] mt-1">
+                      personalization options
+                    </div>
                   </div>
                 </div>
-                <div className="divide-y border rounded overflow-hidden">
-                  {o.items.map((it) => (
-                    <div
-                      key={it.productId + it.size}
-                      className="flex text-[11px] justify-between gap-2 px-2 py-1 bg-neutral-50"
+
+                {/* Recent activity */}
+                {orders.length > 0 && (
+                  <div className="border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-all duration-300">
+                    <h3 className="font-medium text-sm mb-4 text-[#531A1A]">
+                      Recent Order
+                    </h3>
+                    <div className="text-sm">
+                      <div className="flex justify-between pb-3 border-b">
+                        <div className="font-medium">
+                          Order #{orders[0].id.substring(0, 8)}...
+                        </div>
+                        <div className="text-[#7C5C5C]">
+                          {new Date(orders[0].createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+                      <div className="flex justify-between mt-3">
+                        <div>{orders[0].items.length} items</div>
+                        <div className="font-semibold text-[#531A1A]">
+                          ₹{orders[0].total.toFixed(2)}
+                        </div>
+                      </div>
+                      <div className="mt-2">
+                        <span
+                          className={`text-xs px-3 py-1 rounded-full ${
+                            orders[0].status === "delivered"
+                              ? "bg-green-100 text-green-700"
+                              : orders[0].status === "shipped"
+                              ? "bg-blue-100 text-blue-700"
+                              : orders[0].status === "cancelled"
+                              ? "bg-red-100 text-red-700"
+                              : "bg-yellow-100 text-yellow-700"
+                          }`}
+                        >
+                          {orders[0].status.toUpperCase()}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => setActiveTab("orders")}
+                        className="w-full mt-4 py-2 text-center text-[#531A1A] text-sm font-medium hover:bg-[#F9F6F6] rounded-lg transition-colors duration-300"
+                      >
+                        View All Orders
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </section>
+            )}
+
+            {activeTab === "profile" && profile && (
+              <section className="max-w-xl transition-all duration-300 animate-fade-in">
+                <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                  <h2 className="text-lg font-semibold mb-5 text-[#531A1A] border-b border-[#BFA5A5]/20 pb-2">
+                    Profile Details
+                  </h2>
+                  <div className="grid gap-5 text-sm">
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Gender
+                      </label>
+                      <select
+                        value={editProfile.gender || ""}
+                        onChange={(e) =>
+                          setEditProfile((p) => ({
+                            ...p,
+                            gender: e.target.value,
+                          }))
+                        }
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      >
+                        <option value="">Select</option>
+                        <option value="male">Male</option>
+                        <option value="female">Female</option>
+                        <option value="other">Other</option>
+                      </select>
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Phone
+                      </label>
+                      <input
+                        value={editProfile.phone || ""}
+                        onChange={(e) =>
+                          setEditProfile((p) => ({
+                            ...p,
+                            phone: e.target.value,
+                          }))
+                        }
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Avatar URL
+                      </label>
+                      <input
+                        value={editProfile.avatarUrl || ""}
+                        onChange={(e) =>
+                          setEditProfile((p) => ({
+                            ...p,
+                            avatarUrl: e.target.value,
+                          }))
+                        }
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Date of Birth
+                      </label>
+                      <input
+                        type="date"
+                        value={editProfile.dateOfBirth || ""}
+                        onChange={(e) =>
+                          setEditProfile((p) => ({
+                            ...p,
+                            dateOfBirth: e.target.value,
+                          }))
+                        }
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Bio
+                      </label>
+                      <textarea
+                        value={editProfile.bio || ""}
+                        onChange={(e) =>
+                          setEditProfile((p) => ({ ...p, bio: e.target.value }))
+                        }
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300 min-h-[100px] resize-y"
+                      />
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={saveProfile}
+                        disabled={updatingProfile}
+                        className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#531A1A] to-[#3B1212] text-white text-sm font-medium shadow-sm hover:shadow-md transform transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {updatingProfile ? (
+                          <span className="flex items-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Saving...
+                          </span>
+                        ) : (
+                          "Save Changes"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === "preferences" && (
+              <section className="max-w-2xl transition-all duration-300 animate-fade-in">
+                <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
+                  <h2 className="text-lg font-semibold mb-5 text-[#531A1A] border-b border-[#BFA5A5]/20 pb-2">
+                    Shopping Preferences
+                  </h2>
+                  <div className="grid gap-5 text-sm">
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Favorite Categories
+                      </label>
+                      <input
+                        value={(editPrefs.favoriteCategories || []).join(", ")}
+                        onChange={(e) =>
+                          setEditPrefs((p) => ({
+                            ...p,
+                            favoriteCategories: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                        placeholder="e.g. Shirts, Dresses, Jeans"
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                      <p className="text-xs text-[#7C5C5C] mt-1 pl-1">
+                        Separate with commas
+                      </p>
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Favorite Brands
+                      </label>
+                      <input
+                        value={(editPrefs.favoriteBrands || []).join(", ")}
+                        onChange={(e) =>
+                          setEditPrefs((p) => ({
+                            ...p,
+                            favoriteBrands: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                        placeholder="e.g. Nike, Adidas, Zara"
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                      <p className="text-xs text-[#7C5C5C] mt-1 pl-1">
+                        Separate with commas
+                      </p>
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Color Preferences
+                      </label>
+                      <input
+                        value={(editPrefs.colorPreferences || []).join(", ")}
+                        onChange={(e) =>
+                          setEditPrefs((p) => ({
+                            ...p,
+                            colorPreferences: e.target.value
+                              .split(",")
+                              .map((s) => s.trim())
+                              .filter(Boolean),
+                          }))
+                        }
+                        placeholder="e.g. Blue, Black, Red"
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                      <p className="text-xs text-[#7C5C5C] mt-1 pl-1">
+                        Separate with commas
+                      </p>
+                    </div>
+                    <div className="transition-all duration-300 hover:bg-[#F9F6F6] p-2 rounded-lg">
+                      <label className="block text-xs mb-2 text-[#7C5C5C] font-medium">
+                        Price Range
+                      </label>
+                      <input
+                        placeholder="e.g. 500-2000"
+                        value={
+                          editPrefs.priceRange
+                            ? editPrefs.priceRange.join("-")
+                            : ""
+                        }
+                        onChange={(e) => {
+                          const parts = e.target.value
+                            .split("-")
+                            .map((p) => parseFloat(p.trim()))
+                            .filter((n) => !isNaN(n));
+                          setEditPrefs((p) => ({
+                            ...p,
+                            priceRange: parts.length
+                              ? parts.slice(0, 2)
+                              : undefined,
+                          }));
+                        }}
+                        className="w-full border border-[#BFA5A5]/30 rounded-lg px-4 py-2.5 bg-white focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30 focus:border-[#531A1A] transition-all duration-300"
+                      />
+                      <p className="text-xs text-[#7C5C5C] mt-1 pl-1">
+                        Format: min-max (e.g. 500-2000)
+                      </p>
+                    </div>
+                    <div className="flex justify-end mt-2">
+                      <button
+                        onClick={savePreferences}
+                        disabled={updatingPrefs}
+                        className="px-6 py-3 rounded-lg bg-gradient-to-r from-[#531A1A] to-[#3B1212] text-white text-sm font-medium shadow-sm hover:shadow-md transform transition-all duration-300 hover:-translate-y-0.5 disabled:opacity-50 disabled:pointer-events-none"
+                      >
+                        {updatingPrefs ? (
+                          <span className="flex items-center">
+                            <svg
+                              className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                              xmlns="http://www.w3.org/2000/svg"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              ></circle>
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              ></path>
+                            </svg>
+                            Saving...
+                          </span>
+                        ) : (
+                          "Save Preferences"
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            )}
+
+            {activeTab === "wishlist" && (
+              <section className="transition-all duration-300 animate-fade-in">
+                <h2 className="text-lg font-semibold mb-5 flex items-center">
+                  <span className="mr-2">Wishlist</span>
+                  {wishlist.length > 0 && (
+                    <span className="bg-[#531A1A]/10 text-[#531A1A] text-xs px-2 py-0.5 rounded-full">
+                      {wishlist.length}
+                    </span>
+                  )}
+                </h2>
+                {wishlist.length === 0 && (
+                  <div className="text-sm bg-[#F9F6F6] p-6 rounded-xl text-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto text-[#BFA5A5] mb-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
                     >
-                      <div className="truncate flex-1">{it.productName}</div>
-                      <div>x{it.quantity}</div>
-                      <div>₹{it.price}</div>
-                      <div className="opacity-60">{it.size || "-"}</div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                    <p className="text-[#7C5C5C]">
+                      Your wishlist is empty. Browse products and add items you
+                      love!
+                    </p>
+                  </div>
+                )}
+                <div className="grid sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-5">
+                  {wishlist.map((w) => (
+                    <div
+                      key={w.wishlistId}
+                      className="border rounded-xl p-4 bg-white shadow-sm group hover:shadow-md transition-all duration-300 text-sm flex flex-col relative transform hover:-translate-y-1"
+                    >
+                      <button
+                        onClick={() => removeFromWishlist(w.wishlistId)}
+                        className="absolute top-2 right-2 bg-white rounded-full p-1.5 shadow-md opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50 z-10"
+                        title="Remove from wishlist"
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          className="h-4 w-4 text-red-500"
+                          viewBox="0 0 20 20"
+                          fill="currentColor"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                            clipRule="evenodd"
+                          />
+                        </svg>
+                      </button>
+                      <div className="overflow-hidden rounded-lg mb-3 group-hover:shadow-md transition-all duration-300">
+                        {w.image && (
+                          <Image
+                            src={w.image}
+                            alt={w.name}
+                            width={400}
+                            height={400}
+                            className="h-44 w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                          />
+                        )}
+                      </div>
+                      <div
+                        className="font-medium truncate text-[#531A1A]"
+                        title={w.name}
+                      >
+                        {w.name}
+                      </div>
+                      <div className="mt-auto flex justify-between items-center pt-3">
+                        <span className="font-semibold text-lg">
+                          ₹{w.price.toFixed(0)}
+                        </span>
+                        <span
+                          className={`text-xs px-2 py-0.5 rounded-full ${
+                            w.inStock
+                              ? "bg-green-100 text-green-700"
+                              : "bg-red-100 text-red-700"
+                          }`}
+                        >
+                          {w.inStock ? "In Stock" : "Out of Stock"}
+                        </span>
+                      </div>
                     </div>
                   ))}
                 </div>
-              </div>
-            ))}
+              </section>
+            )}
+
+            {activeTab === "reviews" && (
+              <section className="transition-all duration-300 animate-fade-in">
+                <h2 className="text-lg font-semibold mb-5 flex items-center">
+                  <span className="mr-2">My Reviews</span>
+                  {reviews.length > 0 && (
+                    <span className="bg-[#531A1A]/10 text-[#531A1A] text-xs px-2 py-0.5 rounded-full">
+                      {reviews.length}
+                    </span>
+                  )}
+                </h2>
+                {reviews.length === 0 && (
+                  <div className="text-sm bg-[#F9F6F6] p-6 rounded-xl text-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto text-[#BFA5A5] mb-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+                      />
+                    </svg>
+                    <p className="text-[#7C5C5C]">
+                      You haven&apos;t written any reviews yet. Share your
+                      experience with products!
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-5">
+                  {reviews.map((review) => (
+                    <div
+                      key={review.id}
+                      className="border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
+                    >
+                      <div className="flex items-center gap-4 mb-3">
+                        {review.productImage && (
+                          <div className="flex-shrink-0 rounded-lg overflow-hidden shadow-sm">
+                            <Image
+                              src={review.productImage}
+                              alt={review.productName}
+                              width={70}
+                              height={70}
+                              className="rounded object-cover hover:scale-105 transition-transform duration-300"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-grow">
+                          <div className="font-medium text-[#531A1A]">
+                            {review.productName}
+                          </div>
+                          <div className="flex items-center mt-1.5">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                              <span
+                                key={i}
+                                className={`text-lg ${
+                                  i < review.rating
+                                    ? "text-amber-500"
+                                    : "text-gray-300"
+                                } transition-colors duration-300`}
+                              >
+                                ★
+                              </span>
+                            ))}
+                            <span className="ml-2 text-xs text-[#7C5C5C]">
+                              {review.rating.toFixed(1)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-xs text-[#7C5C5C]">
+                          {new Date(review.createdAt).toLocaleDateString()}
+                        </div>
+                      </div>
+
+                      <div className="mt-3 pl-3 border-l-2 border-[#531A1A]/10">
+                        <h3 className="text-sm font-medium">{review.title}</h3>
+                        <p className="text-sm mt-2 text-[#2D1B1B]/80 leading-relaxed">
+                          {review.comment}
+                        </p>
+
+                        {review.photoUrls && review.photoUrls.length > 0 && (
+                          <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#BFA5A5] scrollbar-track-[#F9F6F6]">
+                            {review.photoUrls.map((url, idx) => (
+                              <div
+                                key={idx}
+                                className="flex-shrink-0 rounded-md overflow-hidden shadow-sm"
+                              >
+                                <Image
+                                  src={url}
+                                  alt={`Review image ${idx + 1}`}
+                                  width={80}
+                                  height={80}
+                                  className="rounded object-cover hover:scale-105 transition-transform duration-300"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#BFA5A5]/20 text-xs">
+                        <div className="text-[#7C5C5C]">
+                          {review.helpful > 0 &&
+                            `${review.helpful} ${
+                              review.helpful === 1 ? "person" : "people"
+                            } found this helpful`}
+                        </div>
+                        <button
+                          onClick={() => deleteReview(review.id)}
+                          className="text-red-500 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors duration-300"
+                        >
+                          <span className="flex items-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-3.5 w-3.5 mr-1"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
+                            Delete Review
+                          </span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeTab === "orders" && (
+              <section className="transition-all duration-300 animate-fade-in">
+                <h2 className="text-lg font-semibold mb-5 flex items-center">
+                  <span className="mr-2">Order History</span>
+                  {orders.length > 0 && (
+                    <span className="bg-[#531A1A]/10 text-[#531A1A] text-xs px-2 py-0.5 rounded-full">
+                      {orders.length}
+                    </span>
+                  )}
+                </h2>
+                {orders.length === 0 && (
+                  <div className="text-sm bg-[#F9F6F6] p-6 rounded-xl text-center">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 mx-auto text-[#BFA5A5] mb-3"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                    <p className="text-[#7C5C5C]">
+                      You haven&apos;t placed any orders yet.
+                    </p>
+                  </div>
+                )}
+                <div className="space-y-6">
+                  {orders.map((o) => (
+                    <div
+                      key={o.id}
+                      className="border rounded-xl bg-white shadow-sm hover:shadow-md transition-all duration-300 text-sm transform hover:-translate-y-0.5 overflow-hidden"
+                    >
+                      <div className="bg-gradient-to-r from-[#F9F6F6] to-white p-4 border-b flex flex-wrap gap-4 items-center">
+                        <div>
+                          <span className="text-xs text-[#7C5C5C]">
+                            Order ID:
+                          </span>
+                          <div className="font-mono font-medium">
+                            {o.id.substring(0, 8)}...
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs text-[#7C5C5C]">Date:</span>
+                          <div>
+                            {new Date(o.createdAt).toLocaleDateString()}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs text-[#7C5C5C]">
+                            Payment:
+                          </span>
+                          <div className="capitalize">
+                            {o.paymentInfo.method}
+                          </div>
+                        </div>
+                        <div>
+                          <span className="text-xs text-[#7C5C5C]">Total:</span>
+                          <div className="font-semibold text-[#531A1A]">
+                            ₹{o.total.toFixed(2)}
+                          </div>
+                        </div>
+                        <div className="ml-auto">
+                          <span
+                            className={`px-3 py-1 rounded-full text-xs font-medium capitalize ${
+                              o.status === "delivered"
+                                ? "bg-green-100 text-green-700"
+                                : o.status === "shipped"
+                                ? "bg-blue-100 text-blue-700"
+                                : o.status === "cancelled"
+                                ? "bg-red-100 text-red-700"
+                                : "bg-yellow-100 text-yellow-700"
+                            }`}
+                          >
+                            {o.status}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="p-4">
+                        <h4 className="text-xs font-medium text-[#7C5C5C] mb-2">
+                          Items
+                        </h4>
+                        <div className="divide-y rounded-lg overflow-hidden border">
+                          {o.items.map((it) => (
+                            <div
+                              key={it.productId + it.size}
+                              className="flex text-xs justify-between items-center gap-3 p-3 bg-[#F9F6F6]/50 hover:bg-[#F9F6F6] transition-colors duration-300"
+                            >
+                              <div className="truncate flex-1 font-medium">
+                                {it.productName}
+                              </div>
+                              <div className="text-[#7C5C5C]">
+                                Size: {it.size || "-"}
+                              </div>
+                              <div className="text-[#7C5C5C]">
+                                Qty: {it.quantity}
+                              </div>
+                              <div className="font-semibold text-[#531A1A]">
+                                ₹{it.price}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
           </div>
-        </section>
-      )}
+        </div>
+      </div>
     </main>
   );
 }
