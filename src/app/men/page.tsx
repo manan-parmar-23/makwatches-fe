@@ -7,14 +7,14 @@ import {
   fetchPublicProducts,
   ProductQueryParams,
 } from "@/utils/api";
-
-// Reuse shared card/ui & PRODUCTS from women page so design is consistent
-import { PRODUCTS, ProductCard, ProductCardMobile } from "@/app/women/page";
-import SubcategoryCarousel from "@/components/women/SubCategoryCarousel";
+// Components
 import HeroBanner from "@/components/men/HeroBanner";
 import CategoriesSection from "@/components/men/CategoriesSection";
+import SubcategoryCarousel from "@/components/men/SubCategoryCarousel";
+import ProductCard from "@/components/men/ProductCard";
+import ProductCardMobile from "@/components/men/ProductCardMobile";
 
-// Loading skeleton (unchanged)
+// Loading Skeletons
 function CategorySkeleton() {
   return (
     <div className="my-6 md:my-0 md:mb-8">
@@ -27,7 +27,8 @@ function CategorySkeleton() {
   );
 }
 
-// CategoriesClient now accepts onLoad same as women page
+// Client-side categories fetcher (handles 401 gracefully without infinite re-renders under Suspense)
+// Now accepts an optional onLoad callback to expose categories to parent
 function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -45,6 +46,7 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
         }
       } catch (e: unknown) {
         if (!cancelled) {
+          // Narrow error shape
           const err = e as
             | {
                 response?: { status?: number; data?: { message?: string } };
@@ -58,10 +60,11 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
                 err?.message ||
                 "Failed to load categories";
           setError(msg);
-          const fallback: Category[] = [
-            { id: "men-shirts", name: "Shirts", subcategories: [] },
-            { id: "men-pants", name: "Pants", subcategories: [] },
-            { id: "men-outerwear", name: "Outerwear", subcategories: [] },
+          // Optional fallback (static) categories so UI isn't empty
+          const fallback = [
+            { id: "mens-shirts", name: "Shirts", subcategories: [] },
+            { id: "mens-bottoms", name: "Bottoms", subcategories: [] },
+            { id: "mens-outerwear", name: "Outerwear", subcategories: [] },
           ];
           setCategories(fallback);
           onLoad?.(fallback);
@@ -89,7 +92,46 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
   );
 }
 
-// Primary ProductCarousel for Men (same transform + subcategory extraction as women)
+// Carousel product data
+export const PRODUCTS = [
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for men",
+    price: "1799/-",
+    image: "/tshirt1.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for men",
+    price: "1799/-",
+    image: "/tshirt2.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for men",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for men",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for men",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+];
+
+// Modify ProductCarousel to accept onLoad and include subcategory when transforming
 function ProductCarousel({
   onLoad,
 }: {
@@ -99,10 +141,13 @@ function ProductCarousel({
 }) {
   const [scrollIndex, setScrollIndex] = useState(0);
   const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Dynamic products fetched from public API
   const [fetched, setFetched] = useState<Array<
     (typeof PRODUCTS)[0] & { subcategory?: string | null }
   > | null>(null);
 
+  // Fetch products only for men category (page specific)
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -118,6 +163,7 @@ function ProductCarousel({
           name?: string;
           price?: number;
           images?: string[];
+          // try to pick common subcategory fields
           subcategory?: string;
           subcategoryId?: string;
           subCategory?: string;
@@ -126,7 +172,9 @@ function ProductCarousel({
         const apiItems: ApiProductLite[] = Array.isArray(data.data)
           ? (data.data as ApiProductLite[])
           : [];
+        // Transform to local PRODUCT shape (name, price string, image, optional subcategory)
         const transformed = apiItems.map((p) => {
+          // normalize subcategory: check multiple possible fields
           let sub: string | null = null;
           if (p.subcategory) sub = p.subcategory;
           else if (p.subcategoryId) sub = p.subcategoryId;
@@ -160,6 +208,7 @@ function ProductCarousel({
         if (transformed.length === 0) {
           finalList = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
         } else if (transformed.length < 5) {
+          // append static to reach at least 5 (preserve order: real first)
           const appended = [
             ...transformed,
             ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
@@ -171,16 +220,31 @@ function ProductCarousel({
           finalList = transformed;
         }
         if (!cancelled) {
-          setFetched(finalList);
-          onLoad?.(finalList);
+          // ensure finalList typed consistently with subcategory optional
+          const normalized = finalList as Array<
+            (typeof PRODUCTS)[0] & { subcategory?: string | null }
+          >;
+          setFetched(normalized);
+          onLoad?.(normalized);
         }
       } catch (e) {
         if (!cancelled) {
+          // fallback: attach undefined subcategory to static products
           const fallback = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
-          setFetched(fallback);
-          onLoad?.(fallback);
+          setFetched(
+            fallback as Array<
+              (typeof PRODUCTS)[0] & { subcategory?: string | null }
+            >
+          );
+          onLoad?.(
+            fallback as Array<
+              (typeof PRODUCTS)[0] & { subcategory?: string | null }
+            >
+          );
         }
         console.warn("Failed to fetch public products (men)", e);
+      } finally {
+        // no-op
       }
     })();
     return () => {
@@ -188,8 +252,9 @@ function ProductCarousel({
     };
   }, [onLoad]);
 
-  const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+  const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null })); // while loading use static
 
+  // Autoscroll logic (depends on items length)
   useEffect(() => {
     const interval = setInterval(() => {
       setScrollIndex((prev) => (prev + 1 >= items.length ? 0 : prev + 1));
@@ -197,6 +262,7 @@ function ProductCarousel({
     return () => clearInterval(interval);
   }, [items.length]);
 
+  // Scroll to item when scrollIndex changes - use child's offsetLeft so fixed widths align
   useEffect(() => {
     if (!carouselRef.current) return;
     const children = carouselRef.current.children;
@@ -210,6 +276,7 @@ function ProductCarousel({
     }
   }, [scrollIndex]);
 
+  // Responsive check
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     function handleResize() {
@@ -228,6 +295,7 @@ function ProductCarousel({
         style={{
           scrollBehavior: "smooth",
           WebkitOverflowScrolling: "touch",
+          // enable scroll snapping for a nicer manual scroll experience
           scrollSnapType: "x mandatory",
           width: "100%",
           maxWidth: "1800px",
@@ -243,8 +311,13 @@ function ProductCarousel({
         )}
       </div>
       <style>{`
-        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
-        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
         .group:hover { transform: translateY(-4px); }
       `}</style>
     </div>
@@ -253,23 +326,31 @@ function ProductCarousel({
 
 export default function MenPage() {
   const [categories, setCategories] = useState<Category[]>([]);
+  // products loaded by the primary carousel (includes subcategory when present)
   const [productsLoaded, setProductsLoaded] = useState<
     Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
   >([]);
 
+  // keep original first carousel as "fixed" featured one and capture loaded products
   return (
     <main className="container px-2 md:py-2 max-w-7xl mx-auto">
+      {/* Hero Banner */}
       <div className="max-w-lg md:max-w-4xl">
         <HeroBanner />
       </div>
+      {/* Bestsellers Section */}
       <section className="mt-12 md:mt-16">
+        {/* Categories Section (now passes loaded categories up) */}
         <CategoriesClient onLoad={(cats) => setCategories(cats)} />
         <h3 className="text-2xl md:text-3xl font-semibold text-[#531A1A] mb-8">
           Bestsellers
         </h3>
         <div className="space-y-16">
+          {/* fixed primary carousel (works as before) */}
           <ProductCarousel onLoad={(items) => setProductsLoaded(items || [])} />
 
+          {/* For each category render per-subcategory carousels.
+              If no subcategories exist, render a carousel for the category itself. */}
           {categories &&
             categories.map((cat) => {
               const subs = Array.isArray(cat.subcategories)
@@ -283,6 +364,7 @@ export default function MenPage() {
                       typeof sub === "string" ? sub : sub?.name || sub?.id;
                     const title = `${cat.name} — ${subName}`;
                     const key = `${cat.id || cat.name}-${subId || subName}`;
+                    // filter productsLoaded for this subcategory (match id or name)
                     const filtered = productsLoaded.filter((p) => {
                       if (!p.subcategory) return false;
                       return (
@@ -306,6 +388,7 @@ export default function MenPage() {
                   }
                 );
               }
+              // No subcategories -> render a carousel for the category itself, pass filtered products for the category (if any)
               const key = `${cat.id || cat.name}-category`;
               return (
                 <SubcategoryCarousel
@@ -319,6 +402,16 @@ export default function MenPage() {
             })}
         </div>
       </section>
+      <style>{`
+        .no-scrollbar {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+        .no-scrollbar::-webkit-scrollbar {
+          display: none;
+        }
+        .group:hover { transform: translateY(-4px); }
+      `}</style>
     </main>
   );
 }

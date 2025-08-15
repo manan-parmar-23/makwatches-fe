@@ -1,6 +1,45 @@
-import { PRODUCTS, ProductCardMobile, ProductCard } from "@/app/women/page";
+import ProductCard from "@/components/women/ProductCard";
+import ProductCardMobile from "@/components/women/ProductCardMobile";
 import { ProductQueryParams, fetchPublicProducts } from "@/utils/api";
 import { useState, useRef, useEffect } from "react";
+
+export const PRODUCTS = [
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for women",
+    price: "1799/-",
+    image: "/tshirt1.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for women",
+    price: "1799/-",
+    image: "/tshirt2.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for women",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for women",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+  {
+    id: undefined,
+    name: "Black-blue T-shirt for women",
+    price: "1799/-",
+    image: "/tshirt3.png",
+    subcategory: null,
+  },
+];
 
 // Reusable carousel that accepts optional preloaded items; still falls back to fetching if items not provided
 export default function SubcategoryCarousel({

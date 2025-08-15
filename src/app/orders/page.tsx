@@ -2,7 +2,9 @@
 import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
+).replace(/\/$/, "");
 
 // --- Replace COLORS with a lighter, neutral palette ---
 const COLORS = {
@@ -67,7 +69,6 @@ export default function OrdersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
-  const [userId, setUserId] = useState<string | null>(null);
   const [fetchedOnce, setFetchedOnce] = useState(false);
 
   // Resolve credentials on mount
@@ -80,28 +81,17 @@ export default function OrdersPage() {
       localStorage.getItem("auth_token") ||
       localStorage.getItem("authToken");
     setToken(t);
-    let uid =
-      localStorage.getItem("userId") || sessionStorage.getItem("userId");
-    // Try to decode JWT for user id if not present (assuming payload has userId or id)
-    if (!uid && t) {
-      try {
-        const payload = JSON.parse(atob(t.split(".")[1] || ""));
-        uid = payload.userId || payload.id || payload.sub || null;
-      } catch {}
-    }
-    if (uid) {
-      setUserId(uid);
-      // persist for subsequent pages
-      localStorage.setItem("userId", uid);
-    }
+    // userId not needed for account endpoint; it derives from token
   }, []);
 
   const fetchOrders = useCallback(async () => {
-    if (!token || !userId) return;
+    if (!token) return;
     setLoading(true);
     try {
-      const r = await fetch(`${API_BASE}/orders/user/${userId}`, {
+      // Use account endpoint to infer user from token and avoid mismatch
+      const r = await fetch(`${API_BASE}/account/orders`, {
         headers: { Authorization: `Bearer ${token}` },
+        credentials: "include",
       });
       const j = await r.json();
       if (r.ok && j.success) {
@@ -115,16 +105,16 @@ export default function OrdersPage() {
       setFetchedOnce(true);
       setLoading(false);
     }
-  }, [token, userId]);
+  }, [token]);
 
   useEffect(() => {
-    if (!token || !userId) {
+    if (!token) {
       if (!token) return; // wait until token resolved
       setLoading(false);
       return;
     }
     fetchOrders();
-  }, [token, userId, fetchOrders]);
+  }, [token, fetchOrders]);
 
   async function retryPayment(order: Order) {
     setError(null);
