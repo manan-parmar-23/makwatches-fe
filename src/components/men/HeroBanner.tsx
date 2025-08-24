@@ -4,7 +4,7 @@ import Image from "next/image";
 
 export default function HeroBanner() {
   return (
-    <div className="relative w-full md:w-7xl aspect-[9/4] md:aspect-[9/4] overflow-hidden rounded-2xl shadow-lg">
+    <div className="relative w-full md:w-7xl aspect-[9/4] md:aspect-[9/4] overflow-hidden rounded-2xl shadow-lg md:mt-0 mt-20">
       <Image
         src="/Women-hero.png"
         alt="Men's collection"

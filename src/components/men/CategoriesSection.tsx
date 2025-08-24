@@ -24,7 +24,7 @@ function CategoryTile({ category, mainCategory }: CategoryTileProps) {
         category.id
       )}?name=${encodeURIComponent(category.name)}`}
     >
-      <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[35vh] w-full md:w-[35vw]">
+      <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[45vh] w-full md:w-[40vw]">
         {imageSrc ? (
           <>
             {/* Use plain <img> for external URLs to avoid Next/Image remote config */}
@@ -65,14 +65,15 @@ function CategoryTile({ category, mainCategory }: CategoryTileProps) {
 function BrandTile() {
   return (
     <Link href="/">
-      <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-white flex items-center justify-center h-[140px] md:h-[35vh] w-full md:w-[35vw]">
-        <Image
-          src="/p.png"
-          alt="Pehnaw Logo"
-          width={60}
-          height={60}
-          className="object-contain"
-        />
+      <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-white flex items-center justify-center h-[140px] md:h-[45vh] w-full md:w-[40vw]">
+        <div className="relative w-12 h-12 md:w-20 md:h-20">
+          <Image
+            src="/p.png"
+            alt="Pehnaw Logo"
+            fill
+            className="object-contain"
+          />
+        </div>
       </div>
     </Link>
   );
@@ -80,8 +81,8 @@ function BrandTile() {
 
 function TextTile() {
   return (
-    <div className="flex items-center justify-center aspect-square rounded-xl overflow-hidden shadow-sm bg-white h-[140px] md:h-[35vh] w-full md:w-[35vw]">
-      <span className="text-lg md:text-xl font-bold text-[#5C1B1B]">
+    <div className="flex items-center justify-center aspect-square rounded-xl overflow-hidden shadow-sm bg-white h-[140px] md:h-[45vh] w-full md:w-[40vw]">
+      <span className="text-lg md:text-2xl font-bold text-[#5C1B1B]">
         PEHNAW MUST
       </span>
     </div>
@@ -102,8 +103,8 @@ function DesktopCategoriesGrid({
 }) {
   return (
     <div
-      className="hidden md:grid grid-cols-2 gap-x-170 gap-y-3"
-      style={{ height: "660px", maxWidth: "300px" }}
+      className="hidden md:grid grid-cols-2 gap-x-6 gap-y-4"
+      style={{ height: "760px" }}
     >
       {first ? (
         <div
@@ -114,7 +115,7 @@ function DesktopCategoriesGrid({
           <CategoryTile category={first} mainCategory="Men" />
         </div>
       ) : (
-        <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[35vh] w-full md:w-[35vw]" />
+        <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[45vh] w-full md:w-[40vw]" />
       )}
       <BrandTile />
       <TextTile />
@@ -127,7 +128,7 @@ function DesktopCategoriesGrid({
           <CategoryTile category={second} mainCategory="Men" />
         </div>
       ) : (
-        <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[35vh] w-full md:w-[35vw]" />
+        <div className="relative aspect-square rounded-xl overflow-hidden shadow-sm bg-gray-100 h-[140px] md:h-[45vh] w-full md:w-[40vw]" />
       )}
     </div>
   );
@@ -193,12 +194,13 @@ export default function CategoriesSection({
   const intervalARef = useRef<number | null>(null);
   const intervalBRef = useRef<number | null>(null);
 
+  type SubItem = { id?: string; name: string; imageUrl?: string };
   const localSubs = useMemo(() => {
-    const list: { id: string; name: string }[] = [];
+    const list: { id: string; name: string; imageUrl?: string }[] = [];
     categories?.forEach((c) => {
       if (Array.isArray(c?.subcategories) && c.subcategories.length > 0) {
-        c.subcategories.forEach((s) =>
-          list.push({ id: s.id || s.name, name: s.name })
+        c.subcategories.forEach((s: SubItem) =>
+          list.push({ id: s.id || s.name, name: s.name, imageUrl: s.imageUrl })
         );
       }
     });
@@ -228,19 +230,22 @@ export default function CategoriesSection({
           );
           all = fetchedSets.flat();
         }
-        const withImages = all.map((s) => {
-          // prefer curated images, then a local deterministic image (not random), then site asset
-          const slug = encodeURIComponent(
-            s.name.toLowerCase().replace(/\s+/g, "-")
-          );
-          return {
-            ...s,
-            imageUrl:
-              getImageForSubcategory(s.name) ||
-              `/subcategories/${slug}.jpg` ||
-              `/p.png`,
-          };
-        });
+        const withImages = all.map(
+          (s: { id: string; name: string; imageUrl?: string }) => {
+            // prefer curated images, then a local deterministic image (not random), then site asset
+            const slug = encodeURIComponent(
+              s.name.toLowerCase().replace(/\s+/g, "-")
+            );
+            return {
+              ...s,
+              imageUrl:
+                s.imageUrl ||
+                getImageForSubcategory(s.name) ||
+                `/subcategories/${slug}.jpg` ||
+                `/p.png`,
+            };
+          }
+        );
         if (!cancelled) setSubcats(withImages);
       } catch {
         if (!cancelled) setSubcats([]);

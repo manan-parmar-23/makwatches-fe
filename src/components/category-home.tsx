@@ -13,7 +13,7 @@ const CategoryHome = () => {
   };
 
   return (
-    <section className="w-full max-w-7xl mx-auto px-2 md:px-6 py-16">
+    <section className="w-full max-w-7xl mx-auto px-2 md:px-6 md:py-6">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Women Category */}
         <div

@@ -220,7 +220,7 @@ export const ProductFormModal: React.FC<Props> = ({
                   </select>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium mb-1 flex items-center justify-between">
+                  <label className=" text-xs font-medium mb-1 flex items-center justify-between">
                     Subcategory{" "}
                     {loadingCats && (
                       <span className="text-[10px] text-gray-400">
@@ -274,7 +274,7 @@ export const ProductFormModal: React.FC<Props> = ({
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-medium mb-1 flex items-center gap-2">
+                <label className=" text-xs font-medium mb-1 flex items-center gap-2">
                   Description
                 </label>
                 <textarea

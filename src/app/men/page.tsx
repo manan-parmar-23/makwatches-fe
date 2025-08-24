@@ -157,7 +157,15 @@ function ProductCarousel({
           page: 1,
           limit: 10,
         };
-        const { data } = await fetchPublicProducts(params);
+        const res = await fetchPublicProducts(params);
+        // normalize response: some endpoints return array directly, others return { data: [...] }
+        const resObj = res as { data?: unknown } | unknown;
+        let payload: unknown;
+        if (resObj && typeof resObj === "object" && resObj !== null && "data" in resObj) {
+          payload = (resObj as { data: unknown }).data;
+        } else {
+          payload = res;
+        }
         type ApiProductLite = {
           id?: string;
           name?: string;
@@ -169,9 +177,16 @@ function ProductCarousel({
           subCategory?: string;
           subCategories?: Array<string | { id?: string; name?: string }>;
         };
-        const apiItems: ApiProductLite[] = Array.isArray(data.data)
-          ? (data.data as ApiProductLite[])
-          : [];
+        let apiItems: ApiProductLite[] = [];
+        if (Array.isArray(payload)) apiItems = payload as ApiProductLite[];
+        else if (
+          payload &&
+          typeof payload === "object" &&
+          "data" in (payload as object) &&
+          Array.isArray((payload as { data: unknown }).data)
+        ) {
+          apiItems = ((payload as { data: unknown }).data as ApiProductLite[]);
+        } else apiItems = [];
         // Transform to local PRODUCT shape (name, price string, image, optional subcategory)
         const transformed = apiItems.map((p) => {
           // normalize subcategory: check multiple possible fields
@@ -250,7 +265,9 @@ function ProductCarousel({
     return () => {
       cancelled = true;
     };
-  }, [onLoad]);
+    // run once on mount; onLoad is called after fetch but should not retrigger the effect repeatedly
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null })); // while loading use static
 

@@ -177,7 +177,7 @@ function FooterDesktop() {
 // Mobile Footer
 function FooterMobile() {
   return (
-    <div className="relative w-full flex justify-center items-center px-2 pb-6 pt-10">
+    <div className="relative w-full flex justify-center items-center px-2 pb-6 mb-4 pt-10">
       {/* Background Image */}
       <div className="absolute inset-0 w-full h-full rounded-2xl overflow-hidden">
         <Image

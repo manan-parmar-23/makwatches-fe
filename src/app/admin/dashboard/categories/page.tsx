@@ -17,6 +17,7 @@ import {
 interface Subcategory {
   id: string;
   name: string;
+  imageUrl?: string;
 }
 interface Category {
   id: string;
@@ -61,6 +62,10 @@ const CategoriesPage: React.FC = () => {
     "Men"
   );
   const [submitting, setSubmitting] = useState(false);
+  const [formImageFile, setFormImageFile] = useState<File | null>(null);
+  const [formImagePreview, setFormImagePreview] = useState<string>("");
+  const [formExistingImageUrl, setFormExistingImageUrl] = useState<string>("");
+  const [formImageCleared, setFormImageCleared] = useState<boolean>(false);
 
   // Fetch categories
   const fetchCategories = React.useCallback(async () => {
@@ -103,15 +108,39 @@ const CategoriesPage: React.FC = () => {
     setEditing(null);
     setFormName("");
     setFormMainCategory(activeMain);
+    setFormImageFile(null);
+    setFormImagePreview("");
+    setFormExistingImageUrl("");
+    setFormImageCleared(false);
     setShowModal(true);
   };
 
   // Open Edit Subcategory modal
-  const openEdit = (categoryId: string, subId: string, currentName: string) => {
+  const openEdit = (
+    categoryId: string,
+    subId: string,
+    currentName: string,
+    currentImageUrl?: string
+  ) => {
     setEditing({ categoryId, subId });
     setFormName(currentName);
     setFormMainCategory(activeMain);
+    setFormImageFile(null);
+    setFormImagePreview("");
+    setFormExistingImageUrl(currentImageUrl || "");
+    setFormImageCleared(false);
     setShowModal(true);
+  };
+
+  const uploadImage = async (file: File): Promise<string> => {
+    const fd = new FormData();
+    fd.append("images", file);
+    const res = await api.post("/upload", fd, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+    const url = res.data?.data?.urls?.[0];
+    if (!url) throw new Error("Image upload failed");
+    return url as string;
   };
 
   // Handle create or edit submit
@@ -121,11 +150,22 @@ const CategoriesPage: React.FC = () => {
     setSubmitting(true);
     setError("");
     try {
+      let imageUrlToUse: string | undefined = formExistingImageUrl;
+      if (formImageFile) {
+        imageUrlToUse = await uploadImage(formImageFile);
+      }
       if (editing) {
         // Update subcategory name
+        const payload: Record<string, unknown> = { name: formName };
+        if (formImageCleared && !formImageFile) {
+          // Explicitly clear image
+          payload.imageUrl = "";
+        } else if (imageUrlToUse !== undefined) {
+          payload.imageUrl = imageUrlToUse;
+        }
         await api.patch(
           `/admin/categories/${editing.categoryId}/subcategories/${editing.subId}`,
-          { name: formName }
+          payload
         );
       } else {
         // If category exists use add subcategory endpoint else create category
@@ -133,11 +173,17 @@ const CategoriesPage: React.FC = () => {
         if (cat) {
           await api.post(`/admin/categories/${cat.id}/subcategories`, {
             name: formName,
+            imageUrl: imageUrlToUse,
           });
         } else {
           await api.post(`/admin/categories/`, {
             name: formMainCategory,
-            subcategories: [formName],
+            subcategories: [
+              {
+                name: formName,
+                imageUrl: imageUrlToUse,
+              },
+            ],
           });
         }
       }
@@ -379,18 +425,47 @@ const CategoriesPage: React.FC = () => {
                   style={{ borderBottom: `1px solid ${COLORS.surfaceLight}60` }}
                 >
                   <td className="px-4 py-3">
-                    <span
-                      className="font-medium group-hover:translate-x-0.5 transition-transform duration-300 inline-block"
-                      style={{ color: COLORS.text }}
-                    >
-                      {s.name}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      {s.imageUrl ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={s.imageUrl}
+                          alt={s.name}
+                          className="h-8 w-8 rounded object-cover border"
+                          style={{ borderColor: `${COLORS.surfaceLight}80` }}
+                        />
+                      ) : (
+                        <div
+                          className="h-8 w-8 rounded flex items-center justify-center border"
+                          style={{
+                            borderColor: `${COLORS.surfaceLight}80`,
+                            backgroundColor: `${COLORS.surfaceLight}30`,
+                          }}
+                        >
+                          <FolderIcon
+                            className="h-4 w-4"
+                            style={{ color: COLORS.textMuted }}
+                          />
+                        </div>
+                      )}
+                      <span
+                        className="font-medium group-hover:translate-x-0.5 transition-transform duration-300 inline-block"
+                        style={{ color: COLORS.text }}
+                      >
+                        {s.name}
+                      </span>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
                       <button
                         onClick={() =>
-                          openEdit(currentCategory!.id, s.id, s.name)
+                          openEdit(
+                            currentCategory!.id,
+                            s.id,
+                            s.name,
+                            s.imageUrl
+                          )
                         }
                         className="p-1.5 rounded-lg transition-all duration-300 hover:scale-110"
                         style={{ backgroundColor: `${COLORS.primary}10` }}
@@ -525,6 +600,84 @@ const CategoriesPage: React.FC = () => {
                   placeholder="e.g. Shirts, Pants, etc."
                   autoFocus
                 />
+              </div>
+
+              {/* Image (optional) */}
+              <div>
+                <label
+                  className="block text-xs font-medium mb-1.5"
+                  style={{ color: COLORS.textMuted }}
+                >
+                  Subcategory Image (optional)
+                </label>
+                <div className="flex items-center gap-3">
+                  {formImagePreview || formExistingImageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={formImagePreview || formExistingImageUrl}
+                      alt="preview"
+                      className="h-12 w-12 rounded object-cover border"
+                      style={{ borderColor: `${COLORS.surfaceLight}80` }}
+                    />
+                  ) : (
+                    <div
+                      className="h-12 w-12 rounded flex items-center justify-center border"
+                      style={{
+                        borderColor: `${COLORS.surfaceLight}80`,
+                        backgroundColor: `${COLORS.surfaceLight}30`,
+                      }}
+                    >
+                      <FolderIcon
+                        className="h-5 w-5"
+                        style={{ color: COLORS.textMuted }}
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2">
+                    <label
+                      className="px-3 py-2 text-xs rounded-lg border cursor-pointer transition-colors hover:bg-gray-50"
+                      style={{
+                        borderColor: COLORS.inputBorder,
+                        color: COLORS.text,
+                      }}
+                    >
+                      Choose Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0] || null;
+                          setFormImageFile(file);
+                          if (file) {
+                            setFormImagePreview(URL.createObjectURL(file));
+                          } else {
+                            setFormImagePreview("");
+                          }
+                        }}
+                      />
+                    </label>
+                    {(formImagePreview || formExistingImageUrl) && (
+                      <button
+                        type="button"
+                        className="px-3 py-2 text-xs rounded-lg border transition-colors hover:bg-gray-50"
+                        style={{
+                          borderColor: COLORS.inputBorder,
+                          color: COLORS.textMuted,
+                        }}
+                        onClick={() => {
+                          // Clear selected and existing image (will remove on save)
+                          setFormImageFile(null);
+                          setFormImagePreview("");
+                          setFormExistingImageUrl("");
+                          setFormImageCleared(true);
+                        }}
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
 
               {/* Error Message */}

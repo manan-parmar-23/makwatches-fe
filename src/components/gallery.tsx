@@ -100,7 +100,7 @@ const Gallery: React.FC = () => {
   }, []);
 
   return (
-    <div className="w-full max-w-7xl mx-auto px-4 md:px-8 py-12">
+    <div className="w-full max-w-7xl mx-auto md:px-8">
       <h2 className="mb-6 font-semibold text-2xl text-[#531A1A]">
         you &amp; us
       </h2>

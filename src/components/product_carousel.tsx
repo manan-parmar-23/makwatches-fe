@@ -1,8 +1,8 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
 import Image from "next/image";
+import { fetchPublicProducts, ProductQueryParams } from "@/utils/api";
 
-// Example product data
 const PRODUCTS = [
   {
     name: "Black-blue T-shirt for men",
@@ -19,7 +19,6 @@ const PRODUCTS = [
     price: "1799/-",
     image: "/tshirt3.png",
   },
-  // ...add more products as needed
   {
     name: "Black-blue T-shirt for men",
     price: "1799/-",
@@ -150,28 +149,185 @@ export default function ProductCarousel() {
   const [scrollIndex, setScrollIndex] = useState(0);
   const visibleCount = 3;
   const carouselRef = useRef<HTMLDivElement>(null);
+  const pauseUntilRef = useRef<number>(0);
+  const scrollDebounceRef = useRef<number | null>(null);
 
-  // Autoscroll logic
+  // Dynamic products fetched from public API (same normalization logic as in page.tsx)
+  const [fetched, setFetched] = useState<Array<
+    (typeof PRODUCTS)[0] & { subcategory?: string | null }
+  > | null>(null);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      setScrollIndex((prev) => (prev + 1 >= PRODUCTS.length ? 0 : prev + 1));
-    }, 3000);
-    return () => clearInterval(interval);
+    let cancelled = false;
+    (async () => {
+      try {
+        // fetch without specifying a mainCategory so API returns products across all categories
+        const params: ProductQueryParams = {
+          page: 1,
+          limit: 10,
+        };
+        const res = await fetchPublicProducts(params);
+        const resObj = res as { data?: unknown } | unknown;
+        let payload: unknown;
+        if (
+          resObj &&
+          typeof resObj === "object" &&
+          resObj !== null &&
+          "data" in resObj
+        ) {
+          payload = (resObj as { data: unknown }).data;
+        } else {
+          payload = res;
+        }
+        type ApiProductLite = {
+          id?: string;
+          name?: string;
+          price?: number;
+          images?: string[];
+          subcategory?: string;
+          subcategoryId?: string;
+          subCategory?: string;
+          subCategories?: Array<string | { id?: string; name?: string }>;
+        };
+        let apiItems: ApiProductLite[] = [];
+        if (Array.isArray(payload)) apiItems = payload as ApiProductLite[];
+        else if (
+          payload &&
+          typeof payload === "object" &&
+          "data" in (payload as object) &&
+          Array.isArray((payload as { data: unknown }).data)
+        ) {
+          apiItems = (payload as { data: unknown }).data as ApiProductLite[];
+        } else apiItems = [];
+        const transformed = apiItems.map((p) => {
+          let sub: string | null = null;
+          if (p.subcategory) sub = p.subcategory;
+          else if (p.subcategoryId) sub = p.subcategoryId;
+          else if (p.subCategory) sub = p.subCategory;
+          else if (
+            Array.isArray(p.subCategories) &&
+            p.subCategories.length > 0
+          ) {
+            const first = p.subCategories[0];
+            sub =
+              typeof first === "string"
+                ? first
+                : (first && (first.id || first.name)) || null;
+          }
+          return {
+            id: p.id,
+            name: p.name || "Unnamed Product",
+            price:
+              typeof p.price === "number" ? `${Math.round(p.price)}/-` : "--/-",
+            image:
+              p.images && p.images.length > 0
+                ? p.images[0]
+                : "/placeholder.png",
+            subcategory: sub,
+          } as (typeof PRODUCTS)[0] & { subcategory?: string | null };
+        });
+
+        let finalList:
+          | Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>
+          | undefined;
+        if (transformed.length === 0) {
+          finalList = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+        } else if (transformed.length < 5) {
+          const appended = [
+            ...transformed,
+            ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
+          ]
+            .slice(0, 5)
+            .map((p) => ({ ...p, subcategory: p.subcategory ?? null }));
+          finalList = appended;
+        } else {
+          finalList = transformed;
+        }
+        if (!cancelled && finalList) {
+          setFetched(finalList);
+        }
+      } catch (e) {
+        if (!cancelled) {
+          const fallback = PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+          setFetched(fallback);
+        }
+        console.warn("Failed to fetch public products (all)", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // run once on mount
   }, []);
 
-  // Scroll to item when scrollIndex changes
+  const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+
+  // Autoscroll logic (depends on items length)
   useEffect(() => {
-    if (carouselRef.current) {
-      const cardWidth = carouselRef.current.offsetWidth / visibleCount;
+    const interval = setInterval(() => {
+      // don't auto-advance if user recently interacted
+      if (Date.now() < pauseUntilRef.current) return;
+      setScrollIndex((prev) => (prev + 1 >= items.length ? 0 : prev + 1));
+    }, 3000);
+    return () => clearInterval(interval);
+  }, [items.length]);
+
+  // Scroll to item when scrollIndex changes - use child's offsetLeft so fixed widths align
+  useEffect(() => {
+    if (!carouselRef.current) return;
+    const children = carouselRef.current.children;
+    const idx = Math.max(0, Math.min(scrollIndex, children.length - 1));
+    const target = children[idx] as HTMLElement | undefined;
+    if (target) {
       carouselRef.current.scrollTo({
-        left: scrollIndex * cardWidth,
+        left: target.offsetLeft,
         behavior: "smooth",
       });
     }
   }, [scrollIndex]);
 
+  // handle manual scroll: update scrollIndex and pause auto-scroll briefly
+  useEffect(() => {
+    const el = carouselRef.current;
+    if (!el) return;
+
+    const onScroll = () => {
+      // mark as user interaction: pause auto-scroll for 3s
+      pauseUntilRef.current = Date.now() + 3000;
+
+      // debounce index calculation to avoid thrashing
+      if (scrollDebounceRef.current)
+        window.clearTimeout(scrollDebounceRef.current);
+      scrollDebounceRef.current = window.setTimeout(() => {
+        const children = el.children;
+        const scrollLeft = el.scrollLeft;
+        let nearest = 0;
+        let minDiff = Infinity;
+        for (let i = 0; i < children.length; i++) {
+          const child = children[i] as HTMLElement;
+          const diff = Math.abs(child.offsetLeft - scrollLeft);
+          if (diff < minDiff) {
+            minDiff = diff;
+            nearest = i;
+          }
+        }
+        setScrollIndex((prev) => {
+          if (prev !== nearest) return nearest;
+          return prev;
+        });
+      }, 120);
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      if (scrollDebounceRef.current)
+        window.clearTimeout(scrollDebounceRef.current);
+    };
+  }, [carouselRef, items.length]);
+
   // Progress bar calculation
-  const progress = ((scrollIndex + visibleCount) / PRODUCTS.length) * 100;
+  const progress = ((scrollIndex + visibleCount) / items.length) * 100;
 
   // Responsive check
   const [isMobile, setIsMobile] = useState(false);
@@ -185,7 +341,7 @@ export default function ProductCarousel() {
   }, []);
 
   return (
-    <div className="w-full flex flex-col items-center py-8">
+    <div className="w-full flex flex-col items-center">
       <div
         ref={carouselRef}
         className={`flex overflow-x-hidden ${
@@ -195,7 +351,7 @@ export default function ProductCarousel() {
           scrollBehavior: "smooth",
         }}
       >
-        {PRODUCTS.map((product, idx) =>
+        {items.map((product, idx) =>
           isMobile ? (
             <ProductCardMobile key={idx} product={product} />
           ) : (
@@ -227,7 +383,7 @@ export default function ProductCarousel() {
           fontSize: "1.1rem",
         }}
         onClick={() => {
-          setScrollIndex(PRODUCTS.length - visibleCount);
+          setScrollIndex(Math.max(0, items.length - visibleCount));
         }}
       >
         View More
