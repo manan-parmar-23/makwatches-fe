@@ -2,9 +2,36 @@
 
 import Image from "next/image";
 import { useAccount } from "@/context/AccountContext";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+
+type ReviewItem = {
+  id: string;
+  productId?: string;
+  productName?: string;
+  productImage?: string;
+  rating: number;
+  title: string;
+  comment: string;
+  photoUrls?: string[];
+  helpful?: number;
+  createdAt: string | Date;
+};
+
+type WishlistItem = {
+  wishlistId: string;
+  productId: string;
+  name: string;
+  price: number;
+  image?: string;
+  description?: string;
+  inStock: boolean;
+  size?: string;
+};
 
 export default function AccountPage() {
+  const RAW_API_BASE =
+    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+  const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
   // Replaced local state/fetch logic with the useAccount hook
   const {
     token,
@@ -30,6 +57,123 @@ export default function AccountPage() {
     removeFromWishlist,
     logout,
   } = useAccount();
+
+  // Local state to reflect review edits without reloading the whole context
+  const [reviewsLocal, setReviewsLocal] = useState<ReviewItem[]>(
+    Array.isArray(reviews) ? (reviews as unknown as ReviewItem[]) : []
+  );
+  useEffect(
+    () =>
+      setReviewsLocal(
+        Array.isArray(reviews) ? (reviews as unknown as ReviewItem[]) : []
+      ),
+    [reviews]
+  );
+
+  // Edit review modal state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editReviewId, setEditReviewId] = useState<string | null>(null);
+  const [editRating, setEditRating] = useState<number>(5);
+  const [editTitle, setEditTitle] = useState("");
+  const [editComment, setEditComment] = useState("");
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEdit = (r: ReviewItem) => {
+    setEditReviewId(r.id);
+    setEditRating(Math.round(r.rating));
+    setEditTitle(r.title || "");
+    setEditComment(r.comment || "");
+    setEditError(null);
+    setEditOpen(true);
+  };
+
+  const submitEdit = async () => {
+    if (!editReviewId) return;
+    if (!token) return;
+    if (editTitle.trim().length === 0 || editComment.trim().length < 5) {
+      setEditError(
+        "Please provide a title and a comment of at least 5 characters."
+      );
+      return;
+    }
+    setEditSubmitting(true);
+    setEditError(null);
+    try {
+      const res = await fetch(`${API_BASE}/reviews/${editReviewId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          rating: editRating,
+          title: editTitle.trim(),
+          comment: editComment.trim(),
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data?.message || `Failed to update (status ${res.status})`
+        );
+      }
+      // Optimistically update local list
+      setReviewsLocal((prev: ReviewItem[]) =>
+        prev.map((r) =>
+          r.id === editReviewId
+            ? {
+                ...r,
+                rating: editRating,
+                title: editTitle.trim(),
+                comment: editComment.trim(),
+              }
+            : r
+        )
+      );
+      setEditOpen(false);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "Failed to update review";
+      setEditError(msg);
+    } finally {
+      setEditSubmitting(false);
+    }
+  };
+
+  // Wishlist -> Move to cart
+  const [movingId, setMovingId] = useState<string | null>(null);
+  const moveToCart = async (item: WishlistItem) => {
+    if (!token) return;
+    if (!item?.productId) return;
+    try {
+      setMovingId(item.wishlistId);
+      const res = await fetch(`${API_BASE}/cart`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          productId: String(item.productId),
+          quantity: 1,
+          size: item.size || "",
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(
+          data?.message || `Failed to move to cart (status ${res.status})`
+        );
+      }
+      // On success, remove from wishlist using context helper
+      await removeFromWishlist(item.wishlistId);
+    } catch (e) {
+      console.error(e);
+      // Optional: surface a toast in the future
+    } finally {
+      setMovingId(null);
+    }
+  };
 
   // Smooth scroll to top when changing tabs
   useEffect(() => {
@@ -118,7 +262,7 @@ export default function AccountPage() {
   return (
     <main className="max-w-6xl mx-auto text-[#2D1B1B]">
       {/* Mobile Header with hamburger */}
-      <div className="lg:hidden flex items-center justify-between p-4 border-b border-[#BFA5A5]/20 sticky top-0 bg-white z-20 shadow-sm">
+      <div className="lg:hidden flex items-center justify-between p-4 border-b border-[#BFA5A5]/20 sticky top-10 bg-white z-20 shadow-sm">
         <h1 className="text-xl font-semibold text-[#531A1A]">My Account</h1>
         <button
           onClick={() => setMobileSidebarOpen((prev) => !prev)}
@@ -142,7 +286,7 @@ export default function AccountPage() {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row">
+      <div className="flex flex-col lg:flex-row z-69">
         {/* Mobile sidebar backdrop */}
         {mobileSidebarOpen && (
           <div
@@ -153,8 +297,8 @@ export default function AccountPage() {
 
         {/* Sidebar navigation - collapsible on mobile */}
         <aside
-          className={`w-full lg:w-64 flex-shrink-0 bg-white lg:bg-gradient-to-br lg:from-white lg:to-[#F9F6F6]/80 p-5 border-r border-[#BFA5A5]/20 
-            fixed lg:sticky top-0 h-full lg:h-screen z-40 transform transition-all duration-300 ease-in-out
+          className={`w-full  lg:w-64 flex-shrink-0 bg-white lg:bg-gradient-to-br lg:from-white lg:to-[#F9F6F6]/80 p-5 border-r border-[#BFA5A5]/20 
+            fixed lg:sticky top-10 h-full lg:h-fit z-40 transform transition-all duration-300 ease-in-out
             ${
               mobileSidebarOpen
                 ? "translate-x-0 shadow-xl"
@@ -833,6 +977,21 @@ export default function AccountPage() {
                           {w.inStock ? "In Stock" : "Out of Stock"}
                         </span>
                       </div>
+                      <div className="mt-3 flex gap-2">
+                        <button
+                          onClick={() => moveToCart(w)}
+                          disabled={!w.inStock || movingId === w.wishlistId}
+                          className={`flex-1 px-3 py-2 rounded-lg text-white text-xs font-medium transition-all duration-300 shadow-sm ${
+                            !w.inStock || movingId === w.wishlistId
+                              ? "bg-gray-300 cursor-not-allowed"
+                              : "bg-[#531A1A] hover:bg-[#3B1212]"
+                          }`}
+                        >
+                          {movingId === w.wishlistId
+                            ? "Moving..."
+                            : "Move to cart"}
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -872,7 +1031,7 @@ export default function AccountPage() {
                   </div>
                 )}
                 <div className="space-y-5">
-                  {reviews.map((review) => (
+                  {reviewsLocal.map((review: ReviewItem) => (
                     <div
                       key={review.id}
                       className="border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-0.5"
@@ -882,7 +1041,7 @@ export default function AccountPage() {
                           <div className="flex-shrink-0 rounded-lg overflow-hidden shadow-sm">
                             <Image
                               src={review.productImage}
-                              alt={review.productName}
+                              alt={review.productName || "Product"}
                               width={70}
                               height={70}
                               className="rounded object-cover hover:scale-105 transition-transform duration-300"
@@ -924,53 +1083,78 @@ export default function AccountPage() {
 
                         {review.photoUrls && review.photoUrls.length > 0 && (
                           <div className="flex gap-2 mt-3 overflow-x-auto pb-2 scrollbar-thin scrollbar-thumb-[#BFA5A5] scrollbar-track-[#F9F6F6]">
-                            {review.photoUrls.map((url, idx) => (
-                              <div
-                                key={idx}
-                                className="flex-shrink-0 rounded-md overflow-hidden shadow-sm"
-                              >
-                                <Image
-                                  src={url}
-                                  alt={`Review image ${idx + 1}`}
-                                  width={80}
-                                  height={80}
-                                  className="rounded object-cover hover:scale-105 transition-transform duration-300"
-                                />
-                              </div>
-                            ))}
+                            {review.photoUrls.map(
+                              (url: string, idx: number) => (
+                                <div
+                                  key={idx}
+                                  className="flex-shrink-0 rounded-md overflow-hidden shadow-sm"
+                                >
+                                  <Image
+                                    src={url}
+                                    alt={`Review image ${idx + 1}`}
+                                    width={80}
+                                    height={80}
+                                    className="rounded object-cover hover:scale-105 transition-transform duration-300"
+                                  />
+                                </div>
+                              )
+                            )}
                           </div>
                         )}
                       </div>
 
                       <div className="flex justify-between items-center mt-4 pt-3 border-t border-[#BFA5A5]/20 text-xs">
                         <div className="text-[#7C5C5C]">
-                          {review.helpful > 0 &&
-                            `${review.helpful} ${
-                              review.helpful === 1 ? "person" : "people"
+                          {(review.helpful ?? 0) > 0 &&
+                            `${review.helpful ?? 0} ${
+                              (review.helpful ?? 0) === 1 ? "person" : "people"
                             } found this helpful`}
                         </div>
-                        <button
-                          onClick={() => deleteReview(review.id)}
-                          className="text-red-500 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors duration-300"
-                        >
-                          <span className="flex items-center">
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="h-3.5 w-3.5 mr-1"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                              />
-                            </svg>
-                            Delete Review
-                          </span>
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => openEdit(review)}
+                            className="text-[#531A1A] hover:text-[#3B1212] px-3 py-1.5 rounded-md hover:bg-[#F9F6F6] transition-colors duration-300"
+                          >
+                            <span className="flex items-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3.5 w-3.5 mr-1"
+                                viewBox="0 0 20 20"
+                                fill="currentColor"
+                              >
+                                <path d="M17.414 2.586a2 2 0 010 2.828l-9.9 9.9a1 1 0 01-.39.242l-3.5 1a1 1 0 01-1.238-1.238l1-3.5a1 1 0 01.242-.39l9.9-9.9a2 2 0 012.828 0z" />
+                                <path
+                                  fillRule="evenodd"
+                                  d="M2 13.5V18h4.5l9.9-9.9-4.5-4.5L2 13.5z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              Edit
+                            </span>
+                          </button>
+                          <button
+                            onClick={() => deleteReview(review.id)}
+                            className="text-red-500 hover:text-red-700 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors duration-300"
+                          >
+                            <span className="flex items-center">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="h-3.5 w-3.5 mr-1"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                />
+                              </svg>
+                              Delete
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -1095,6 +1279,92 @@ export default function AccountPage() {
           </div>
         </div>
       </div>
+
+      {/* Edit Review Modal */}
+      {editOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setEditOpen(false)}
+          />
+          <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-fade-in">
+            <h3 className="text-lg font-semibold text-[#531A1A] mb-4">
+              Edit your review
+            </h3>
+            {editError && (
+              <div className="mb-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+                {editError}
+              </div>
+            )}
+            <div className="space-y-4">
+              <div>
+                <div className="text-xs text-[#7C5C5C] mb-1">Rating</div>
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => setEditRating(i + 1)}
+                      className={`text-2xl ${
+                        i < editRating ? "text-amber-500" : "text-gray-300"
+                      }`}
+                    >
+                      ★
+                    </button>
+                  ))}
+                  <span className="ml-2 text-xs text-[#7C5C5C]">
+                    {editRating}/5
+                  </span>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs text-[#7C5C5C] mb-1">
+                  Title
+                </label>
+                <input
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full border border-[#BFA5A5]/30 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30"
+                  placeholder="Great quality!"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-[#7C5C5C] mb-1">
+                  Comment
+                </label>
+                <textarea
+                  value={editComment}
+                  onChange={(e) => setEditComment(e.target.value)}
+                  className="w-full border border-[#BFA5A5]/30 rounded-lg px-3 py-2 min-h-[100px] focus:outline-none focus:ring-2 focus:ring-[#531A1A]/30"
+                  placeholder="Share details of your experience..."
+                />
+              </div>
+            </div>
+            <div className="mt-5 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setEditOpen(false)}
+                className="px-4 py-2 rounded-lg text-[#531A1A] hover:bg-[#F9F6F6]"
+                disabled={editSubmitting}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={submitEdit}
+                disabled={editSubmitting}
+                className={`px-4 py-2 rounded-lg text-white ${
+                  editSubmitting
+                    ? "bg-gray-400"
+                    : "bg-[#531A1A] hover:bg-[#3B1212]"
+                }`}
+              >
+                {editSubmitting ? "Saving..." : "Save changes"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 }

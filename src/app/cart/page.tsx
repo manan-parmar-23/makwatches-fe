@@ -66,6 +66,7 @@ export default function CartPage() {
   const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<string | null>(null); // productId while updating qty
   const [removing, setRemoving] = useState<string | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
 
   const fetchCart = useCallback(async () => {
     if (!user) return;
@@ -246,6 +247,67 @@ export default function CartPage() {
       setError(msg || "Failed to remove item");
     } finally {
       setRemoving(null);
+    }
+  }
+
+  // Save item to wishlist and remove from cart (move-to-wishlist behaviour)
+  async function saveForLater(productId: string) {
+    if (!user) return setError("Please login to save items");
+    try {
+      setSaving(productId);
+      const token = getToken();
+      if (!token) throw new Error("Not authenticated");
+
+      // Add to wishlist
+      const res = await fetch(`${API_BASE}/wishlist`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ productId }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success)
+        throw new Error(json.message || "Failed to save to wishlist");
+
+      // Remove from cart (best-effort). Backend cart delete requires user id.
+      try {
+        const delRes = await fetch(`${API_BASE}/cart/${user.id}/${productId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const delJson = await delRes.json();
+        if (!delRes.ok || !delJson.success) {
+          // If delete failed, refresh cart from server to avoid drift
+          await fetchCart();
+        } else {
+          // Optimistically remove locally
+          setCart((prev) => {
+            const items = prev.items.filter((ci) => ci.productId !== productId);
+            const total = items.reduce(
+              (sum, ci) => sum + (ci.product?.price || 0) * ci.quantity,
+              0
+            );
+            return { items, total };
+          });
+        }
+      } catch {
+        // ignore and refresh
+        await fetchCart();
+      }
+
+      // Inform user
+      // Using alert to keep changes minimal; could be replaced by a toast
+      alert(json.message || "Saved to wishlist");
+    } catch (e: unknown) {
+      const msg =
+        typeof e === "object" && e && "message" in e
+          ? (e as { message?: string }).message
+          : undefined;
+      setError(msg || "Failed to save item");
+    } finally {
+      setSaving(null);
     }
   }
 
@@ -533,42 +595,42 @@ export default function CartPage() {
                             </div>
                           </div>
 
-                          <div className="mt-4 flex items-center justify-between gap-4">
-                            <div
-                              className="flex items-center border rounded-lg overflow-hidden"
-                              style={{ borderColor: COLORS.inputBorder }}
-                            >
-                              <button
-                                disabled={updating === item.productId}
-                                onClick={() =>
-                                  updateQuantity(item.productId, -1)
-                                }
-                                className="px-3 py-2 text-sm"
-                                style={{ backgroundColor: COLORS.surface }}
-                              >
-                                −
-                              </button>
+                          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 ">
+                            <div className="flex flex-wrap items-center gap-2 md:gap-12 ">
                               <div
-                                className="px-4 py-2 bg-white text-sm font-medium"
-                                style={{ minWidth: 44, textAlign: "center" }}
+                                className="flex items-center border rounded-lg overflow-hidden w-fit "
+                                style={{ borderColor: COLORS.inputBorder }}
                               >
-                                {updating === item.productId
-                                  ? "…"
-                                  : item.quantity}
+                                <button
+                                  disabled={updating === item.productId}
+                                  onClick={() =>
+                                    updateQuantity(item.productId, -1)
+                                  }
+                                  className="px-3 py-2 text-sm"
+                                  style={{ backgroundColor: COLORS.surface }}
+                                >
+                                  −
+                                </button>
+                                <div
+                                  className="px-4 py-2 bg-white text-sm font-medium"
+                                  style={{ minWidth: 44, textAlign: "center" }}
+                                >
+                                  {updating === item.productId
+                                    ? "…"
+                                    : item.quantity}
+                                </div>
+                                <button
+                                  disabled={updating === item.productId}
+                                  onClick={() =>
+                                    updateQuantity(item.productId, 1)
+                                  }
+                                  className="px-3 py-2 text-sm"
+                                  style={{ backgroundColor: COLORS.surface }}
+                                >
+                                  +
+                                </button>
                               </div>
-                              <button
-                                disabled={updating === item.productId}
-                                onClick={() =>
-                                  updateQuantity(item.productId, 1)
-                                }
-                                className="px-3 py-2 text-sm"
-                                style={{ backgroundColor: COLORS.surface }}
-                              >
-                                +
-                              </button>
-                            </div>
 
-                            <div className="flex items-center gap-3">
                               <button
                                 aria-label="remove"
                                 onClick={() => removeItem(item.productId)}
@@ -584,13 +646,14 @@ export default function CartPage() {
                                   : "Remove"}
                               </button>
                               <button
-                                className="px-3 py-2 rounded-lg text-sm font-medium border"
+                                className="px-3 py-2 rounded-lg text-sm font-medium border flex items-center"
                                 style={{ borderColor: COLORS.inputBorder }}
-                                onClick={() =>
-                                  alert("Save for later - not implemented")
-                                }
+                                onClick={() => saveForLater(item.productId)}
+                                disabled={saving === item.productId}
                               >
-                                Save for later
+                                {saving === item.productId
+                                  ? "Saving…"
+                                  : "Save for later"}
                               </button>
                             </div>
                           </div>

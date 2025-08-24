@@ -70,6 +70,17 @@ export default function OrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [fetchedOnce, setFetchedOnce] = useState(false);
+  // Review UI state
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [currentProductId, setCurrentProductId] = useState<string | null>(null);
+  const [currentProductName, setCurrentProductName] = useState<string | null>(
+    null
+  );
+  const [rating, setRating] = useState<number>(5);
+  const [reviewTitle, setReviewTitle] = useState<string>("");
+  const [reviewComment, setReviewComment] = useState<string>("");
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
   // Resolve credentials on mount
   useEffect(() => {
@@ -462,6 +473,7 @@ export default function OrdersPage() {
                         <th className="pb-3">Qty</th>
                         <th className="pb-3">Price</th>
                         <th className="pb-3">Subtotal</th>
+                        <th className="pb-3 text-right">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -482,6 +494,23 @@ export default function OrdersPage() {
                             style={{ color: COLORS.primary }}
                           >
                             ₹{it.subtotal.toFixed(2)}
+                          </td>
+                          <td className="py-3 text-right">
+                            <button
+                              className="px-3 py-1.5 rounded-md border text-sm"
+                              style={{ borderColor: COLORS.surfaceLight }}
+                              onClick={() => {
+                                setCurrentProductId(it.productId);
+                                setCurrentProductName(it.productName);
+                                setRating(5);
+                                setReviewTitle("");
+                                setReviewComment("");
+                                setFormError(null);
+                                setShowReviewModal(true);
+                              }}
+                            >
+                              Give review
+                            </button>
                           </td>
                         </tr>
                       ))}
@@ -526,6 +555,21 @@ export default function OrdersPage() {
                         >
                           ₹{it.price.toFixed(2)} each
                         </div>
+                        <button
+                          className="mt-2 px-3 py-1.5 rounded-md border text-sm"
+                          style={{ borderColor: COLORS.surfaceLight }}
+                          onClick={() => {
+                            setCurrentProductId(it.productId);
+                            setCurrentProductName(it.productName);
+                            setRating(5);
+                            setReviewTitle("");
+                            setReviewComment("");
+                            setFormError(null);
+                            setShowReviewModal(true);
+                          }}
+                        >
+                          Give review
+                        </button>
                       </div>
                     </div>
                   ))}
@@ -555,13 +599,6 @@ export default function OrdersPage() {
                           Retry Payment
                         </button>
                       )}
-                    <button
-                      onClick={() => (window.location.href = `/orders/${o.id}`)}
-                      className="px-4 py-2 rounded-md border"
-                      style={{ borderColor: COLORS.surfaceLight }}
-                    >
-                      View details
-                    </button>
                   </div>
                 </div>
               </div>
@@ -569,6 +606,162 @@ export default function OrdersPage() {
           );
         })}
       </div>
+
+      {/* Review modal */}
+      {showReviewModal && currentProductId && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={() => setShowReviewModal(false)}
+          />
+          <div
+            className="bg-white rounded-lg p-6 w-full max-w-md z-10"
+            style={{ boxShadow: "0 8px 24px rgba(15,23,42,0.12)" }}
+          >
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-sm">
+                ★
+              </div>
+              <div>
+                <h3
+                  className="text-lg font-semibold"
+                  style={{ color: COLORS.primary }}
+                >
+                  Write a review
+                </h3>
+                <div className="text-xs" style={{ color: COLORS.textMuted }}>
+                  Share your experience with other shoppers
+                </div>
+              </div>
+            </div>
+            <div
+              className="text-sm text-muted mb-4"
+              style={{ color: COLORS.textMuted }}
+            >
+              {currentProductName
+                ? currentProductName
+                : `Product ID: ${currentProductId?.substring(0, 10)}`}
+            </div>
+            <div className="mb-3">
+              <label
+                className="block text-sm mb-1"
+                style={{ color: COLORS.textMuted }}
+              >
+                Rating
+              </label>
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((v) => (
+                  <button
+                    key={v}
+                    onClick={() => setRating(v)}
+                    aria-label={`${v} star`}
+                    className={`h-8 w-8 rounded-full flex items-center justify-center border ${
+                      v <= rating
+                        ? "bg-amber-300 border-amber-400"
+                        : "bg-white border-gray-200"
+                    }`}
+                  >
+                    ★
+                  </button>
+                ))}
+              </div>
+              <div className="text-xs mt-1" style={{ color: COLORS.textMuted }}>
+                1 = Poor, 5 = Excellent
+              </div>
+            </div>
+            <input
+              value={reviewTitle}
+              onChange={(e) => setReviewTitle(e.target.value)}
+              placeholder="Title"
+              className="w-full mb-3 p-2 border rounded"
+            />
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              placeholder="Write your review"
+              rows={4}
+              className="w-full p-2 mb-3 border rounded"
+            />
+            {formError && (
+              <div
+                className="mb-3 text-sm p-2 rounded border"
+                style={{
+                  color: COLORS.error,
+                  borderColor: `${COLORS.error}50`,
+                  backgroundColor: `${COLORS.error}0D`,
+                }}
+              >
+                {formError}
+              </div>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowReviewModal(false)}
+                className="px-4 py-2 rounded-md border"
+                style={{ borderColor: COLORS.surfaceLight }}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!token) {
+                    setFormError("Please login to submit a review");
+                    return;
+                  }
+                  if (!currentProductId) {
+                    setFormError("Invalid product selected");
+                    return;
+                  }
+                  if (!reviewTitle || reviewTitle.trim().length === 0) {
+                    setFormError("Please enter a title for your review");
+                    return;
+                  }
+                  if (!reviewComment || reviewComment.trim().length < 5) {
+                    setFormError(
+                      "Please enter a comment (minimum 5 characters)"
+                    );
+                    return;
+                  }
+                  setSubmittingReview(true);
+                  setError(null);
+                  setFormError(null);
+                  try {
+                    const res = await fetch(`${API_BASE}/account/reviews`, {
+                      method: "POST",
+                      headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                      },
+                      body: JSON.stringify({
+                        productId: currentProductId,
+                        rating,
+                        title: reviewTitle,
+                        comment: reviewComment,
+                      }),
+                    });
+                    const js = await res.json();
+                    if (!res.ok || !js.success)
+                      throw new Error(js.message || "Failed to submit review");
+                    // success - close modal and refresh orders (review count will be visible in account)
+                    setShowReviewModal(false);
+                  } catch (e: unknown) {
+                    setFormError(
+                      e instanceof Error ? e.message : "Failed to submit review"
+                    );
+                  } finally {
+                    setSubmittingReview(false);
+                  }
+                }}
+                className="px-4 py-2 rounded-md font-semibold text-white"
+                style={{ backgroundColor: COLORS.primary }}
+                disabled={submittingReview}
+              >
+                {submittingReview ? "Submitting..." : "Submit review"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style jsx>{`
         @media (max-width: 640px) {

@@ -32,7 +32,6 @@ export default function ProductDetailsPage() {
   const params = useSearchParams();
   const id = params.get("id");
   const [product, setProduct] = useState<DisplayProduct>(FALLBACK);
-  // loading state omitted since skeleton not shown; could be added later
   const [error, setError] = useState<string | null>(null);
   const [imgIndex, setImgIndex] = useState(0);
   const [qty, setQty] = useState(1);
@@ -137,151 +136,239 @@ export default function ProductDetailsPage() {
     }
   }
 
-  const priceTag = `${Math.round(product.price)}/-`;
+  const priceTag = `₹${Math.round(product.price)}`;
+  const isOutOfStock = (product.stock || 0) < 1;
 
   return (
-    <main className="container mx-auto px-3 md:px-8 py-6 max-w-7xl text-[#531A1A]">
+    <main className="container mx-auto px-4 md:px-8 py-8 max-w-7xl text-gray-800 mt-10 md:mt-0">
       {error && (
-        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
-          {error}
+        <div className="mb-6 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3 shadow-sm animate-fadeIn">
+          <span className="font-medium">Error:</span> {error}
         </div>
       )}
-      <div className="grid md:grid-cols-2 gap-8">
+      <div className="grid md:grid-cols-2 gap-10">
         {/* Left: Images */}
-        <div>
-          <div className="aspect-square w-full bg-white flex items-center justify-center border rounded-lg overflow-hidden">
+        <div className="space-y-4">
+          <div className="aspect-square w-full bg-white flex items-center justify-center border rounded-xl overflow-hidden shadow-sm transition-all duration-300 hover:shadow-md">
             <Image
               src={product.images[imgIndex]}
               alt={product.name}
-              width={600}
-              height={600}
-              className="object-contain w-full h-full"
+              width={700}
+              height={700}
+              className="object-contain w-full h-full transition-opacity duration-300"
+              priority
             />
           </div>
-          <div className="mt-4 grid grid-cols-4 gap-3">
+          <div className="grid grid-cols-4 gap-3">
             {product.images.slice(0, 4).map((img, i) => (
               <button
                 key={i}
                 onClick={() => setImgIndex(i)}
-                className={`aspect-square border rounded-md overflow-hidden ${
-                  imgIndex === i ? "ring-2 ring-[#531A1A]" : ""
+                className={`aspect-square border rounded-lg overflow-hidden transition-all duration-200 ${
+                  imgIndex === i
+                    ? "ring-2 ring-[#531A1A] ring-offset-1 shadow-md scale-105"
+                    : "hover:ring-1 hover:ring-[#531A1A] hover:scale-[1.02]"
                 }`}
               >
                 <Image
                   src={img}
-                  alt={`thumb-${i}`}
-                  width={120}
-                  height={120}
+                  alt={`thumbnail-${i + 1}`}
+                  width={150}
+                  height={150}
                   className="object-contain w-full h-full"
                 />
               </button>
             ))}
           </div>
         </div>
+
         {/* Right: Info */}
         <div className="flex flex-col">
-          <h2 className="text-sm font-medium mb-2 tracking-wide uppercase opacity-80">
-            {product.category || "Category"}
-          </h2>
-          <h1 className="text-2xl md:text-3xl font-semibold leading-snug mb-2">
-            {product.name}
-          </h1>
-          <div className="text-xl font-semibold mb-4">{priceTag}</div>
-          {/* Size selector (static placeholder) */}
-          <div className="flex items-center gap-2 mb-4">
-            {["S", "M", "L", "XL"].map((s) => {
-              const active = selectedSize === s;
-              return (
-                <button
-                  type="button"
-                  key={s}
-                  onClick={() => setSelectedSize(s)}
-                  className={`px-3 py-1.5 border rounded-md text-sm transition ${
-                    active
-                      ? "bg-[#531A1A] text-white border-[#531A1A]"
-                      : "hover:bg-[#531A1A] hover:text-white"
-                  }`}
-                  aria-pressed={active}
-                >
-                  {s}
-                </button>
-              );
-            })}
+          <div className="pb-6 border-b border-gray-200">
+            <h2 className="text-sm font-medium mb-2 tracking-wide uppercase text-[#531A1A]/80">
+              {product.brand} • {product.category || "Category"}
+            </h2>
+            <h1 className="text-2xl md:text-3xl font-semibold leading-snug mb-3 text-[#531A1A]">
+              {product.name}
+            </h1>
+            <div className="flex items-center gap-2">
+              <span className="text-xl md:text-2xl font-semibold">
+                {priceTag}
+              </span>
+              {isOutOfStock ? (
+                <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-full">
+                  Out of Stock
+                </span>
+              ) : (
+                <span className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">
+                  In Stock
+                </span>
+              )}
+            </div>
           </div>
+
+          {/* Size selector */}
+          <div className="my-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium">Select Size</span>
+              {!selectedSize && (
+                <span className="text-xs text-red-500">
+                  Please select a size
+                </span>
+              )}
+            </div>
+            <div className="flex items-center gap-3">
+              {["S", "M", "L", "XL"].map((s) => {
+                const active = selectedSize === s;
+                return (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setSelectedSize(s)}
+                    className={`w-10 h-10 flex items-center justify-center border rounded-md text-sm font-medium transition-all duration-200 ${
+                      active
+                        ? "bg-[#531A1A] text-white border-[#531A1A] shadow-sm"
+                        : "hover:border-[#531A1A] hover:text-[#531A1A]"
+                    }`}
+                    aria-pressed={active}
+                  >
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
           {/* Qty + Add to cart */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="flex items-center border rounded-md overflow-hidden">
+          <div className="flex flex-wrap items-center gap-4 mb-6">
+            <div className="flex items-center border rounded-md overflow-hidden shadow-sm bg-white">
               <button
                 onClick={() => setQty((q) => Math.max(1, q - 1))}
-                className="px-3 py-1 text-lg"
+                className="px-3 py-2 text-lg hover:bg-gray-100 transition"
+                aria-label="Decrease quantity"
               >
-                -
+                −
               </button>
-              <span className="px-4 select-none">{qty}</span>
+              <span className="px-4 py-2 select-none font-medium">{qty}</span>
               <button
                 onClick={() =>
                   setQty((q) => Math.min(product.stock || 10, q + 1))
                 }
-                className="px-3 py-1 text-lg"
+                className="px-3 py-2 text-lg hover:bg-gray-100 transition"
+                aria-label="Increase quantity"
               >
                 +
               </button>
             </div>
             <button
               onClick={addToCart}
-              disabled={adding || (product.stock || 0) < 1 || !selectedSize}
-              className="flex-1 px-6 py-3 rounded-md font-semibold text-white bg-[#531A1A] hover:opacity-90 disabled:opacity-50 transition"
+              disabled={adding || isOutOfStock || !selectedSize}
+              className="flex-1 px-6 py-3 rounded-md font-semibold text-white bg-[#531A1A] hover:bg-[#632A2A] active:bg-[#431A1A] disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors shadow-sm flex items-center justify-center gap-2"
             >
-              {adding ? "Adding..." : "Add to cart"}
+              {adding ? (
+                <>
+                  <svg
+                    className="animate-spin h-4 w-4 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Adding...
+                </>
+              ) : (
+                "Add to cart"
+              )}
             </button>
             <button
-              className="w-10 h-10 rounded-full border flex items-center justify-center hover:bg-[#531A1A] hover:text-white transition"
-              aria-label="wishlist"
+              className="w-12 h-12 rounded-full border flex items-center justify-center hover:bg-[#531A1A]/10 transition-colors"
+              aria-label="Add to wishlist"
             >
-              ♡
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="22"
+                height="22"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="#531A1A"
+                strokeWidth="2"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                />
+              </svg>
             </button>
           </div>
+
           {addMsg && (
             <div
-              className={`text-sm mb-4 ${
-                addMsg.includes("select") ? "text-red-600" : ""
+              className={`p-3 mb-6 text-sm rounded-lg transition-all duration-300 ${
+                addMsg.includes("select") ||
+                addMsg.includes("login") ||
+                addMsg.includes("Failed") ||
+                addMsg.includes("expired")
+                  ? "bg-red-50 text-red-700 border border-red-200"
+                  : "bg-green-50 text-green-700 border border-green-200"
               }`}
             >
+              {addMsg.includes("Added") && <span className="mr-1">✓</span>}
               {addMsg}
             </div>
           )}
+
           {/* Description */}
-          <div>
-            <h3 className="font-semibold mb-2">Description</h3>
-            <p className="text-sm leading-relaxed whitespace-pre-line opacity-90 max-h-56 overflow-auto pr-2">
+          <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <h3 className="font-semibold mb-3 text-[#531A1A]">
+              Product Details
+            </h3>
+            <p className="text-sm leading-relaxed whitespace-pre-line text-gray-700 max-h-60 overflow-auto pr-2">
               {product.description}
             </p>
           </div>
         </div>
       </div>
-      {/* Related products placeholder (reuse static fallback) */}
-      <section className="mt-12">
-        <h3 className="text-xl font-semibold mb-6">You may also like</h3>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6">
+
+      {/* Related products */}
+      <section className="mt-16 pt-8 border-t border-gray-200">
+        <h3 className="text-xl font-semibold mb-6 text-[#531A1A]">
+          You may also like
+        </h3>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
           {product.images.slice(0, 5).map((img, i) => (
-            <div key={i} className="flex flex-col items-center">
-              <div className="aspect-square w-full border rounded-lg flex items-center justify-center overflow-hidden mb-2">
+            <div key={i} className="flex flex-col group cursor-pointer">
+              <div className="aspect-square w-full border rounded-lg flex items-center justify-center overflow-hidden mb-2 transition-all duration-300 group-hover:shadow-md">
                 <Image
                   src={img}
-                  alt={`rel-${i}`}
+                  alt={`related-${i + 1}`}
                   width={220}
                   height={220}
-                  className="object-contain w-full h-full"
+                  className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
                 />
               </div>
-              <div className="text-center text-sm font-medium truncate w-full">
+              <div className="text-center text-sm font-medium truncate w-full group-hover:text-[#531A1A] transition-colors">
                 {product.name}
               </div>
-              <div className="text-xs opacity-70">{priceTag}</div>
+              <div className="text-center text-xs opacity-70">{priceTag}</div>
             </div>
           ))}
         </div>
       </section>
+
       {/* FAQs / How to use accordions */}
       <section className="mt-16 space-y-4">
         {[
@@ -294,14 +381,32 @@ export default function ProductDetailsPage() {
             body: "Q: Is the fabric pre-shrunk? A: Yes, minimal shrinkage (<3%).",
           },
         ].map((acc, i) => (
-          <details key={i} className="group border rounded-md px-4 py-3">
-            <summary className="cursor-pointer list-none flex justify-between items-center font-medium">
+          <details
+            key={i}
+            className="group border rounded-lg px-5 py-4 shadow-sm hover:shadow transition-all duration-200"
+          >
+            <summary className="cursor-pointer list-none flex justify-between items-center font-medium text-[#531A1A]">
               <span>{acc.title}</span>
-              <span className="transition group-open:rotate-45 text-xl leading-none">
-                +
-              </span>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                className="transition-transform duration-300 group-open:rotate-180"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
             </summary>
-            <div className="mt-3 text-sm opacity-90">{acc.body}</div>
+            <div className="mt-3 text-sm text-gray-700 pt-2 border-t border-gray-100">
+              {acc.body}
+            </div>
           </details>
         ))}
       </section>

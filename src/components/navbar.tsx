@@ -142,69 +142,27 @@ const MobileNavbar = () => {
               Home
             </Link>
 
-            <button
-              className={linkClass + " block py-2 text-left w-full"}
-              onClick={() =>
-                setExpandedMenu(expandedMenu === "men" ? null : "men")
-              }
+            <Link
+              href="/men"
+              className={linkClass + " block py-2"}
+              onClick={() => {
+                setOpen(false);
+                setExpandedMenu(null);
+              }}
             >
               Men
-            </button>
-            <AnimatePresence>
-              {expandedMenu === "men" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="pl-4"
-                >
-                  {/* Only show All Men (removed sub-links) */}
-                  <Link
-                    href="/men"
-                    className="block py-2 text-[#531A1A]"
-                    onClick={() => {
-                      setOpen(false);
-                      setExpandedMenu(null);
-                    }}
-                  >
-                    All Men
-                  </Link>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </Link>
 
-            <button
-              className={linkClass + " block py-2 text-left w-full"}
-              onClick={() =>
-                setExpandedMenu(expandedMenu === "women" ? null : "women")
-              }
+            <Link
+              href="/women"
+              className={linkClass + " block py-2"}
+              onClick={() => {
+                setOpen(false);
+                setExpandedMenu(null);
+              }}
             >
               Women
-            </button>
-            <AnimatePresence>
-              {expandedMenu === "women" && (
-                <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="pl-4"
-                >
-                  {/* Only show All Women (removed sub-links) */}
-                  <Link
-                    href="/women"
-                    className="block py-2 text-[#531A1A]"
-                    onClick={() => {
-                      setOpen(false);
-                      setExpandedMenu(null);
-                    }}
-                  >
-                    All Women
-                  </Link>
-                </motion.div>
-              )}
-            </AnimatePresence>
+            </Link>
 
             <hr className="border-[#531A1A]/20" />
             <button

@@ -136,3 +136,29 @@ body {
   background: var(--background);
   color: var(--foreground);
 }
+
+/* Add these primary color variables if not already defined */
+:root {
+  --color-primary: #531A1A;
+  --color-primary-dark: #421515;
+}
+
+.bg-primary {
+  background-color: var(--color-primary);
+}
+
+.bg-primary-dark {
+  background-color: var(--color-primary-dark);
+}
+
+.text-primary {
+  color: var(--color-primary);
+}
+
+.border-primary {
+  border-color: var(--color-primary);
+}
+
+.hover\:bg-primary-dark:hover {
+  background-color: var(--color-primary-dark);
+}
