@@ -34,7 +34,6 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
   );
 
   // New states for add-to-cart flow
-  const [selectedSize, setSelectedSize] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState<string | null>(null);
 
@@ -44,12 +43,6 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
     setAddMsg(null);
 
     try {
-      if (!selectedSize) {
-        setAddMsg("Please select a size first.");
-        setAdding(false);
-        return;
-      }
-
       // Retrieve token from multiple legacy keys (same logic as product_details page)
       const token =
         typeof window !== "undefined"
@@ -76,7 +69,6 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
         body: JSON.stringify({
           productID: product.id,
           quantity,
-          size: selectedSize,
         }),
       });
 
@@ -132,13 +124,13 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
             animate={{ scale: 1, opacity: 1 }}
             exit={{ scale: 0.9, opacity: 0 }}
             transition={{ type: "spring", damping: 25 }}
-            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto"
+            className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-auto border border-amber-200"
             onClick={handleModalClick}
           >
             <div className="flex justify-end p-2">
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
+                className="p-2 rounded-full hover:bg-amber-50 transition-colors"
                 aria-label="Close"
               >
                 <XMarkIcon className={iconClass} />
@@ -148,7 +140,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 p-4 md:p-6">
               {/* Product Images */}
               <div className="space-y-4">
-                <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden">
+                <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden border border-amber-200 shadow-md">
                   <Image
                     src={selectedImage}
                     alt={product.name || "Product"}
@@ -168,8 +160,8 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                         className={`relative w-16 h-16 border-2 rounded-md overflow-hidden flex-shrink-0 
                         ${
                           selectedImage === img
-                            ? "border-primary"
-                            : "border-gray-200"
+                            ? "border-amber-500"
+                            : "border-amber-200"
                         }`}
                       >
                         <Image
@@ -188,10 +180,10 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
               {/* Product Details */}
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-2xl font-bold text-gray-800">
+                  <h2 className="text-2xl font-bold text-gray-800 font-serif">
                     {product.name}
                   </h2>
-                  <p className="text-xl font-semibold text-primary mt-2">
+                  <p className="text-xl font-semibold text-amber-600 mt-2">
                     ₹{product.price}
                   </p>
                 </div>
@@ -203,40 +195,38 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                   </p>
                 </div>
 
-                {/* Size Selector (new) */}
+                {/* Watch Specifications */}
                 <div>
-                  <label className="text-sm text-gray-700 block mb-2">
-                    Size
+                  <label className="text-sm text-amber-700 font-medium block mb-2">
+                    Specifications
                   </label>
-                  <div className="flex items-center gap-2">
-                    {["S", "M", "L", "XL"].map((s) => {
-                      const active = selectedSize === s;
-                      return (
-                        <button
-                          key={s}
-                          onClick={() => setSelectedSize(s)}
-                          className={`px-3 py-1.5 border rounded-md text-sm transition ${
-                            active
-                              ? "bg-primary text-white border-primary"
-                              : "hover:bg-gray-100"
-                          }`}
-                          aria-pressed={active}
-                          type="button"
-                        >
-                          {s}
-                        </button>
-                      );
-                    })}
+                  <div className="grid grid-cols-2 gap-2 text-xs text-gray-600">
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>Swiss Movement</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>100m Water Resistant</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>Sapphire Crystal</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                      <span>2-Year Warranty</span>
+                    </div>
                   </div>
                 </div>
 
                 {/* Quantity Selector */}
                 <div className="flex items-center space-x-4">
                   <span className="text-gray-700">Quantity:</span>
-                  <div className="flex items-center border border-gray-300 rounded-md">
+                  <div className="flex items-center border border-amber-300 rounded-md">
                     <button
                       onClick={decrementQuantity}
-                      className="p-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                      className="p-2 text-amber-700 hover:bg-amber-50 transition-colors"
                       aria-label="Decrease quantity"
                     >
                       <MinusIcon className="w-4 h-4" />
@@ -246,7 +236,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                     </span>
                     <button
                       onClick={incrementQuantity}
-                      className="p-2 text-gray-600 hover:bg-gray-100 transition-colors"
+                      className="p-2 text-amber-700 hover:bg-amber-50 transition-colors"
                       aria-label="Increase quantity"
                     >
                       <PlusIcon className="w-4 h-4" />
@@ -258,7 +248,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                 <div>
                   <button
                     onClick={handleAddToCart}
-                    className="w-full py-3 px-6 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors flex items-center justify-center space-x-2 disabled:opacity-50"
+                    className="w-full py-3 px-6 bg-amber-600 text-white rounded-md hover:bg-amber-700 transition-colors flex items-center justify-center space-x-2 disabled:opacity-50 shadow-md"
                     aria-label="Add to cart"
                     disabled={adding}
                   >
@@ -280,9 +270,10 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                 </div>
 
                 {/* Additional product information */}
-                <div className="border-t border-gray-200 pt-4 text-sm text-gray-500">
-                  <p>Free delivery on orders over ₹999</p>
-                  <p>30-day return policy</p>
+                <div className="border-t border-amber-200 pt-4 text-sm text-gray-600">
+                  <p>✦ Free delivery on luxury watches</p>
+                  <p>✦ 2-year international warranty</p>
+                  <p>✦ Authentic certification included</p>
                 </div>
               </div>
             </div>

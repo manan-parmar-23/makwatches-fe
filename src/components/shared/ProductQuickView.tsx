@@ -221,8 +221,8 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
                       </button>
 
                       <Link
-                        href={`/product/${product.id}`}
-                        className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md border border-primary text-primary hover:bg-primary hover:text-white transition-colors"
+                        href={`/product_details?id=${product.id}`}
+                        className="flex-1 flex items-center justify-center gap-2 py-2 px-4 rounded-md border border-primary text-primary hover:text-white transition-colors"
                       >
                         View Details
                         <ArrowRightIcon className="w-4 h-4" />

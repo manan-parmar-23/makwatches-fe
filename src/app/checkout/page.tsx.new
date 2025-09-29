@@ -1,0 +1,26 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { useAuth } from "@/context/AuthContext";
+
+// Using CSS variables defined in globals.css
+
+// ---- Types ----
+type Address = {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  landmark?: string;
+};
+type PaymentMethod = "razorpay_upi" | "razorpay_card" | "cod";
+interface CartItem {
+  id: string;
+  productId?: string;
+  name?: string;
+  price?: number;
+  quantity: number;
+  size?: string;
+  product?: { name?: string; price?: number; images?: string[] };
+}

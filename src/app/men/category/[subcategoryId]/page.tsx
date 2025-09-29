@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import { fetchPublicProducts, ProductQueryParams } from "@/utils/api";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 // Replace react-icons/fi with Heroicons
 import { FunnelIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
@@ -69,10 +70,20 @@ export default function MenSubcategoryPage({
     currentPage * itemsPerPage
   );
 
-  // Handle product click to show modal
+  // Handle product click to navigate to product details
+  const router = useRouter();
+
   const handleProductClick = (product: LiteProduct) => {
+    // First show quick preview modal
     setSelectedProduct(product);
     setIsModalOpen(true);
+
+    // After a short delay, navigate to the full product details page
+    if (product.id) {
+      setTimeout(() => {
+        router.push(`/product_details?id=${product.id}`);
+      }, 300); // Short delay for better UX
+    }
   };
 
   // Handle filter changes
@@ -238,14 +249,20 @@ export default function MenSubcategoryPage({
   ];
 
   return (
-    <main className="bg-gray-50">
+    <main className="bg-gradient-to-b from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8 max-w-7xl">
-        {/* Header */}
-        <div className="mb-2 md:mb-6 mt-10 md:mt-0">
-          <h1 className="text-3xl font-bold text-gray-900">{title}</h1>
-          <p className="text-gray-600 mt-2">
-            {filteredItems.length} products available
-          </p>
+        {/* Header with luxury styling */}
+        <div className="mb-6 md:mb-10 mt-10 md:mt-4 border-b border-gray-200 pb-6">
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight">
+            {title}
+          </h1>
+          <div className="flex items-center justify-between mt-4">
+            <p className="text-gray-600">
+              <span className="font-medium">{filteredItems.length}</span>{" "}
+              timepieces available
+            </p>
+            <div className="hidden md:block h-px w-32 bg-accent"></div>
+          </div>
         </div>
 
         {/* Main content with sidebar layout */}

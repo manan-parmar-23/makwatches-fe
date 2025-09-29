@@ -29,12 +29,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ y: -5 }}
-      className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300"
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
     >
       {/* Product Image */}
       <div className="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden">
-        <Link href={`/product/${product.id}`}>
+        <Link href={`/product_details?id=${product.id}`}>
           <div className="w-full h-full relative cursor-pointer">
             <Image
               src={product.imageUrl || product.images[0] || "/placeholder.png"}
@@ -67,30 +67,30 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
 
         {/* Quick actions overlay (no dark background) */}
         <div className="absolute inset-0 bg-transparent transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
-          <div className="flex space-x-2 bg-white/60 backdrop-blur-sm rounded-full p-2 shadow-sm">
+          <div className="flex space-x-3 bg-black/80 backdrop-blur-md rounded-full p-3 shadow-xl">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
-              className="bg-white p-3 rounded-full shadow-md"
+              className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 onQuickView();
               }}
               aria-label="Quick view"
             >
-              <EyeIcon className="text-gray-700 w-5 h-5" />
+              <EyeIcon className="text-gray-900 w-5 h-5" />
             </motion.button>
 
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
               disabled={product.stock <= 0}
-              className={`p-3 rounded-full shadow-md ${
+              className={`p-3 rounded-full shadow-lg transition-all duration-300 ${
                 product.stock <= 0
-                  ? "bg-gray-300 cursor-not-allowed"
+                  ? "bg-gray-400 cursor-not-allowed"
                   : isInCart(product.id)
-                  ? "bg-green-500"
-                  : "bg-primary"
+                  ? "bg-gradient-to-r from-green-500 to-green-600"
+                  : "bg-gradient-to-r from-gray-900 to-black hover:from-black hover:to-gray-800"
               }`}
               onClick={handleAddToCart}
               aria-label={isInCart(product.id) ? "In cart" : "Add to cart"}
@@ -111,7 +111,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
       </div>
 
       {/* Product Info */}
-      <Link href={`/product/${product.id}`}>
+      <Link href={`/product_details?id=${product.id}`}>
         <div className="p-4">
           {product.brand && (
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">

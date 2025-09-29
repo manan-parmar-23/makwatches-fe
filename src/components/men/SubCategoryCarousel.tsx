@@ -1,44 +1,78 @@
-import ProductCard from "@/components/women/ProductCard";
-import ProductCardMobile from "@/components/women/ProductCardMobile";
+"use client";
+import ProductCard from "@/components/men/ProductCard";
+import ProductCardMobile from "@/components/men/ProductCardMobile";
 import { ProductQueryParams, fetchPublicProducts } from "@/utils/api";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+
 import Link from "next/link";
 
+// Watch products for men subcategory
 export const PRODUCTS = [
   {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt1.png",
-    subcategory: null,
+    id: "1",
+    name: "MAK Classic Heritage",
+    subtitle: "Timeless Elegance",
+    price: "₹12,999",
+    originalPrice: "₹15,999",
+    image: "/watches/item-card-image-1.png",
+    subcategory: "Classic",
+    features: ["Swiss Movement", "Water Resistant", "Leather Strap"],
+    discount: "25% OFF",
   },
   {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt2.png",
-    subcategory: null,
+    id: "2",
+    name: "MAK Sport Pro",
+    subtitle: "Athletic Performance",
+    price: "₹18,999",
+    originalPrice: "₹22,999",
+    image: "/watches/item-card-image-2.png",
+    subcategory: "Sports",
+    features: ["Chronograph", "Titanium Case", "Rubber Strap"],
+    discount: "17% OFF",
   },
   {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-    subcategory: null,
+    id: "3",
+    name: "MAK Luxury Gold",
+    subtitle: "Premium Collection",
+    price: "₹45,999",
+    originalPrice: "₹52,999",
+    image: "/watches/item-card-image-3.png",
+    subcategory: "Luxury",
+    features: ["Gold Plated", "Sapphire Crystal", "Automatic"],
+    discount: "13% OFF",
   },
   {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-    subcategory: null,
+    id: "4",
+    name: "MAK Smart Elite",
+    subtitle: "Digital Innovation",
+    price: "₹24,999",
+    originalPrice: "₹29,999",
+    image: "/watches/item-card-image-4.png",
+    subcategory: "Smart",
+    features: ["GPS Tracking", "Heart Rate", "Bluetooth"],
+    discount: "17% OFF",
   },
   {
-    id: undefined,
-    name: "Black-blue T-shirt for men",
-    price: "1799/-",
-    image: "/tshirt3.png",
-    subcategory: null,
+    id: "5",
+    name: "MAK Casual Style",
+    subtitle: "Everyday Comfort",
+    price: "₹8,999",
+    originalPrice: "₹11,999",
+    image: "/watches/item-card-image-5.png",
+    subcategory: "Casual",
+    features: ["Quartz Movement", "Stainless Steel", "Date Display"],
+    discount: "25% OFF",
+  },
+  {
+    id: "6",
+    name: "MAK Executive",
+    subtitle: "Business Class",
+    price: "₹32,999",
+    originalPrice: "₹38,999",
+    image: "/watches/item-card-image-1.png",
+    subcategory: "Luxury",
+    features: ["Automatic Movement", "Ceramic Bezel", "Power Reserve"],
+    discount: "15% OFF",
   },
 ];
 
@@ -102,7 +136,11 @@ export default function SubcategoryCarousel({
   // If providedItems exist, use them (with fallback logic) and skip fetching
   useEffect(() => {
     if (providedItems) {
-      setItemsState(buildFinalList(providedItems));
+      setItemsState(
+        buildFinalList(providedItems) as Array<
+          (typeof PRODUCTS)[0] & { subcategory?: string | null }
+        >
+      );
       setIsLoading(false);
       return;
     }
@@ -209,7 +247,11 @@ export default function SubcategoryCarousel({
 
           const finalList = buildFinalList(transformed);
           if (isMounted) {
-            setItemsState(finalList);
+            setItemsState(
+              finalList as Array<
+                (typeof PRODUCTS)[0] & { subcategory?: string | null }
+              >
+            );
             setIsLoading(false);
           }
         } else if (retryCount < 2) {
@@ -223,7 +265,11 @@ export default function SubcategoryCarousel({
         } else {
           // Give up and use fallback
           if (isMounted) {
-            setItemsState(PRODUCTS.map((p) => ({ ...p, subcategory: null })));
+            setItemsState(
+              PRODUCTS.map((p) => ({ ...p, subcategory: "General" })) as Array<
+                (typeof PRODUCTS)[0] & { subcategory?: string | null }
+              >
+            );
             setIsLoading(false);
           }
         }
@@ -242,7 +288,11 @@ export default function SubcategoryCarousel({
           );
           setRetryCount((prev) => prev + 1);
         } else if (isMounted) {
-          setItemsState(PRODUCTS.map((p) => ({ ...p, subcategory: null })));
+          setItemsState(
+            PRODUCTS.map((p) => ({ ...p, subcategory: "General" })) as Array<
+              (typeof PRODUCTS)[0] & { subcategory?: string | null }
+            >
+          );
           setIsLoading(false);
         }
       }
@@ -339,13 +389,17 @@ export default function SubcategoryCarousel({
               gap: "0",
             }}
           >
-            {list.map((product, idx) =>
-              isMobile ? (
-                <ProductCardMobile key={idx} product={product} />
+            {list.map((product, idx) => {
+              const validProduct = {
+                ...product,
+                subcategory: product.subcategory || "General",
+              };
+              return isMobile ? (
+                <ProductCardMobile key={idx} product={validProduct} />
               ) : (
-                <ProductCard key={idx} product={product} />
-              )
-            )}
+                <ProductCard key={idx} product={validProduct} />
+              );
+            })}
           </div>
         )}
       </div>

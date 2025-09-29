@@ -8,7 +8,7 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 const linkClass =
-  "uppercase font-bold text-xl tracking-wide text-[#531A1A] transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
+  "uppercase font-bold text-xl tracking-wide text-accent transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
 
 // Mobile Navbar Component
 const MobileNavbar = () => {
@@ -43,22 +43,22 @@ const MobileNavbar = () => {
   }, [open]);
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-white md:hidden shadow z-9999">
-      <div className="flex items-center justify-between px-4 py-3">
+    <nav className="fixed top-0 left-0 w-full bg-secondary md:hidden shadow z-9999">
+      <div className="flex items-center justify-between px-4 py-2">
         {/* Logo */}
         <div className="flex items-center">
           <Image
-            src="/p.png"
+            src="/logo-1.png"
             alt="Logo"
             width={32}
             height={32}
-            className="h-8 w-auto transition duration-200 ease-in-out hover:scale-110"
+            className="h-12 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
           />
         </div>
         {/* Hamburger */}
         <motion.button
           ref={burgerRef}
-          className="text-[#531A1A] focus:outline-none"
+          className="text-accent focus:outline-none"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
           initial={false}
@@ -102,16 +102,16 @@ const MobileNavbar = () => {
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="px-4 pb-2 pt-2 bg-white shadow-md flex items-center gap-2"
+            className="px-4 pb-2 pt-2 bg-secondary shadow-md flex items-center gap-2"
           >
             <input
               type="text"
               placeholder="Search..."
-              className="flex-1 border rounded px-3 py-2 focus:outline-none"
+              className="flex-1 border rounded px-3 py-2 focus:outline-none bg-secondary text-primary"
               autoFocus
             />
             <button
-              className="text-[#531A1A] font-bold px-3 py-2"
+              className="text-accent font-bold px-3 py-2"
               onClick={() => setShowSearch(false)}
             >
               Close
@@ -128,7 +128,7 @@ const MobileNavbar = () => {
             animate={{ opacity: 1, y: 0, pointerEvents: "auto" }}
             exit={{ opacity: 0, y: -20, pointerEvents: "none" }}
             transition={{ duration: 0.35 }}
-            className="fixed top-12 left-0 w-full h-100px px-4 pb-4 pt-12 space-y-2 bg-white shadow-md z-40 rounded-b-lg overflow-y-hidden"
+            className="fixed top-14 left-0 w-full h-100px px-4 pb-4 pt-12 space-y-2 bg-secondary shadow-md z-40 rounded-b-lg overflow-y-hidden"
             ref={menuRef}
           >
             <Link
@@ -164,7 +164,7 @@ const MobileNavbar = () => {
               Women
             </Link>
 
-            <hr className="border-[#531A1A]/20" />
+            <hr className="border-accent/20" />
             <button
               className={linkClass + " block py-2 text-left w-full"}
               onClick={() => {
@@ -209,21 +209,21 @@ const MobileNavbar = () => {
                       <div className="py-1">
                         <Link
                           href="/login"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Customer Login
                         </Link>
                         <Link
                           href="/admin/login"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Admin Login
                         </Link>
                         <Link
                           href="/"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Explore as Guest
@@ -234,7 +234,7 @@ const MobileNavbar = () => {
                       <div className="py-1">
                         <Link
                           href="/account"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Account
@@ -242,13 +242,13 @@ const MobileNavbar = () => {
                         {/* Orders link visible only to logged-in customers */}
                         <Link
                           href="/orders"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Orders
                         </Link>
                         <button
-                          className="block w-full text-left py-2 text-[#531A1A]"
+                          className="block w-full text-left py-2 text-accent"
                           onClick={() => {
                             logout();
                             setOpen(false);
@@ -263,13 +263,13 @@ const MobileNavbar = () => {
                       <div className="py-1">
                         <Link
                           href="/admin/dashboard"
-                          className="block py-2 text-[#531A1A]"
+                          className="block py-2 text-accent"
                           onClick={() => setOpen(false)}
                         >
                           Dashboard
                         </Link>
                         <button
-                          className="block w-full text-left py-2 text-[#531A1A]"
+                          className="block w-full text-left py-2 text-accent"
                           onClick={() => {
                             logout();
                             setOpen(false);
@@ -308,8 +308,8 @@ const Navbar = () => {
   return (
     <>
       {/* Desktop Navbar */}
-      <nav className="w-full bg-white hidden md:block">
-        <div className="max-w-screen-xl mx-auto flex items-center justify-between py-6 px-6">
+      <nav className="fixed w-full bg-secondary hidden md:block shadow z-40">
+        <div className="max-w-screen-xl mx-auto flex items-center justify-between py-2 px-6">
           {/* Left menu */}
           <div className="flex gap-10">
             <Link href="/" className={linkClass}>
@@ -325,11 +325,11 @@ const Navbar = () => {
           {/* Center logo */}
           <div className="flex-1 flex justify-center">
             <Image
-              src="/p.png"
+              src="/logo-1.png"
               alt="Logo"
               width={36}
               height={36}
-              className="h-10 w-auto transition duration-200 ease-in-out hover:scale-110"
+              className="h-18 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
             />
           </div>
           {/* Right menu */}
@@ -365,21 +365,21 @@ const Navbar = () => {
                       <div className="py-1">
                         <Link
                           href="/login"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Customer Login
                         </Link>
                         <Link
                           href="/admin/login"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Admin Login
                         </Link>
                         <Link
                           href="/"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Explore as Guest
@@ -390,7 +390,7 @@ const Navbar = () => {
                       <div className="py-1">
                         <Link
                           href="/account"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Account
@@ -398,13 +398,13 @@ const Navbar = () => {
                         {/* Orders link visible only to logged-in customers */}
                         <Link
                           href="/orders"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Orders
                         </Link>
                         <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => {
                             logout();
                             setShowAccountMenu(false);
@@ -418,13 +418,13 @@ const Navbar = () => {
                       <div className="py-1">
                         <Link
                           href="/admin/dashboard"
-                          className="block px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Dashboard
                         </Link>
                         <button
-                          className="block w-full text-left px-4 py-2 hover:bg-gray-100 text-[#531A1A] transition duration-150"
+                          className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
                           onClick={() => {
                             logout();
                             setShowAccountMenu(false);
@@ -453,11 +453,11 @@ const Navbar = () => {
               <input
                 type="text"
                 placeholder="Search..."
-                className="flex-1 border rounded px-3 py-2 focus:outline-none"
+                className="flex-1 border rounded px-3 py-2 focus:outline-none bg-secondary text-primary"
                 autoFocus
               />
               <button
-                className="text-[#531A1A] font-bold px-3 py-2"
+                className="text-accent font-bold px-3 py-2"
                 onClick={() => setShowSearch(false)}
               >
                 Close

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+@plugin "tailwindcss-animate";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
 /* Inter font-face setup */
 @font-face {
   font-family: 'Inter';
@@ -132,33 +137,244 @@ html, body {
   font-family: 'Inter', Arial, Helvetica, sans-serif;
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-}
-
-/* Add these primary color variables if not already defined */
+/* MAK Watches premium palette for CSS variables */
 :root {
-  --color-primary: #531A1A;
-  --color-primary-dark: #421515;
+  /* Base colors */
+  --color-primary: #531A1A; /* Rich maroon for primary elements */
+  --color-primary-dark: #3B1212; /* Darker maroon for hover states */
+  --color-accent: #C6A664; /* Gold accent for highlights and important elements */
+  --color-secondary: #F5F5F5; /* Light background for contrast */
+  --color-foreground: #2D1B1B; /* Deep brown for text */
+  --color-background: #FFFFFF; /* Clean white background */
+  
+  /* UI elements */
+  --color-surface: #F5F5F5; /* Surface elements */
+  --color-surface-light: #E5E5E5; /* Lighter surface elements */
+  --color-input-bg: #F9F6F6; /* Form input backgrounds */
+  --color-input-border: #BFA5A5; /* Form input borders */
+  --color-input-focus: #531A1A; /* Form input focus state */
+  --color-text-muted: #7C5C5C; /* Muted text color */
+  --color-error: #B3261E; /* Error messaging */
+  --color-success: #388E3C; /* Success messaging */
+  
+  /* Common styling */
+  --radius: 0.625rem;
+  
+  /* ShadCN theme variables */
+  --background: oklch(1 0 0); /* White */
+  --foreground: oklch(0.145 0 0); /* Near black */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.3 0.16 25); /* Maroon */
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.78 0.118 83.872); /* Gold */
+  --accent-foreground: oklch(0.145 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.3 0.16 25); /* Maroon for focus rings */
+  
+  /* Chart colors for admin dashboards */
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  
+  /* Sidebar specific colors */
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.3 0.16 25); /* Maroon */
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.78 0.118 83.872); /* Gold */
+  --sidebar-accent-foreground: oklch(0.145 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.3 0.16 25); /* Maroon for focus rings */
 }
 
 .bg-primary {
   background-color: var(--color-primary);
 }
-
 .bg-primary-dark {
   background-color: var(--color-primary-dark);
 }
-
+.bg-accent {
+  background-color: var(--color-accent);
+}
+.bg-secondary {
+  background-color: var(--color-secondary);
+}
 .text-primary {
   color: var(--color-primary);
 }
-
+.text-accent {
+  color: var(--color-accent);
+}
+.text-secondary {
+  color: var(--color-secondary);
+}
 .border-primary {
   border-color: var(--color-primary);
 }
-
+.border-accent {
+  border-color: var(--color-accent);
+}
 .hover\:bg-primary-dark:hover {
   background-color: var(--color-primary-dark);
+}
+.hover\:bg-accent:hover {
+  background-color: var(--color-accent);
+  color: var(--color-background);
+}
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+}
+
+/* Theme radius variables */
+:root {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* Ensure color variables are properly connected to ShadCN theme */
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+.dark {
+  /* Dark theme with luxurious feel */
+  --background: oklch(0.1 0 0); /* Near black background */
+  --foreground: oklch(0.95 0 0); /* Near white text */
+  
+  /* Card elements */
+  --card: oklch(0.15 0 0); /* Slightly lighter than background */
+  --card-foreground: oklch(0.95 0 0);
+  
+  /* Popover elements */
+  --popover: oklch(0.15 0 0);
+  --popover-foreground: oklch(0.95 0 0);
+  
+  /* Primary elements - gold in dark mode for luxury feel */
+  --primary: oklch(0.78 0.118 83.872); /* Gold */
+  --primary-foreground: oklch(0.1 0 0); /* Dark text on gold */
+  
+  /* Secondary elements */
+  --secondary: oklch(0.2 0 0); /* Dark gray */
+  --secondary-foreground: oklch(0.95 0 0);
+  
+  /* Muted elements */
+  --muted: oklch(0.2 0 0);
+  --muted-foreground: oklch(0.75 0 0); /* Subtle gray text */
+  
+  /* Accent elements - subtle maroon in dark mode */
+  --accent: oklch(0.3 0.16 25); /* Maroon */
+  --accent-foreground: oklch(0.95 0 0);
+  
+  /* Alert and feedback colors */
+  --destructive: oklch(0.704 0.191 22.216);
+  
+  /* Border and input styling */
+  --border: oklch(1 0 0 / 10%);
+  --input: oklch(1 0 0 / 15%);
+  --ring: oklch(0.78 0.118 83.872); /* Gold rings for focus */
+  
+  /* Chart colors for admin dashboards */
+  --chart-1: oklch(0.488 0.243 264.376);
+  --chart-2: oklch(0.696 0.17 162.48);
+  --chart-3: oklch(0.769 0.188 70.08);
+  --chart-4: oklch(0.627 0.265 303.9);
+  --chart-5: oklch(0.645 0.246 16.439);
+  
+  /* Sidebar specific colors */
+  --sidebar: oklch(0.15 0 0);
+  --sidebar-foreground: oklch(0.95 0 0);
+  --sidebar-primary: oklch(0.78 0.118 83.872); /* Gold */
+  --sidebar-primary-foreground: oklch(0.15 0 0);
+  --sidebar-accent: oklch(0.3 0.16 25); /* Maroon */
+  --sidebar-accent-foreground: oklch(0.95 0 0);
+  --sidebar-border: oklch(1 0 0 / 10%);
+  --sidebar-ring: oklch(0.78 0.118 83.872); /* Gold */
+  
+  /* Update base theme colors for dark mode */
+  --color-primary: #C6A664; /* Gold for primary in dark mode */
+  --color-primary-dark: #B3935A; /* Darker gold for hover states */
+  --color-accent: #703838; /* Muted maroon for accent */
+  --color-secondary: #292929; /* Dark gray secondary */
+  --color-foreground: #F0F0F0; /* Light text */
+  --color-background: #121212; /* Very dark background */
+  --color-surface: #1E1E1E; /* Surface elements */
+  --color-surface-light: #252525; /* Lighter surface */
+  --color-text-muted: #A8A8A8; /* Muted text */
+}
+
+/* Base element styling */
+* {
+  border-color: var(--border);
+  outline-color: var(--ring);
+  outline-opacity: 0.5;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+/* Line clamp utilities */
+.line-clamp-1 {
+  display: -webkit-box;
+  line-clamp: 1;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.line-clamp-3 {
+  display: -webkit-box;
+  line-clamp: 3;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }

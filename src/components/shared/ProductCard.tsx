@@ -18,8 +18,8 @@ type ProductCardProps = {
 const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
   return (
     <motion.div
-      whileHover={{ y: -5 }}
-      className="group bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300"
+      whileHover={{ y: -8, scale: 1.02 }}
+      className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
     >
       {/* Product Image */}
       <div
@@ -34,48 +34,70 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
           className="object-cover group-hover:scale-105 transition-transform duration-700"
         />
 
-        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-10 transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-white p-3 rounded-full shadow-md mx-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              onClick();
-            }}
-            aria-label="Quick view"
-          >
-            <EyeIcon className="text-gray-700 w-5 h-5" />
-          </motion.button>
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            className="bg-primary p-3 rounded-full shadow-md mx-1"
-            onClick={(e) => {
-              e.stopPropagation();
-              // Add to cart functionality here
-              console.log("Add to cart:", product.name);
-            }}
-            aria-label="Add to cart"
-          >
-            <ShoppingBagIcon className="text-white w-5 h-5" />
-          </motion.button>
+        <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center">
+          <div className="flex space-x-3 bg-black/80 backdrop-blur-md rounded-full p-3 shadow-xl">
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-white/90 backdrop-blur-sm p-3 rounded-full shadow-lg hover:bg-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onClick();
+              }}
+              aria-label="Quick view"
+            >
+              <EyeIcon className="text-gray-900 w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.95 }}
+              className="bg-gradient-to-r from-gray-900 to-black p-3 rounded-full shadow-lg hover:from-black hover:to-gray-800 transition-all duration-300"
+              onClick={(e) => {
+                e.stopPropagation();
+                // Add to cart functionality here
+                console.log("Add to cart:", product.name);
+              }}
+              aria-label="Add to cart"
+            >
+              <ShoppingBagIcon className="text-white w-5 h-5" />
+            </motion.button>
+          </div>
         </div>
       </div>
 
       {/* Product Info */}
-      <div className="p-4" onClick={onClick}>
-        <h3 className="font-medium text-gray-800 mb-1 line-clamp-1">
-          {product.name}
-        </h3>
+      <div className="p-6" onClick={onClick}>
+        <div className="space-y-3">
+          {product.subcategory && (
+            <p className="text-xs uppercase tracking-wider text-gray-500 font-medium">
+              {product.subcategory}
+            </p>
+          )}
 
-        {product.subcategory && (
-          <p className="text-xs text-gray-500 mb-2">{product.subcategory}</p>
-        )}
+          <h3 className="font-bold text-gray-900 mb-2 line-clamp-2 text-lg">
+            {product.name}
+          </h3>
 
-        <p className="text-primary font-semibold">
-          ₹{typeof product.price === "number" ? product.price : product.price}
-        </p>
+          <div className="flex items-center justify-between">
+            <p className="text-xl font-bold text-gray-900">
+              ₹
+              {typeof product.price === "number"
+                ? product.price
+                : product.price}
+            </p>
+            <div className="flex space-x-1">
+              {[...Array(5)].map((_, i) => (
+                <svg
+                  key={i}
+                  className="w-3 h-3 text-yellow-400 fill-current"
+                  viewBox="0 0 20 20"
+                >
+                  <path d="M10 15l-5.878 3.09 1.123-6.545L.489 6.91l6.572-.955L10 0l2.939 5.955 6.572.955-4.756 4.635 1.123 6.545z" />
+                </svg>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </motion.div>
   );

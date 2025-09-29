@@ -61,12 +61,23 @@ export interface Subcategory {
 // Filter type
 export interface ProductFilters {
   category?: string;
+  brand?: string[];
+  gender?: string;
+  dialColor?: string;
+  dialShape?: string;
+  dialType?: string;
+  strapColor?: string;
+  strapMaterial?: string;
+  style?: string;
+  dialThickness?: string;
   minPrice?: number;
   maxPrice?: number;
+  inStock?: boolean;
   sortBy?: string;
   order?: 'asc' | 'desc';
   page?: number;
   limit?: number;
+  search?: string;
 }
 
 // API response type
