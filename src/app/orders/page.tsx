@@ -6,19 +6,20 @@ const API_BASE = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
 ).replace(/\/$/, "");
 
-// --- Replace COLORS with a lighter, neutral palette ---
+// --- Mak Watches brand palette (black/white/gold) ---
 const COLORS = {
-  primary: "#6B2A2A", // warm brand accent
-  primaryDark: "#421616",
-  primaryLight: "#A65A5A",
-  secondary: "#E6DFDB",
-  background: "#FAFAFB", // very light
-  surface: "#FFFFFF", // card background
-  surfaceLight: "#F3F4F6", // subtle borders / dividers
-  text: "#0F172A", // dark neutral
-  textMuted: "#6B7280", // neutral muted
+  primary: "#1A1A1A",
+  primaryDark: "#000000",
+  primaryLight: "#232323",
+  accent: "#C6A664",
+  secondary: "#F5F5F5",
+  background: "#FFFFFF",
+  surface: "#F5F5F5",
+  surfaceLight: "#E5E5E5",
+  text: "#262626",
+  textMuted: "#737373",
   error: "#EF4444",
-  success: "#10B981",
+  success: "#22C55E",
 };
 
 type OrderItem = {
@@ -192,7 +193,7 @@ export default function OrdersPage() {
           }
         },
         prefill: {},
-        theme: { color: "#531A1A" },
+        theme: { color: "#C6A664" },
       });
       rzp.open();
     } catch (e: unknown) {
@@ -277,7 +278,7 @@ export default function OrdersPage() {
 
   return (
     <motion.main
-      className="max-w-4xl mx-auto mt-12 p-4 sm:p-6 min-h-screen transition-all duration-300"
+      className="max-w-4xl mx-auto mt-20 p-4 sm:p-6 min-h-screen transition-all duration-300"
       style={{ backgroundColor: COLORS.background, color: COLORS.text }}
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}

@@ -3,60 +3,69 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
+import {
+  FiBarChart,
+  FiSettings,
+  FiLogOut,
+  FiUsers,
+  FiFolder,
+  FiPackage,
+  FiShoppingBag,
+} from "react-icons/fi";
 
-// Enhanced Color constants - matching your dashboard
+// Enhanced Color constants - luxury theme with rich black and gold
 const COLORS = {
-  primary: "#531A1A",
-  primaryDark: "#3B1212",
-  primaryLight: "#A45A5A",
-  secondary: "#BFA5A5",
-  background: "#FFFFFF",
-  surface: "#F5F5F5",
-  surfaceLight: "#E5E5E5",
-  text: "#2D1B1B",
-  textMuted: "#7C5C5C",
-  error: "#B3261E",
-  success: "#388E3C",
-  inputBg: "#F9F6F6",
-  inputBorder: "#BFA5A5",
-  inputFocus: "#531A1A",
+  primary: "#D4AF37", // Luxury Gold
+  primaryDark: "#A67C00", // Darker Gold
+  primaryLight: "#F4CD68", // Lighter Gold
+  secondary: "#0F0F0F", // Rich Black
+  background: "#FFFFFF", // White
+  surface: "#F8F8F8", // Off-White
+  surfaceLight: "#F0F0F0", // Light Gray
+  text: "#0F0F0F", // Rich Black for text
+  textMuted: "#6D6D6D", // Muted Gray
+  error: "#B00020", // Deep Red
+  success: "#006400", // Deep Green
+  inputBg: "#FFFFFF", // White
+  inputBorder: "#D4AF37", // Gold for borders
+  inputFocus: "#A67C00", // Darker Gold for focus
 };
 
 const navLinks = [
   {
     name: "Dashboard",
     href: "/admin/dashboard",
-    icon: "📊",
+    icon: <FiBarChart />,
     description: "Overview & Analytics",
   },
   {
     name: "Categories",
     href: "/admin/dashboard/categories",
-    icon: "📂",
+    icon: <FiFolder />,
     description: "Manage Categories",
   },
   {
     name: "Products",
     href: "/admin/dashboard/products",
-    icon: "📦",
+    icon: <FiPackage />,
     description: "Product Management",
   },
   {
     name: "Orders",
     href: "/admin/dashboard/orders",
-    icon: "🛒",
+    icon: <FiShoppingBag />,
     description: "Order Processing",
   },
   {
     name: "Users",
     href: "/admin/dashboard/customers",
-    icon: "👥",
+    icon: <FiUsers />,
     description: "Customer Management",
   },
   {
     name: "Settings",
     href: "/admin/dashboard/settings",
-    icon: "⚙️",
+    icon: <FiSettings />,
     description: "System Settings",
   },
 ];
@@ -287,7 +296,7 @@ export default function AdminLayout({
           </div>
 
           {/* Navigation Links - Better spacing and sizing */}
-          <nav className="flex flex-col p-2 space-y-2 h-full">
+          <nav className="flex flex-col p-2 md:pt-10 pt-6 space-y-6 h-full">
             {navLinks.map((link, index) => {
               const isActive = pathname === link.href;
               return (
@@ -397,7 +406,9 @@ export default function AdminLayout({
                     className="w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-300 group-hover:scale-110 group-hover:rotate-3"
                     style={{ backgroundColor: `${COLORS.error}20` }}
                   >
-                    <span className="text-sm">🚪</span>
+                    <span className="text-sm">
+                      <FiLogOut />
+                    </span>
                   </div>
                   <div className="flex-1">
                     <div className="font-semibold text-xs sm:text-sm">

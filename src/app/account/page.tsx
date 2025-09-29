@@ -3,6 +3,31 @@
 import Image from "next/image";
 import { useAccount } from "@/context/AccountContext";
 import { useEffect, useState } from "react";
+import {
+  FiHome,
+  FiUser,
+  FiSettings,
+  FiHeart,
+  FiBox,
+  FiStar,
+  FiLogOut,
+} from "react-icons/fi";
+
+// Mak Watches brand palette
+const COLORS = {
+  primary: "#1A1A1A",
+  primaryDark: "#000000",
+  primaryLight: "#232323",
+  accent: "#C6A664",
+  secondary: "#F5F5F5",
+  background: "#FFFFFF",
+  surface: "#F5F5F5",
+  surfaceLight: "#E5E5E5",
+  text: "#262626",
+  textMuted: "#737373",
+  error: "#EF4444",
+  success: "#22C55E",
+};
 
 type ReviewItem = {
   id: string;
@@ -184,8 +209,11 @@ export default function AccountPage() {
     return (
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
         <div className="flex flex-col items-center justify-center py-20">
-          <div className="w-16 h-16 rounded-full border-3 border-t-transparent border-l-transparent border-r-[#531A1A]/70 border-b-[#531A1A] animate-spin mb-4"></div>
-          <p className="text-[#531A1A] font-medium animate-pulse tracking-wide">
+          <div className="w-16 h-16 rounded-full border-3 border-t-transparent border-l-transparent border-r-[#1A1A1A]/70 border-b-[#1A1A1A] animate-spin mb-4"></div>
+          <p
+            className="font-medium animate-pulse tracking-wide"
+            style={{ color: COLORS.primary }}
+          >
             Loading your account...
           </p>
         </div>
@@ -218,10 +246,10 @@ export default function AccountPage() {
   if (!token)
     return (
       <main className="max-w-6xl mx-auto p-4 sm:p-6">
-        <div className="bg-[#F9F6F6] rounded-xl p-8 shadow-md text-center transform transition-all duration-300 hover:shadow-lg animate-fade-in">
+        <div className="bg-[#F5F5F5] rounded-xl p-8 shadow-md text-center transform transition-all duration-300 hover:shadow-lg animate-fade-in">
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-16 w-16 mx-auto text-[#531A1A] mb-5 opacity-80"
+            className="h-16 w-16 mx-auto text-[#1A1A1A] mb-5 opacity-80"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -233,15 +261,28 @@ export default function AccountPage() {
               d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"
             />
           </svg>
-          <h2 className="text-2xl font-semibold mb-3 text-[#531A1A]">
+          <h2
+            className="text-2xl font-semibold mb-3"
+            style={{ color: COLORS.primary }}
+          >
             Authentication Required
           </h2>
-          <p className="text-[#7C5C5C] mb-7 max-w-md mx-auto">
+          <p
+            className="mb-7 max-w-md mx-auto"
+            style={{ color: COLORS.textMuted }}
+          >
             Please log in to view and manage your account information.
           </p>
           <a
             href="/login"
-            className="inline-block px-8 py-3 rounded-full bg-[#531A1A] text-white font-medium text-sm transition-all duration-300 hover:bg-[#3B1212] hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2 focus:ring-[#531A1A] focus:ring-opacity-50"
+            className="inline-block px-8 py-3 rounded-full text-white font-medium text-sm transition-all duration-300 hover:shadow-lg hover:scale-105 focus:outline-none focus:ring-2"
+            style={{ backgroundColor: COLORS.primary }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.backgroundColor = COLORS.primaryDark)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.backgroundColor = COLORS.primary)
+            }
           >
             Sign In
           </a>
@@ -251,30 +292,39 @@ export default function AccountPage() {
 
   // Navigation item definition for sidebar
   const navItems = [
-    { id: "overview", label: "Overview", icon: "🏠" },
-    { id: "profile", label: "Profile", icon: "👤" },
-    { id: "preferences", label: "Preferences", icon: "⚙️" },
-    { id: "wishlist", label: "Wishlist", icon: "❤️" },
-    { id: "orders", label: "Orders", icon: "📦" },
-    { id: "reviews", label: "Reviews", icon: "⭐" },
+    { id: "overview", label: "Overview", icon: <FiHome /> },
+    { id: "profile", label: "Profile", icon: <FiUser /> },
+    { id: "preferences", label: "Preferences", icon: <FiSettings /> },
+    { id: "wishlist", label: "Wishlist", icon: <FiHeart /> },
+    { id: "orders", label: "Orders", icon: <FiBox /> },
+    { id: "reviews", label: "Reviews", icon: <FiStar /> },
   ] as const;
 
   return (
-    <main className="max-w-6xl mx-auto text-[#2D1B1B]">
+    <main className="max-w-6xl mx-auto" style={{ color: COLORS.text }}>
       {/* Mobile Header with hamburger */}
-      <div className="lg:hidden flex items-center justify-between p-4 border-b border-[#BFA5A5]/20 sticky top-10 bg-white z-20 shadow-sm">
-        <h1 className="text-xl font-semibold text-[#531A1A]">My Account</h1>
+      <div
+        className="lg:hidden flex items-center justify-between p-4 border-b sticky top-10 bg-white z-20 shadow-sm"
+        style={{ borderColor: "#E5E5E5" }}
+      >
+        <h1
+          className="text-xl font-semibold pt-6"
+          style={{ color: COLORS.primary }}
+        >
+          My Account
+        </h1>
         <button
           onClick={() => setMobileSidebarOpen((prev) => !prev)}
-          className="w-10 h-10 flex items-center justify-center rounded-lg hover:bg-[#F9F6F6] transition-all duration-300 hover:shadow-sm"
+          className="w-10 h-10 pt-6 flex items-center justify-center rounded-lg transition-all duration-300 hover:shadow-sm"
+          style={{ backgroundColor: "transparent" }}
           aria-label="Toggle navigation"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
-            className="h-6 w-6 text-[#531A1A]"
+            className="h-6 w-6"
             fill="none"
             viewBox="0 0 24 24"
-            stroke="currentColor"
+            stroke={COLORS.primary}
           >
             <path
               strokeLinecap="round"
@@ -286,7 +336,7 @@ export default function AccountPage() {
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row z-69">
+      <div className="flex flex-col lg:flex-row">
         {/* Mobile sidebar backdrop */}
         {mobileSidebarOpen && (
           <div
@@ -297,8 +347,8 @@ export default function AccountPage() {
 
         {/* Sidebar navigation - collapsible on mobile */}
         <aside
-          className={`w-full  lg:w-64 flex-shrink-0 bg-white lg:bg-gradient-to-br lg:from-white lg:to-[#F9F6F6]/80 p-5 border-r border-[#BFA5A5]/20 
-            fixed lg:sticky top-10 h-full lg:h-fit z-40 transform transition-all duration-300 ease-in-out
+          className={`w-full  lg:w-64 flex-shrink-0 bg-white lg:bg-gradient-to-br lg:from-white lg:to-[#F5F5F5]/80 p-5 border-r border-[#E5E5E5]/20 
+            fixed lg:sticky top-12 md:top-28 h-full lg:h-fit md:z-10 z-50 transform transition-all duration-300 ease-in-out rounded-xl
             ${
               mobileSidebarOpen
                 ? "translate-x-0 shadow-xl"
@@ -306,8 +356,8 @@ export default function AccountPage() {
             }`}
         >
           {/* User Profile Section */}
-          <div className="flex items-center space-x-3 mb-8 p-2 bg-[#F9F6F6]/50 rounded-xl transition-all duration-300 hover:bg-[#F0EBEB]/80">
-            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#F0EBEB] flex-shrink-0 border-2 border-[#531A1A]/10 shadow-md transition-transform duration-300 hover:scale-105">
+          <div className="flex items-center space-x-3 mb-8 p-2 bg-[#F5F5F5]/50 rounded-xl transition-all duration-300 hover:bg-[#E5E5E5]/80">
+            <div className="w-12 h-12 rounded-full overflow-hidden bg-[#F5F5F5] flex-shrink-0 border-2 border-[#1A1A1A]/10 shadow-md transition-transform duration-300 hover:scale-105">
               {profile?.avatarUrl ? (
                 <Image
                   src={profile.avatarUrl}
@@ -317,16 +367,19 @@ export default function AccountPage() {
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <div className="w-full h-full flex items-center justify-center text-xl font-bold text-[#531A1A]/40">
+                <div
+                  className="w-full h-full flex items-center justify-center text-xl font-bold"
+                  style={{ color: `${COLORS.primary}66` }}
+                >
                   {profile?.name?.charAt(0).toUpperCase()}
                 </div>
               )}
             </div>
             <div className="overflow-hidden">
-              <h2 className="font-medium text-[#531A1A] truncate">
+              <h2 className="font-medium" style={{ color: COLORS.primary }}>
                 {profile?.name || "User"}
               </h2>
-              <p className="text-xs text-[#7C5C5C] truncate">
+              <p className="text-xs" style={{ color: COLORS.textMuted }}>
                 {profile?.email || ""}
               </p>
             </div>
@@ -334,14 +387,15 @@ export default function AccountPage() {
             {/* Mobile close button */}
             <button
               onClick={() => setMobileSidebarOpen(false)}
-              className="lg:hidden ml-auto p-1.5 rounded-full hover:bg-[#F0EBEB] transition-all duration-300"
+              className="lg:hidden ml-auto p-1.5 rounded-full transition-all duration-300"
+              style={{ backgroundColor: "transparent" }}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5 text-[#531A1A]"
+                className="h-5 w-5"
                 fill="none"
                 viewBox="0 0 24 24"
-                stroke="currentColor"
+                stroke={COLORS.primary}
               >
                 <path
                   strokeLinecap="round"
@@ -365,26 +419,38 @@ export default function AccountPage() {
                 className={`w-full flex items-center px-4 py-3 rounded-xl text-left transition-all duration-300
                   ${
                     activeTab === item.id
-                      ? "bg-gradient-to-r from-[#531A1A] to-[#3B1212] text-white font-medium shadow-md transform scale-102"
-                      : "text-[#2D1B1B] hover:bg-[#BFA5A5]/10 hover:shadow-sm"
+                      ? "bg-gradient-to-r from-[#1A1A1A] to-[#000000] text-white font-medium shadow-md transform scale-102"
+                      : "hover:shadow-sm"
                   }`}
+                style={
+                  activeTab === item.id ? undefined : { color: COLORS.text }
+                }
               >
                 <span className="mr-3 text-lg w-6 flex-shrink-0">
                   {item.icon}
                 </span>
                 <span className="text-sm font-medium">{item.label}</span>
                 {item.id === "wishlist" && wishlist.length > 0 && (
-                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm animate-pulse">
+                  <span
+                    className="ml-auto text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm animate-pulse"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
                     {wishlist.length}
                   </span>
                 )}
                 {item.id === "orders" && orders.length > 0 && (
-                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm">
+                  <span
+                    className="ml-auto text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
                     {orders.length}
                   </span>
                 )}
                 {item.id === "reviews" && reviews.length > 0 && (
-                  <span className="ml-auto bg-[#531A1A] text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm">
+                  <span
+                    className="ml-auto text-white text-xs px-2 py-0.5 rounded-full min-w-[1.5rem] text-center shadow-sm"
+                    style={{ backgroundColor: COLORS.primary }}
+                  >
                     {reviews.length}
                   </span>
                 )}
@@ -393,13 +459,17 @@ export default function AccountPage() {
           </nav>
 
           {/* Logout Button */}
-          <div className="mt-auto pt-4 border-t border-[#BFA5A5]/20">
+          <div
+            className="mt-auto pt-4 border-t"
+            style={{ borderColor: "#E5E5E5" }}
+          >
             <button
               onClick={logout}
-              className="w-full flex items-center px-4 py-3 rounded-xl text-left text-[#B3261E] hover:bg-[#B3261E]/10 transition-all duration-300 group"
+              className="w-full flex items-center px-4 py-3 rounded-xl text-left hover:bg-[#EF4444]/10 transition-all duration-300 group"
+              style={{ color: "#EF4444" }}
             >
               <span className="mr-3 text-lg group-hover:rotate-12 transition-transform duration-300">
-                🚪
+                <FiLogOut />
               </span>
               <span className="text-sm font-medium">Logout</span>
             </button>
@@ -407,16 +477,19 @@ export default function AccountPage() {
         </aside>
 
         {/* Main content area */}
-        <div className="flex-1 p-4 lg:p-6 overflow-hidden">
+        <div className="flex-1 p-4 md:mt-24 mt-10 lg:p-4 overflow-hidden">
           <div className="mb-8">
-            <h1 className="text-2xl font-bold text-[#531A1A] hidden lg:block mb-2 animate__animated animate__fadeIn">
+            <h1
+              className="text-2xl font-bold"
+              style={{ color: COLORS.primary }}
+            >
               {navItems.find((item) => item.id === activeTab)?.label}
             </h1>
-            <div className="h-1 w-24 bg-gradient-to-r from-[#531A1A] to-[#BFA5A5] rounded-full hidden lg:block transform transition-all duration-500"></div>
+            <div className="h-1 w-24 bg-gradient-to-r from-[#1A1A1A] to-[#BFA5A5] rounded-full hidden lg:block transform transition-all duration-500"></div>
           </div>
 
           {/* Tab Content - Adding transition animations */}
-          <div className="transition-all duration-500 transform animate-fade-in">
+          <div className="transition-all duration-500 transform animate-fade-in z-0">
             {activeTab === "overview" && (
               <section className="grid gap-6">
                 {/* Profile card with avatar */}
@@ -432,25 +505,40 @@ export default function AccountPage() {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-3xl font-bold text-[#531A1A]/30">
+                        <div
+                          className="w-full h-full flex items-center justify-center text-3xl font-bold"
+                          style={{ color: `${COLORS.primary}30` }}
+                        >
                           {profile.name?.charAt(0).toUpperCase()}
                         </div>
                       )}
                     </div>
 
                     <div className="flex-grow text-center sm:text-left">
-                      <h2 className="text-2xl font-semibold text-[#531A1A]">
+                      <h2
+                        className="text-2xl font-semibold"
+                        style={{ color: COLORS.primary }}
+                      >
                         {profile.name}
                       </h2>
-                      <div className="text-sm text-[#7C5C5C] mt-1">
+                      <div
+                        className="text-sm"
+                        style={{ color: COLORS.textMuted }}
+                      >
                         {profile.email}
                       </div>
-                      <div className="text-xs text-[#7C5C5C]/80 mt-1">
+                      <div
+                        className="text-xs"
+                        style={{ color: COLORS.textMuted }}
+                      >
                         Member since{" "}
                         {new Date(profile.createdAt).toLocaleDateString()}
                       </div>
                       {profile.bio && (
-                        <p className="text-sm mt-3 text-[#2D1B1B]">
+                        <p
+                          className="text-sm mt-3"
+                          style={{ color: COLORS.text }}
+                        >
                           {profile.bio}
                         </p>
                       )}
@@ -488,10 +576,16 @@ export default function AccountPage() {
                         />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-[#531A1A]">
+                    <div
+                      className="text-3xl font-bold"
+                      style={{ color: COLORS.primary }}
+                    >
                       {wishlist.length}
                     </div>
-                    <div className="text-xs text-[#7C5C5C] mt-1">
+                    <div
+                      className="text-xs"
+                      style={{ color: COLORS.textMuted }}
+                    >
                       saved items
                     </div>
                   </div>
@@ -504,7 +598,7 @@ export default function AccountPage() {
                       <span>Orders</span>
                       <svg
                         xmlns="http://www.w3.org/2000/svg"
-                        className="h-5 w-5 text-[#531A1A]"
+                        className="h-5 w-5"
                         viewBox="0 0 20 20"
                         fill="currentColor"
                       >
@@ -516,10 +610,16 @@ export default function AccountPage() {
                         />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-[#531A1A]">
+                    <div
+                      className="text-3xl font-bold"
+                      style={{ color: COLORS.primary }}
+                    >
                       {orders.length}
                     </div>
-                    <div className="text-xs text-[#7C5C5C] mt-1">
+                    <div
+                      className="text-xs"
+                      style={{ color: COLORS.textMuted }}
+                    >
                       placed orders
                     </div>
                   </div>
@@ -539,10 +639,16 @@ export default function AccountPage() {
                         <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-[#531A1A]">
+                    <div
+                      className="text-3xl font-bold"
+                      style={{ color: COLORS.primary }}
+                    >
                       {reviews.length}
                     </div>
-                    <div className="text-xs text-[#7C5C5C] mt-1">
+                    <div
+                      className="text-xs"
+                      style={{ color: COLORS.textMuted }}
+                    >
                       product reviews
                     </div>
                   </div>
@@ -566,10 +672,16 @@ export default function AccountPage() {
                         />
                       </svg>
                     </div>
-                    <div className="text-3xl font-bold text-[#531A1A]">
+                    <div
+                      className="text-3xl font-bold"
+                      style={{ color: COLORS.primary }}
+                    >
                       Settings
                     </div>
-                    <div className="text-xs text-[#7C5C5C] mt-1">
+                    <div
+                      className="text-xs"
+                      style={{ color: COLORS.textMuted }}
+                    >
                       personalization options
                     </div>
                   </div>
@@ -578,7 +690,10 @@ export default function AccountPage() {
                 {/* Recent activity */}
                 {orders.length > 0 && (
                   <div className="border rounded-xl p-5 bg-white shadow-sm hover:shadow-md transition-all duration-300">
-                    <h3 className="font-medium text-sm mb-4 text-[#531A1A]">
+                    <h3
+                      className="font-medium text-sm mb-4"
+                      style={{ color: COLORS.primary }}
+                    >
                       Recent Order
                     </h3>
                     <div className="text-sm">
@@ -592,7 +707,10 @@ export default function AccountPage() {
                       </div>
                       <div className="flex justify-between mt-3">
                         <div>{orders[0].items.length} items</div>
-                        <div className="font-semibold text-[#531A1A]">
+                        <div
+                          className="font-semibold"
+                          style={{ color: COLORS.primary }}
+                        >
                           ₹{orders[0].total.toFixed(2)}
                         </div>
                       </div>
@@ -626,7 +744,10 @@ export default function AccountPage() {
             {activeTab === "profile" && profile && (
               <section className="max-w-xl transition-all duration-300 animate-fade-in">
                 <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-                  <h2 className="text-lg font-semibold mb-5 text-[#531A1A] border-b border-[#BFA5A5]/20 pb-2">
+                  <h2
+                    className="text-lg font-semibold mb-5"
+                    style={{ color: COLORS.primary }}
+                  >
                     Profile Details
                   </h2>
                   <div className="grid gap-5 text-sm">
@@ -751,7 +872,10 @@ export default function AccountPage() {
             {activeTab === "preferences" && (
               <section className="max-w-2xl transition-all duration-300 animate-fade-in">
                 <div className="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-all duration-300">
-                  <h2 className="text-lg font-semibold mb-5 text-[#531A1A] border-b border-[#BFA5A5]/20 pb-2">
+                  <h2
+                    className="text-lg font-semibold mb-5"
+                    style={{ color: COLORS.primary }}
+                  >
                     Shopping Preferences
                   </h2>
                   <div className="grid gap-5 text-sm">
@@ -958,13 +1082,17 @@ export default function AccountPage() {
                         )}
                       </div>
                       <div
-                        className="font-medium truncate text-[#531A1A]"
+                        className="font-medium truncate"
+                        style={{ color: COLORS.primary }}
                         title={w.name}
                       >
                         {w.name}
                       </div>
                       <div className="mt-auto flex justify-between items-center pt-3">
-                        <span className="font-semibold text-lg">
+                        <span
+                          className="font-semibold text-lg"
+                          style={{ color: COLORS.primary }}
+                        >
                           ₹{w.price.toFixed(0)}
                         </span>
                         <span
@@ -1049,7 +1177,10 @@ export default function AccountPage() {
                           </div>
                         )}
                         <div className="flex-grow">
-                          <div className="font-medium text-[#531A1A]">
+                          <div
+                            className="font-medium"
+                            style={{ color: COLORS.primary }}
+                          >
                             {review.productName}
                           </div>
                           <div className="flex items-center mt-1.5">
@@ -1224,7 +1355,10 @@ export default function AccountPage() {
                         </div>
                         <div>
                           <span className="text-xs text-[#7C5C5C]">Total:</span>
-                          <div className="font-semibold text-[#531A1A]">
+                          <div
+                            className="font-semibold"
+                            style={{ color: COLORS.primary }}
+                          >
                             ₹{o.total.toFixed(2)}
                           </div>
                         </div>
@@ -1264,7 +1398,10 @@ export default function AccountPage() {
                               <div className="text-[#7C5C5C]">
                                 Qty: {it.quantity}
                               </div>
-                              <div className="font-semibold text-[#531A1A]">
+                              <div
+                                className="font-semibold"
+                                style={{ color: COLORS.primary }}
+                              >
                                 ₹{it.price}
                               </div>
                             </div>
@@ -1288,7 +1425,10 @@ export default function AccountPage() {
             onClick={() => setEditOpen(false)}
           />
           <div className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 animate-fade-in">
-            <h3 className="text-lg font-semibold text-[#531A1A] mb-4">
+            <h3
+              className="text-lg font-semibold"
+              style={{ color: COLORS.primary }}
+            >
               Edit your review
             </h3>
             {editError && (

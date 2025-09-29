@@ -18,22 +18,22 @@ import {
   CalendarIcon,
 } from "@heroicons/react/24/outline";
 
-// Enhanced Color constants - matching dashboard theme
+// Enhanced Color constants - luxury theme with rich black and gold
 const COLORS = {
-  primary: "#531A1A",
-  primaryDark: "#3B1212",
-  primaryLight: "#A45A5A",
-  secondary: "#BFA5A5",
-  background: "#FFFFFF",
-  surface: "#F5F5F5",
-  surfaceLight: "#E5E5E5",
-  text: "#2D1B1B",
-  textMuted: "#7C5C5C",
-  error: "#B3261E",
-  success: "#388E3C",
-  inputBg: "#F9F6F6",
-  inputBorder: "#BFA5A5",
-  inputFocus: "#531A1A",
+  primary: "#D4AF37", // Luxury Gold
+  primaryDark: "#A67C00", // Darker Gold
+  primaryLight: "#F4CD68", // Lighter Gold
+  secondary: "#0F0F0F", // Rich Black
+  background: "#FFFFFF", // White
+  surface: "#F8F8F8", // Off-White
+  surfaceLight: "#F0F0F0", // Light Gray
+  text: "#0F0F0F", // Rich Black for text
+  textMuted: "#6D6D6D", // Muted Gray
+  error: "#B00020", // Deep Red
+  success: "#006400", // Deep Green
+  inputBg: "#FFFFFF", // White
+  inputBorder: "#D4AF37", // Gold for borders
+  inputFocus: "#A67C00", // Darker Gold for focus
 };
 
 interface OrderItem {
@@ -190,7 +190,7 @@ export default function OrdersPage() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 pt-18">
       {/* Header with animation */}
       <div className="mb-6 animate-fade-in-up">
         <div className="flex items-center mb-3 group">

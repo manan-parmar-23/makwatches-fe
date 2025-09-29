@@ -30,20 +30,21 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://localhost:8080";
 
 // Color constants
 const COLORS = {
-  primary: "#531A1A",
-  primaryDark: "#3B1212",
-  primaryLight: "#A45A5A",
-  secondary: "#BFA5A5",
+  primary: "#1A1A1A",
+  primaryDark: "#000000",
+  primaryLight: "#232323",
+  accent: "#C6A664",
+  secondary: "#F5F5F5",
   background: "#FFFFFF",
   surface: "#F5F5F5",
   surfaceLight: "#E5E5E5",
-  text: "#2D1B1B",
-  textMuted: "#7C5C5C",
-  error: "#B3261E",
-  success: "#388E3C",
-  inputBg: "#F9F6F6",
-  inputBorder: "#BFA5A5",
-  inputFocus: "#531A1A",
+  text: "#262626",
+  textMuted: "#737373",
+  error: "#EF4444",
+  success: "#22C55E",
+  inputBg: "#FAFAFA",
+  inputBorder: "#E5E5E5",
+  inputFocus: "#C6A664",
 };
 
 // Utility to resolve any token (customer/admin) for auth calls

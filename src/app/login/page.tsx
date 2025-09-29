@@ -3,22 +3,23 @@
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-// Professional maroon palette
+// Mak Watches brand palette (black/gold/off-white)
 const COLORS = {
-  primary: "#531A1A", // Deep maroon
-  primaryDark: "#3B1212", // Darker shade
-  primaryLight: "#A45A5A", // Lighter shade
-  secondary: "#BFA5A5", // Soft accent
-  background: "#FFFFFF", // Clean white
-  surface: "#F5F5F5", // Soft gray
+  primary: "#1A1A1A", // Deep black
+  primaryDark: "#000000", // Pure black
+  primaryLight: "#232323", // Near-black
+  accent: "#C6A664", // Gold accent
+  secondary: "#F5F5F5", // Off white (surfaces)
+  background: "#FFFFFF", // Page background
+  surface: "#F5F5F5", // Cards/surfaces
   surfaceLight: "#E5E5E5",
-  text: "#2D1B1B", // Deep brown for text
-  textMuted: "#7C5C5C",
-  error: "#B3261E",
-  success: "#388E3C",
-  inputBg: "#F9F6F6",
-  inputBorder: "#BFA5A5",
-  inputFocus: "#531A1A",
+  text: "#262626", // Gray-800-ish for readability
+  textMuted: "#737373", // Gray-500
+  error: "#EF4444",
+  success: "#22C55E",
+  inputBg: "#FAFAFA",
+  inputBorder: "#E5E5E5",
+  inputFocus: "#C6A664", // Focus ring in gold
 };
 
 export default function CustomerAuthPage() {
@@ -306,14 +307,18 @@ export default function CustomerAuthPage() {
                 type="button"
                 onClick={() => {
                   // Redirect to backend Google OAuth start endpoint
-                  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080/";
+                  const base =
+                    process.env.NEXT_PUBLIC_API_BASE_URL ||
+                    "http://localhost:8080/";
                   // Ensure trailing slash handling
-                  const url = base.endsWith("/") ? `${base}auth/google` : `${base}/auth/google`;
+                  const url = base.endsWith("/")
+                    ? `${base}auth/google`
+                    : `${base}/auth/google`;
                   window.location.href = url;
                 }}
                 className="w-full py-3 font-semibold rounded-lg flex items-center justify-center space-x-3 border transition-all duration-200 hover:shadow-lg"
                 style={{
-                  background: '#fff',
+                  background: "#fff",
                   color: COLORS.text,
                   borderColor: COLORS.inputBorder,
                 }}
@@ -323,10 +328,22 @@ export default function CustomerAuthPage() {
                   viewBox="0 0 48 48"
                   className="w-5 h-5"
                 >
-                  <path fill="#EA4335" d="M24 9.5c3.54 0 6.25 1.53 8.12 2.78l6-5.9C34.5 3.6 29.58 1.5 24 1.5 14.74 1.5 6.99 7.2 3.69 15.22l7.4 5.73C12.9 14.02 17.95 9.5 24 9.5z" />
-                  <path fill="#34A853" d="M46.5 24.5c0-1.36-.12-2.37-.37-3.4H24v6.4h12.73c-.54 3.2-2.86 6-6.11 7.78l7.44 5.77C43.7 36.7 46.5 31.99 46.5 24.5z" />
-                  <path fill="#4A90E2" d="M10.09 29.95A14.99 14.99 0 0 1 9.5 24c0-1.46.25-2.87.7-4.17L3 14.1A23 23 0 0 0 0 24c0 3.7.89 7.18 2.47 10.25l7.62-4.3z" />
-                  <path fill="#FBBC05" d="M24 46.5c6.11 0 11.25-2.02 15-5.48l-7.44-5.77C29.94 35.9 27.17 37 24 37c-6.05 0-11.1-4.52-12.91-10.95l-7.4 5.73C6.99 40.8 14.74 46.5 24 46.5z" />
+                  <path
+                    fill="#EA4335"
+                    d="M24 9.5c3.54 0 6.25 1.53 8.12 2.78l6-5.9C34.5 3.6 29.58 1.5 24 1.5 14.74 1.5 6.99 7.2 3.69 15.22l7.4 5.73C12.9 14.02 17.95 9.5 24 9.5z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M46.5 24.5c0-1.36-.12-2.37-.37-3.4H24v6.4h12.73c-.54 3.2-2.86 6-6.11 7.78l7.44 5.77C43.7 36.7 46.5 31.99 46.5 24.5z"
+                  />
+                  <path
+                    fill="#4A90E2"
+                    d="M10.09 29.95A14.99 14.99 0 0 1 9.5 24c0-1.46.25-2.87.7-4.17L3 14.1A23 23 0 0 0 0 24c0 3.7.89 7.18 2.47 10.25l7.62-4.3z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M24 46.5c6.11 0 11.25-2.02 15-5.48l-7.44-5.77C29.94 35.9 27.17 37 24 37c-6.05 0-11.1-4.52-12.91-10.95l-7.4 5.73C6.99 40.8 14.74 46.5 24 46.5z"
+                  />
                 </svg>
                 <span>Continue with Google</span>
               </button>

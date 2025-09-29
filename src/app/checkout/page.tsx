@@ -3,19 +3,20 @@
 import { useEffect, useState, useCallback } from "react";
 import { useAuth } from "@/context/AuthContext";
 
-// --- REPLACED: COLORS with a light, neutral palette ---
+// --- Mak Watches brand palette (black/white/gold) ---
 const COLORS = {
-  primary: "#6B2A2A", // warm brand accent
-  primaryDark: "#421616",
-  primaryLight: "#A65A5A",
-  secondary: "#E6DFDB",
-  background: "#FAFAFB", // very light
-  surface: "#FFFFFF", // card background
-  surfaceLight: "#F3F4F6", // subtle borders / dividers
-  text: "#0F172A", // dark neutral
-  textMuted: "#6B7280", // neutral muted
+  primary: "#1A1A1A",
+  primaryDark: "#000000",
+  primaryLight: "#232323",
+  accent: "#C6A664",
+  secondary: "#F5F5F5",
+  background: "#FFFFFF",
+  surface: "#F5F5F5",
+  surfaceLight: "#E5E5E5",
+  text: "#262626",
+  textMuted: "#737373",
   error: "#EF4444",
-  success: "#10B981",
+  success: "#22C55E",
 };
 
 // ---- Types ----

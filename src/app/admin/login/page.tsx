@@ -1,22 +1,24 @@
 "use client";
 import React, { useState } from "react";
+import Image from "next/image";
 import { useAuth } from "@/context/AuthContext";
 
 const COLORS = {
-  primary: "#531A1A", // Deep maroon
-  primaryDark: "#3B1212", // Darker shade
-  primaryLight: "#A45A5A", // Lighter shade
-  secondary: "#BFA5A5", // Soft accent
-  background: "#FFFFFF", // Clean white
-  surface: "#F5F5F5", // Soft gray
+  primary: "#1A1A1A", // Deep black
+  primaryDark: "#000000", // Pure black
+  primaryLight: "#232323", // Near-black
+  accent: "#C6A664", // Gold
+  secondary: "#F5F5F5", // Off white
+  background: "#FFFFFF",
+  surface: "#F5F5F5",
   surfaceLight: "#E5E5E5",
-  text: "#2D1B1B", // Deep brown for text
-  textMuted: "#7C5C5C",
-  error: "#B3261E",
-  success: "#388E3C",
-  inputBg: "#F9F6F6",
-  inputBorder: "#BFA5A5",
-  inputFocus: "#531A1A",
+  text: "#262626",
+  textMuted: "#737373",
+  error: "#EF4444",
+  success: "#22C55E",
+  inputBg: "#FAFAFA",
+  inputBorder: "#E5E5E5",
+  inputFocus: "#C6A664",
 };
 
 export default function AdminAuthPage() {
@@ -83,14 +85,18 @@ export default function AdminAuthPage() {
         >
           {/* Header */}
           <div className="text-center mb-8">
-            {/* Logo/Icon placeholder */}
+            {/* Logo/Icon */}
             <div
-              className="w-16 h-16 mx-auto rounded-2xl mb-6 flex items-center justify-center transform transition-transform duration-300 hover:rotate-6"
+              className="w-16 h-16 mx-auto rounded-2xl mb-6 flex items-center justify-center transform transition-transform duration-300 hover:rotate-6 overflow-hidden"
               style={{ backgroundColor: `${COLORS.primary}10` }}
             >
-              <div
-                className="w-8 h-8 rounded-lg"
-                style={{ backgroundColor: COLORS.primary }}
+              <Image
+                src="/mak-logo.png"
+                alt="MAK Logo"
+                width={48}
+                height={48}
+                className="object-contain"
+                priority
               />
             </div>
 
