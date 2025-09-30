@@ -108,25 +108,79 @@ function AdminDashboardPage() {
     async function fetchStats() {
       setLoading(true);
       try {
-        const [usersRes, ordersRes, productsRes] = await Promise.all([
-          api.get("/admin/accounts"),
+        // Helper to read a list from different response shapes
+        const extractList = (payload: unknown): unknown[] => {
+          if (!payload) return [];
+          const d = (payload as { data?: unknown }).data ?? payload;
+          if (Array.isArray(d)) return d as unknown[];
+          if (
+            d &&
+            typeof d === "object" &&
+            Array.isArray((d as { data?: unknown[] }).data)
+          )
+            return (d as { data: unknown[] }).data;
+          if (
+            d &&
+            typeof d === "object" &&
+            Array.isArray((d as { users?: unknown[] }).users)
+          )
+            return (d as { users: unknown[] }).users;
+          if (
+            d &&
+            typeof d === "object" &&
+            Array.isArray((d as { accounts?: unknown[] }).accounts)
+          )
+            return (d as { accounts: unknown[] }).accounts;
+          if (
+            d &&
+            typeof d === "object" &&
+            Array.isArray((d as { items?: unknown[] }).items)
+          )
+            return (d as { items: unknown[] }).items;
+          return [];
+        };
+
+        // Try multiple endpoints to fetch users, as backends may vary
+        const userEndpoints = [
+          "/admin/accounts",
+          "/admin/users",
+          "/admin/customers",
+          "/accounts",
+          "/users",
+          "/customers",
+        ];
+
+        let users: unknown[] = [];
+        for (const ep of userEndpoints) {
+          try {
+            const res = await api.get(ep);
+            const list = extractList(res?.data);
+            if (Array.isArray(list) && list.length >= 0) {
+              users = list;
+              break;
+            }
+          } catch {
+            // keep trying next endpoint
+          }
+        }
+
+        const [ordersRes, productsRes] = await Promise.all([
           api.get("/orders"),
           api.get("/products"),
         ]);
 
-        const users = usersRes.data.data || [];
-        const orders = ordersRes.data.data || [];
-        const products = productsRes.data.data || [];
+        const orders = extractList(ordersRes?.data) as unknown[] as Order[];
+        const products = extractList(productsRes?.data) as unknown[];
 
-        const revenue = orders.reduce(
-          (sum: number, o: Order) => sum + (o.total || 0),
+        const revenue: number = orders.reduce(
+          (sum, o) => sum + (o.total || 0),
           0
         );
 
         setStats([
           {
             name: "Total Users",
-            value: users.length.toLocaleString(),
+            value: (users?.length ?? 0).toLocaleString(),
             icon: UserGroupIcon,
             color: "from-blue-500/10 to-blue-600/10",
             iconColor: "text-blue-600",
@@ -551,7 +605,7 @@ function AdminDashboardPage() {
                           >
                             <UserGroupIcon
                               className="w-3 h-3 sm:w-4 sm:h-4"
-                              style={{ color: COLORS.primary }}
+                              style={{ color: "white" }}
                             />
                           </div>
                           <span

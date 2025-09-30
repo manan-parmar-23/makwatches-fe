@@ -1,10 +1,16 @@
 import Image from "next/image";
 import { motion, AnimatePresence, PanInfo } from "framer-motion";
-import { useScrollTo } from "@/hooks/useLenis";
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useRouter } from "next/navigation";
+import type { HeroSlide } from "@/types/home-content";
+import {
+  fetchPublicProductById,
+  fetchPublicProducts,
+  ProductQueryParams,
+} from "@/utils/api";
 
-// Product data structure
-const watchProducts = [
+// Fallback static data (preserves existing design)
+const fallbackProducts = [
   {
     id: 1,
     name: "MAK Watches",
@@ -54,35 +60,94 @@ const watchProducts = [
     glowColor: "from-green-500/20",
   },
 ];
+interface HeroContentProps {
+  slides?: HeroSlide[];
+}
 
-function HeroContent() {
-  const { scrollTo } = useScrollTo();
+function HeroContent({ slides }: HeroContentProps) {
+  const router = useRouter();
   const [currentIndex, setCurrentIndex] = useState(0);
   // autoplay always runs; removed pause-on-hover behavior and its state setter
   const [direction, setDirection] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const currentProduct = watchProducts[currentIndex];
-  const nextIndex = (currentIndex + 1) % watchProducts.length;
-  const nextProduct = watchProducts[nextIndex];
+  // Map dynamic slides to the local view model used by this component
+  const products =
+    slides && slides.length
+      ? slides.map((s, i) => ({
+          id: i + 1,
+          name: s.title || "MAK Watches",
+          subtitle: s.subtitle || "",
+          price: s.price || "",
+          description: s.description || "",
+          image: s.image || "/black-image.png",
+          features:
+            s.features && s.features.length
+              ? s.features
+              : ["Water Resistant", "Swiss Movement", "2 Year Warranty"],
+          gradient: s.gradient || "from-amber-600 to-transparent",
+          glowColor: s.glowColor || "from-amber-500/20",
+        }))
+      : fallbackProducts;
 
-  const handleShopNow = () => {
-    scrollTo("#products", { duration: 1.5 });
+  const currentProduct = products[currentIndex];
+  const nextIndex = (currentIndex + 1) % products.length;
+  const nextProduct = products[nextIndex];
+
+  const handleShopNow = async () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    try {
+      // Try using hero slide id as product id (verify to avoid 404)
+      const slideId =
+        slides && slides.length
+          ? slides[currentIndex % slides.length]?.id
+          : undefined;
+      if (slideId) {
+        try {
+          await fetchPublicProductById(slideId);
+          router.push(`/product_details?id=${encodeURIComponent(slideId)}`);
+          return;
+        } catch {
+          // fall through to fetch list
+        }
+      }
+
+      // Fallback: fetch first public product and use its id
+      try {
+        const params: ProductQueryParams = { page: 1, limit: 1 };
+        const { data } = await fetchPublicProducts(params);
+        const list = Array.isArray(data?.data)
+          ? (data.data as Array<{ id?: string }>)
+          : [];
+        const first = list.find((p) => typeof p?.id === "string")?.id;
+        if (first) {
+          router.push(`/product_details?id=${encodeURIComponent(first)}`);
+          return;
+        }
+      } catch {
+        // ignore and use generic page
+      }
+
+      // Final fallback: generic product details page
+      router.push(`/product_details`);
+    } finally {
+      setIsNavigating(false);
+    }
   };
 
   // Enhanced slide functions with faster timing
   const nextSlide = useCallback(() => {
     setDirection(1);
-    setCurrentIndex((prev) => (prev + 1) % watchProducts.length);
-  }, []);
+    setCurrentIndex((prev) => (prev + 1) % products.length);
+  }, [products.length]);
 
   const prevSlide = useCallback(() => {
     setDirection(-1);
-    setCurrentIndex(
-      (prev) => (prev - 1 + watchProducts.length) % watchProducts.length
-    );
-  }, []);
+    setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
+  }, [products.length]);
 
   // const goToSlide = useCallback(
   //   (index: number) => {
@@ -202,12 +267,12 @@ function HeroContent() {
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-16">
         <div
-          className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-4 items-center min-h-[calc(100vh-8rem)] ${
+          className={`grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center min-h-[calc(100vh-8rem)] ${
             isMobile ? "gap-4" : ""
           }`}
         >
           {/* Left Content */}
-          <div className="flex flex-col justify-center space-y-6 md:space-y-4 text-white order-2 lg:order-1 md:ml-40">
+          <div className="flex flex-col justify-center space-y-6 md:space-y-4 text-white order-2 lg:order-1 md:ml-30">
             {/* Brand Tag */}
             <AnimatePresence mode="wait">
               <motion.div
@@ -411,7 +476,7 @@ function HeroContent() {
               <motion.div
                 key={`preview-${nextIndex}`}
                 // Symmetric positioning and consistent sizing across breakpoints
-                className="absolute bottom-44 right-0 md:bottom-70 md:right-6 w-16 h-16 md:w-36 md:h-36 overflow-hidden cursor-pointer group"
+                className="absolute bottom-44 right-0 md:bottom-70 md:right-0 w-16 h-16 md:w-36 md:h-36 overflow-hidden cursor-pointer group"
                 initial={{ opacity: 0, scale: 0.85, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.85, y: 16 }}
@@ -442,7 +507,7 @@ function HeroContent() {
             <AnimatePresence>
               <motion.div
                 key={`preview-prev-${currentIndex}`}
-                className="absolute bottom-44 left-0 md:bottom-70 md:left-6 w-16 h-16 md:w-36 md:h-36 overflow-hidden cursor-pointer group"
+                className="absolute bottom-44 left-0 md:bottom-70 md:left-0 w-16 h-16 md:w-36 md:h-36 overflow-hidden cursor-pointer group"
                 initial={{ opacity: 0, scale: 0.85, y: 16 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.85, y: 16 }}
@@ -461,15 +526,13 @@ function HeroContent() {
                 <div className="relative w-full h-full p-1 md:p-2">
                   <Image
                     src={
-                      watchProducts[
-                        (currentIndex - 1 + watchProducts.length) %
-                          watchProducts.length
+                      products[
+                        (currentIndex - 1 + products.length) % products.length
                       ].image
                     }
                     alt={`Prev: ${
-                      watchProducts[
-                        (currentIndex - 1 + watchProducts.length) %
-                          watchProducts.length
+                      products[
+                        (currentIndex - 1 + products.length) % products.length
                       ].subtitle
                     }`}
                     fill
@@ -517,7 +580,7 @@ function HeroContent() {
       {/* Carousel Indicators
       <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
         <div className="flex items-center gap-3">
-          {watchProducts.map((_, index) => (
+          {products.map((_, index) => (
             <button
               key={index}
               onClick={() => goToSlide(index)}
@@ -549,7 +612,7 @@ function HeroContent() {
           animate={{
             width: isPlaying
               ? "100%"
-              : `${((currentIndex + 1) / watchProducts.length) * 100}%`,
+              : `${((currentIndex + 1) / products.length) * 100}%`,
           }}
           transition={{
             duration: isPlaying ? 4 : 0,

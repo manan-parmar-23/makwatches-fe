@@ -26,8 +26,8 @@ export default function WomenSubcategoryPage({
   params,
   searchParams,
 }: {
-  params: { subcategoryId: string };
-  searchParams?: { name?: string };
+  params: Promise<{ subcategoryId: string }>;
+  searchParams?: Promise<{ name?: string }>;
 }) {
   // unwrap possible promise-based params/searchParams using React.use()
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

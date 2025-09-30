@@ -1,6 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { XMarkIcon, ChevronDownIcon } from "@heroicons/react/24/outline";
+import {
+  XMarkIcon,
+  ChevronUpIcon,
+  AdjustmentsHorizontalIcon,
+} from "@heroicons/react/24/outline";
 
 type PriceRange = {
   min: number;
@@ -99,12 +103,41 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     currentFilters.watchFilters?.dialThickness
   );
 
+  // Update local state when currentFilters change
+  useEffect(() => {
+    setPriceRange(currentFilters.priceRange);
+    setSortBy(currentFilters.sortBy);
+    setInStock(currentFilters.inStock);
+    setSelectedBrands(currentFilters.watchFilters?.brands || []);
+    setGender(currentFilters.watchFilters?.gender);
+    setDialColor(currentFilters.watchFilters?.dialColor);
+    setDialShape(currentFilters.watchFilters?.dialShape);
+    setDialType(currentFilters.watchFilters?.dialType);
+    setStrapColor(currentFilters.watchFilters?.strapColor);
+    setStrapMaterial(currentFilters.watchFilters?.strapMaterial);
+    setStyle(currentFilters.watchFilters?.style);
+    setDialThickness(currentFilters.watchFilters?.dialThickness);
+  }, [currentFilters]);
+
+  // Lock background scroll when sidebar is open (mobile: scroll only the sidebar)
+  useEffect(() => {
+    if (!isOpen) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [isOpen]);
+
   const [expanded, setExpanded] = useState({
     price: true,
     sort: true,
     availability: true,
     brands: true,
-    gender: false,
+    gender: true,
     dialColor: false,
     dialShape: false,
     dialType: false,
@@ -168,6 +201,21 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
     });
   };
 
+  // Count active filters
+  const countActiveFilters = () => {
+    let count = 0;
+    if (selectedBrands.length > 0) count++;
+    if (gender) count++;
+    if (dialColor) count++;
+    if (dialShape) count++;
+    if (dialType) count++;
+    if (strapColor) count++;
+    if (strapMaterial) count++;
+    if (style) count++;
+    if (dialThickness) count++;
+    return count;
+  };
+
   return (
     <>
       {/* Overlay for mobile */}
@@ -177,7 +225,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="md:hidden fixed inset-0 bg-black/40 bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40"
             onClick={onClose}
           />
         )}
@@ -185,20 +233,26 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
 
       {/* Sidebar with luxury styling */}
       <motion.div
-        className="fixed md:sticky top-0 right-0 md:left-0 h-screen md:h-[calc(100vh-80px)] bg-white z-50 w-[85%] max-w-xs md:w-64 shadow-xl md:shadow-none flex flex-col border-l md:border-r border-amber-200"
-        initial={{ x: isOpen ? 0 : "100%" }}
+        className="fixed top-0 right-0 bg-white z-50 w-[90%] max-w-sm shadow-xl flex flex-col overflow-hidden border-l border-amber-200"
+        initial={{ x: "100%" }}
         animate={{ x: isOpen ? 0 : "100%" }}
         transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        style={{ display: isOpen ? "flex" : "none" }}
+        style={{ display: isOpen ? "flex" : "none", height: "100dvh" }}
       >
         <div className="p-5 border-b border-amber-100 bg-gradient-to-r from-amber-50 to-white flex-shrink-0">
           <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold tracking-tight font-serif text-amber-900">
-              Refine Selection
-            </h2>
+            <div>
+              <h2 className="text-xl font-bold text-amber-900 flex items-center gap-2">
+                <AdjustmentsHorizontalIcon className="w-5 h-5" />
+                Refine Selection
+              </h2>
+              <p className="text-xs text-amber-600 mt-1">
+                {countActiveFilters()} filters applied
+              </p>
+            </div>
             <button
               onClick={onClose}
-              className="md:hidden p-1.5 rounded-sm hover:bg-amber-50 transition-colors border border-amber-200"
+              className="p-2 rounded-full hover:bg-amber-50 transition-colors border border-amber-200"
               aria-label="Close filters"
             >
               <XMarkIcon className="w-5 h-5" />
@@ -207,17 +261,23 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
         </div>
 
         <div
-          className="overflow-y-auto flex-grow p-5 pb-8 space-y-8 overscroll-contain"
-          style={{ scrollbarWidth: "thin" }}
+          className="overflow-y-scroll flex-grow p-5 pb-8 space-y-7 overscroll-contain"
+          style={{
+            scrollbarWidth: "thin",
+            WebkitOverflowScrolling: "touch",
+            scrollbarGutter: "stable both-edges",
+          }}
+          onWheel={(e) => e.stopPropagation()}
+          onTouchMove={(e) => e.stopPropagation()}
         >
           {/* Price Range Filter with luxury styling */}
-          <div className="border-b border-amber-100 pb-5">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-semibold uppercase tracking-widest text-sm group py-1.5"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("price")}
               aria-expanded={expanded.price}
             >
-              <span className="group-hover:text-amber-600 transition-colors">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Price Range
               </span>
               <motion.div
@@ -225,7 +285,7 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                 transition={{ duration: 0.2 }}
                 className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -235,12 +295,34 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-3 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="space-y-4 overflow-hidden"
                 >
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="flex justify-between text-sm text-gray-600 mb-2">
+                    <span>₹{priceRange.min}</span>
+                    <span>₹{priceRange.max}</span>
+                  </div>
+
+                  <input
+                    type="range"
+                    min="0"
+                    max="10000"
+                    step="500"
+                    value={priceRange.max}
+                    onChange={(e) =>
+                      setPriceRange({
+                        ...priceRange,
+                        max: Number(e.target.value),
+                      })
+                    }
+                    className="w-full accent-amber-600 h-2 mt-1"
+                  />
+
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="text-sm text-gray-500">Min</label>
+                      <label className="text-xs text-gray-500 block mb-1">
+                        Min Price
+                      </label>
                       <input
                         type="number"
                         value={priceRange.min}
@@ -250,13 +332,15 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                             min: Number(e.target.value),
                           })
                         }
-                        className="w-full border border-amber-300 rounded px-2 py-2 mt-1 text-base"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         min="0"
                         max={priceRange.max}
                       />
                     </div>
                     <div>
-                      <label className="text-sm text-gray-500">Max</label>
+                      <label className="text-xs text-gray-500 block mb-1">
+                        Max Price
+                      </label>
                       <input
                         type="number"
                         value={priceRange.max}
@@ -266,43 +350,32 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                             max: Number(e.target.value),
                           })
                         }
-                        className="w-full border border-amber-300 rounded px-2 py-2 mt-1 text-base"
+                        className="w-full border border-amber-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-400 focus:border-transparent"
                         min={priceRange.min}
                       />
                     </div>
                   </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    value={priceRange.max}
-                    onChange={(e) =>
-                      setPriceRange({
-                        ...priceRange,
-                        max: Number(e.target.value),
-                      })
-                    }
-                    className="w-full accent-amber-600 h-2 mt-3"
-                    style={{ touchAction: "none" }}
-                  />
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Sort Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium py-1.5"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("sort")}
               aria-expanded={expanded.sort}
             >
-              <span>Sort By</span>
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
+                Sort By
+              </span>
               <motion.div
                 animate={{ rotate: expanded.sort ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -312,8 +385,8 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="space-y-3 overflow-hidden"
                 >
                   {availableFilters.sortOptions.map((option) => (
                     <div key={option.value} className="flex items-center">
@@ -324,9 +397,12 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                         value={option.value}
                         checked={sortBy === option.value}
                         onChange={(e) => setSortBy(e.target.value)}
-                        className="mr-2"
+                        className="text-amber-600 border-amber-300 focus:ring-amber-400"
                       />
-                      <label htmlFor={`sort-${option.value}`}>
+                      <label
+                        htmlFor={`sort-${option.value}`}
+                        className="ml-2 text-sm text-gray-700"
+                      >
                         {option.label}
                       </label>
                     </div>
@@ -336,63 +412,22 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
             </AnimatePresence>
           </div>
 
-          {/* Availability Filter */}
-          <div className="border-b border-amber-100 pb-4">
-            <button
-              className="flex items-center justify-between w-full text-left font-medium py-1.5"
-              onClick={() => toggleSection("availability")}
-              aria-expanded={expanded.availability}
-            >
-              <span>Availability</span>
-              <motion.div
-                animate={{ rotate: expanded.availability ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-              >
-                <ChevronDownIcon className="w-4 h-4" />
-              </motion.div>
-            </button>
-
-            <AnimatePresence>
-              {expanded.availability && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
-                >
-                  <div className="flex items-center py-1">
-                    <input
-                      type="checkbox"
-                      id="in-stock"
-                      checked={inStock}
-                      onChange={(e) => setInStock(e.target.checked)}
-                      className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500 h-4 w-4"
-                    />
-                    <label htmlFor="in-stock" className="flex-grow py-1">
-                      In Stock Only
-                    </label>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-
           {/* Brands Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("brands")}
               aria-expanded={expanded.brands}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Brands
               </span>
               <motion.div
                 animate={{ rotate: expanded.brands ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -402,63 +437,67 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.brands || [
-                      "MOVADA",
-                      "BALMAIN",
-                      "GUESS",
-                      "VERSACE",
-                      "TITAN",
-                      "FOSSIL",
-                    ]
-                  ).map((brand) => (
-                    <div
-                      key={brand}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="checkbox"
-                        id={`brand-${brand}`}
-                        checked={selectedBrands.includes(brand)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedBrands([...selectedBrands, brand]);
-                          } else {
-                            setSelectedBrands(
-                              selectedBrands.filter((b) => b !== brand)
-                            );
-                          }
-                        }}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label htmlFor={`brand-${brand}`} className="text-sm">
-                        {brand}
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      availableFilters.brands || [
+                        "MOVADA",
+                        "BALMAIN",
+                        "GUESS",
+                        "VERSACE",
+                        "TITAN",
+                        "FOSSIL",
+                      ]
+                    ).map((brand) => (
+                      <label
+                        key={brand}
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg border transition-all cursor-pointer text-center ${
+                          selectedBrands.includes(brand)
+                            ? "bg-amber-500 text-white border-amber-500"
+                            : "border-amber-200 hover:border-amber-300 text-gray-700"
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedBrands.includes(brand)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedBrands([...selectedBrands, brand]);
+                            } else {
+                              setSelectedBrands(
+                                selectedBrands.filter((b) => b !== brand)
+                              );
+                            }
+                          }}
+                          className="sr-only"
+                        />
+                        <span className="text-sm">{brand}</span>
                       </label>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Gender Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("gender")}
               aria-expanded={expanded.gender}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Gender
               </span>
               <motion.div
                 animate={{ rotate: expanded.gender ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -468,52 +507,51 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(availableFilters.genders || ["Men", "Women", "Unisex"]).map(
-                    (genderOption) => (
-                      <div
+                  <div className="flex justify-between gap-3">
+                    {(
+                      availableFilters.genders || ["Men", "Women", "Unisex"]
+                    ).map((genderOption) => (
+                      <button
                         key={genderOption}
-                        className="flex items-center hover:text-amber-700 transition-colors"
+                        onClick={() =>
+                          setGender(
+                            gender === genderOption ? undefined : genderOption
+                          )
+                        }
+                        className={`flex-1 flex items-center justify-center px-3 py-2.5 rounded-lg border transition-all ${
+                          gender === genderOption
+                            ? "bg-amber-500 text-white border-amber-500 font-medium"
+                            : "border-amber-200 hover:border-amber-300 text-gray-700"
+                        }`}
                       >
-                        <input
-                          type="radio"
-                          id={`gender-${genderOption}`}
-                          name="gender"
-                          checked={gender === genderOption}
-                          onChange={() => setGender(genderOption)}
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <label
-                          htmlFor={`gender-${genderOption}`}
-                          className="text-sm"
-                        >
-                          {genderOption}
-                        </label>
-                      </div>
-                    )
-                  )}
+                        <span className="text-sm">{genderOption}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Dial Color Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("dialColor")}
               aria-expanded={expanded.dialColor}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Dial Color
               </span>
               <motion.div
                 animate={{ rotate: expanded.dialColor ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -523,59 +561,66 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.dialColors || [
-                      "Black",
-                      "White",
-                      "Blue",
-                      "Gold",
-                      "Silver",
-                      "Green",
-                    ]
-                  ).map((color) => (
-                    <div
-                      key={color}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        id={`dial-color-${color}`}
-                        name="dialColor"
-                        checked={dialColor === color}
-                        onChange={() => setDialColor(color)}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label
-                        htmlFor={`dial-color-${color}`}
-                        className="text-sm"
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      availableFilters.dialColors || [
+                        "Black",
+                        "White",
+                        "Blue",
+                        "Gold",
+                        "Silver",
+                        "Green",
+                      ]
+                    ).map((color) => (
+                      <button
+                        key={color}
+                        onClick={() =>
+                          setDialColor(dialColor === color ? undefined : color)
+                        }
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                          dialColor === color
+                            ? "bg-amber-50 border-amber-400 text-amber-900 shadow-sm"
+                            : "border-amber-100 hover:border-amber-200 text-gray-700"
+                        }`}
                       >
-                        {color}
-                      </label>
-                    </div>
-                  ))}
+                        <span
+                          className="w-6 h-6 rounded-full mb-1 border"
+                          style={{
+                            backgroundColor: color.toLowerCase(),
+                            boxShadow:
+                              dialColor === color
+                                ? "0 0 0 2px rgba(251, 191, 36, 0.6)"
+                                : "none",
+                          }}
+                        ></span>
+                        <span className="text-xs">{color}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Dial Shape Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("dialShape")}
               aria-expanded={expanded.dialShape}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Dial Shape
               </span>
               <motion.div
                 animate={{ rotate: expanded.dialShape ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -585,58 +630,55 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.dialShapes || [
-                      "Round",
-                      "Square",
-                      "Rectangle",
-                      "Oval",
-                      "Tonneau",
-                    ]
-                  ).map((shape) => (
-                    <div
-                      key={shape}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        id={`dial-shape-${shape}`}
-                        name="dialShape"
-                        checked={dialShape === shape}
-                        onChange={() => setDialShape(shape)}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label
-                        htmlFor={`dial-shape-${shape}`}
-                        className="text-sm"
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      availableFilters.dialShapes || [
+                        "Round",
+                        "Square",
+                        "Rectangle",
+                        "Oval",
+                        "Tonneau",
+                      ]
+                    ).map((shape) => (
+                      <button
+                        key={shape}
+                        onClick={() =>
+                          setDialShape(dialShape === shape ? undefined : shape)
+                        }
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg border transition-all ${
+                          dialShape === shape
+                            ? "bg-amber-500 text-white border-amber-500"
+                            : "border-amber-200 hover:border-amber-300 text-gray-700"
+                        }`}
                       >
-                        {shape}
-                      </label>
-                    </div>
-                  ))}
+                        <span className="text-sm">{shape}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Strap Color Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("strapColor")}
               aria-expanded={expanded.strapColor}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Strap Color
               </span>
               <motion.div
                 animate={{ rotate: expanded.strapColor ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -646,59 +688,68 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.strapColors || [
-                      "Black",
-                      "Brown",
-                      "Silver",
-                      "Gold",
-                      "Blue",
-                      "Green",
-                    ]
-                  ).map((color) => (
-                    <div
-                      key={color}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        id={`strap-color-${color}`}
-                        name="strapColor"
-                        checked={strapColor === color}
-                        onChange={() => setStrapColor(color)}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label
-                        htmlFor={`strap-color-${color}`}
-                        className="text-sm"
+                  <div className="grid grid-cols-3 gap-2">
+                    {(
+                      availableFilters.strapColors || [
+                        "Black",
+                        "Brown",
+                        "Silver",
+                        "Gold",
+                        "Blue",
+                        "Green",
+                      ]
+                    ).map((color) => (
+                      <button
+                        key={color}
+                        onClick={() =>
+                          setStrapColor(
+                            strapColor === color ? undefined : color
+                          )
+                        }
+                        className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                          strapColor === color
+                            ? "bg-amber-50 border-amber-400 text-amber-900 shadow-sm"
+                            : "border-amber-100 hover:border-amber-200 text-gray-700"
+                        }`}
                       >
-                        {color}
-                      </label>
-                    </div>
-                  ))}
+                        <span
+                          className="w-6 h-6 rounded-full mb-1 border"
+                          style={{
+                            backgroundColor: color.toLowerCase(),
+                            boxShadow:
+                              strapColor === color
+                                ? "0 0 0 2px rgba(251, 191, 36, 0.6)"
+                                : "none",
+                          }}
+                        ></span>
+                        <span className="text-xs">{color}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Strap Material Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("strapMaterial")}
               aria-expanded={expanded.strapMaterial}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Strap Material
               </span>
               <motion.div
                 animate={{ rotate: expanded.strapMaterial ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
+                className="text-amber-600"
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -708,59 +759,57 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.strapMaterials || [
-                      "Leather",
-                      "Metal",
-                      "Rubber",
-                      "Fabric",
-                      "Ceramic",
-                      "Silicone",
-                    ]
-                  ).map((material) => (
-                    <div
-                      key={material}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        id={`strap-material-${material}`}
-                        name="strapMaterial"
-                        checked={strapMaterial === material}
-                        onChange={() => setStrapMaterial(material)}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label
-                        htmlFor={`strap-material-${material}`}
-                        className="text-sm"
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      availableFilters.strapMaterials || [
+                        "Leather",
+                        "Metal",
+                        "Rubber",
+                        "Fabric",
+                        "Ceramic",
+                        "Silicone",
+                      ]
+                    ).map((material) => (
+                      <button
+                        key={material}
+                        onClick={() =>
+                          setStrapMaterial(
+                            strapMaterial === material ? undefined : material
+                          )
+                        }
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg border transition-all ${
+                          strapMaterial === material
+                            ? "bg-amber-500 text-white border-amber-500"
+                            : "border-amber-200 hover:border-amber-300 text-gray-700"
+                        }`}
                       >
-                        {material}
-                      </label>
-                    </div>
-                  ))}
+                        <span className="text-sm">{material}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
 
           {/* Style Filter */}
-          <div className="border-b border-amber-100 pb-4">
+          <div className="border-b border-amber-100 pb-6">
             <button
-              className="flex items-center justify-between w-full text-left font-medium"
+              className="flex items-center justify-between w-full text-left font-semibold text-amber-900 mb-3 group"
               onClick={() => toggleSection("style")}
               aria-expanded={expanded.style}
             >
-              <span className="font-medium text-amber-800 uppercase text-sm tracking-wider">
+              <span className="text-sm uppercase tracking-wider group-hover:text-amber-700 transition-colors">
                 Style
               </span>
               <motion.div
                 animate={{ rotate: expanded.style ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronDownIcon className="w-4 h-4" />
+                <ChevronUpIcon className="w-4 h-4" />
               </motion.div>
             </button>
 
@@ -770,59 +819,116 @@ const FilterSidebar: React.FC<FilterSidebarProps> = ({
                   initial={{ height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  className="mt-3 space-y-2 overflow-hidden"
+                  transition={{ duration: 0.3 }}
+                  className="overflow-hidden"
                 >
-                  {(
-                    availableFilters.styles || [
-                      "Casual",
-                      "Dress",
-                      "Sports",
-                      "Luxury",
-                      "Smart",
-                      "Vintage",
-                    ]
-                  ).map((styleOption) => (
-                    <div
-                      key={styleOption}
-                      className="flex items-center hover:text-amber-700 transition-colors"
-                    >
-                      <input
-                        type="radio"
-                        id={`style-${styleOption}`}
-                        name="style"
-                        checked={style === styleOption}
-                        onChange={() => setStyle(styleOption)}
-                        className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                      />
-                      <label
-                        htmlFor={`style-${styleOption}`}
-                        className="text-sm"
+                  <div className="grid grid-cols-2 gap-2">
+                    {(
+                      availableFilters.styles || [
+                        "Casual",
+                        "Dress",
+                        "Sports",
+                        "Luxury",
+                        "Smart",
+                        "Vintage",
+                      ]
+                    ).map((styleOption) => (
+                      <button
+                        key={styleOption}
+                        onClick={() =>
+                          setStyle(
+                            style === styleOption ? undefined : styleOption
+                          )
+                        }
+                        className={`flex items-center justify-center px-3 py-2 rounded-lg border transition-all ${
+                          style === styleOption
+                            ? "bg-amber-500 text-white border-amber-500"
+                            : "border-amber-200 hover:border-amber-300 text-gray-700"
+                        }`}
                       >
-                        {styleOption}
-                      </label>
-                    </div>
-                  ))}
+                        <span className="text-sm">{styleOption}</span>
+                      </button>
+                    ))}
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
+
+          {/* Selected Filters Summary */}
+          {countActiveFilters() > 0 && (
+            <div className="border-b border-amber-100 pb-6">
+              <h3 className="font-semibold text-amber-900 mb-3 text-sm uppercase tracking-wider">
+                Selected Filters
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedBrands.length > 0 && (
+                  <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                    Brands: {selectedBrands.length}
+                    <button
+                      onClick={() => setSelectedBrands([])}
+                      className="hover:text-amber-600 ml-1"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {gender && (
+                  <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                    {gender}
+                    <button
+                      onClick={() => setGender(undefined)}
+                      className="hover:text-amber-600 ml-1"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {dialColor && (
+                  <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                    {dialColor} Dial
+                    <button
+                      onClick={() => setDialColor(undefined)}
+                      className="hover:text-amber-600 ml-1"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {dialShape && (
+                  <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                    {dialShape} Shape
+                    <button
+                      onClick={() => setDialShape(undefined)}
+                      className="hover:text-amber-600 ml-1"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
+                {/* Add other filter chips as needed */}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Action Buttons - Fixed at bottom for mobile */}
-        <div className="p-5 pt-4 border-t border-amber-100 bg-white flex-shrink-0 md:border-t-0 md:p-0 md:mt-5 sticky bottom-0 shadow-[0_-1px_3px_rgba(0,0,0,0.1)]">
-          <div className="flex space-x-2">
+        {/* Action Buttons */}
+        <div
+          className="p-5 border-t border-amber-100 bg-white shadow-[0_-1px_3px_rgba(0,0,0,0.05)]"
+          style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}
+        >
+          <div className="flex space-x-3">
             <button
               onClick={applyFilters}
-              className="flex-1 bg-amber-600 text-white py-2 px-4 rounded hover:bg-amber-700 transition-colors shadow-md"
+              className="flex-1 bg-amber-600 text-white py-3 rounded-lg font-medium hover:bg-amber-700 transition-colors shadow-sm"
             >
               Apply Filters
             </button>
             <button
               onClick={resetFilters}
-              className="flex-1 border border-amber-300 py-2 px-4 rounded hover:bg-amber-50 transition-colors text-amber-800"
+              className="px-4 border border-amber-300 rounded-lg hover:bg-amber-50 transition-colors text-amber-800"
             >
-              Reset
+              <XMarkIcon className="h-5 w-5" />
             </button>
           </div>
         </div>

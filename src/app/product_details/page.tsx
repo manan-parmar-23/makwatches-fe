@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { fetchPublicProductById } from "@/utils/api";
@@ -28,7 +28,7 @@ const FALLBACK: DisplayProduct = {
   stock: 10,
 };
 
-export default function ProductDetailsPage() {
+function ProductDetailsInner() {
   const params = useSearchParams();
   const id = params.get("id");
   const [product, setProduct] = useState<DisplayProduct>(FALLBACK);
@@ -422,5 +422,24 @@ export default function ProductDetailsPage() {
         </>
       )}
     </main>
+  );
+}
+
+export default function ProductDetailsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="container mx-auto px-4 md:px-8 py-12 max-w-7xl text-gray-800 mt-10 md:mt-20 font-inter">
+          <div className="flex flex-col items-center justify-center min-h-[50vh]">
+            <div className="w-16 h-16 border-4 border-amber-200 border-t-amber-600 rounded-full animate-spin mb-4"></div>
+            <p className="text-amber-800 font-medium">
+              Loading product details...
+            </p>
+          </div>
+        </main>
+      }
+    >
+      <ProductDetailsInner />
+    </Suspense>
   );
 }

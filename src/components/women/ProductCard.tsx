@@ -4,8 +4,21 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
 
+// Shared product type for women components
+export interface WomenProduct {
+  id?: string;
+  name: string;
+  subtitle?: string;
+  price: string;
+  originalPrice?: string;
+  image: string;
+  subcategory?: string | null;
+  features?: string[];
+  discount?: string;
+}
+
 // Watch product data for women
-export const PRODUCTS = [
+export const PRODUCTS: WomenProduct[] = [
   {
     id: "1",
     name: "MAK Elegance Rose",
@@ -75,7 +88,7 @@ export const PRODUCTS = [
 ];
 
 interface ProductCardProps {
-  product: (typeof PRODUCTS)[0];
+  product: WomenProduct;
   index?: number;
 }
 

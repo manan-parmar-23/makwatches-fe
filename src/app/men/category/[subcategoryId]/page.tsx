@@ -27,8 +27,8 @@ export default function MenSubcategoryPage({
   params,
   searchParams,
 }: {
-  params: { subcategoryId: string };
-  searchParams?: { name?: string };
+  params: Promise<{ subcategoryId: string }>;
+  searchParams?: Promise<{ name?: string }>;
 }) {
   // For Next.js 14+ use React.use() to unwrap params (we use any to avoid TypeScript issues)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any

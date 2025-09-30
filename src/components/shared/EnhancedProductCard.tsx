@@ -29,7 +29,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      whileHover={{ y: -8, scale: 1.02 }}
+      whileHover={{ y: -4, scale: 1.02 }}
       className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
     >
       {/* Product Image */}
@@ -47,27 +47,19 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
 
             {/* Out of stock badge (subtle) */}
             {product.stock <= 0 && (
-              <div className="absolute top-3 left-3">
-                <span className="inline-block bg-white/85 text-red-600 border border-red-100 px-3 py-1 rounded-md font-medium shadow-sm">
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3">
+                <span className="inline-block bg-white/85 text-red-600 border border-red-100 px-2 sm:px-3 py-0.5 sm:py-1 text-xs sm:text-sm rounded-md font-medium shadow-sm">
                   Out of Stock
                 </span>
               </div>
             )}
-
-            {/* Sale tag - you can add this if you have sale prices */}
-            {/* {product.salePrice && product.salePrice < product.price && (
-              <div className="absolute top-2 left-2">
-                <div className="bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                  SALE
-                </div>
-              </div>
-            )} */}
           </div>
         </Link>
 
-        {/* Quick actions overlay (no dark background) */}
+        {/* Quick actions overlay - Works on both mobile and desktop */}
         <div className="absolute inset-0 bg-transparent transition-all duration-300 flex items-center justify-center opacity-0 group-hover:opacity-100 pointer-events-none group-hover:pointer-events-auto">
-          <div className="flex space-x-3 bg-black/80 backdrop-blur-md rounded-full p-3 shadow-xl">
+          {/* Tablet/Desktop view buttons */}
+          <div className="hidden sm:flex space-x-3 bg-black/80 backdrop-blur-md rounded-full p-3 shadow-xl">
             <motion.button
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.95 }}
@@ -102,6 +94,41 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
               )}
             </motion.button>
           </div>
+
+          {/* Mobile view buttons - Simplified */}
+          <div className="sm:hidden flex flex-col gap-2 absolute bottom-2 right-2">
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-md hover:bg-white transition-colors"
+              onClick={(e) => {
+                e.stopPropagation();
+                onQuickView();
+              }}
+              aria-label="Quick view"
+            >
+              <EyeIcon className="text-gray-900 w-4 h-4" />
+            </motion.button>
+
+            <motion.button
+              whileTap={{ scale: 0.95 }}
+              disabled={product.stock <= 0}
+              className={`p-2 rounded-full shadow-md transition-all duration-300 ${
+                product.stock <= 0
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : isInCart(product.id)
+                  ? "bg-green-500"
+                  : "bg-black"
+              }`}
+              onClick={handleAddToCart}
+              aria-label={isInCart(product.id) ? "In cart" : "Add to cart"}
+            >
+              {isInCart(product.id) ? (
+                <ShoppingBagSolid className="text-white w-4 h-4" />
+              ) : (
+                <ShoppingBagIcon className="text-white w-4 h-4" />
+              )}
+            </motion.button>
+          </div>
         </div>
 
         {/* Wishlist button */}
@@ -112,14 +139,14 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
 
       {/* Product Info */}
       <Link href={`/product_details?id=${product.id}`}>
-        <div className="p-4">
+        <div className="p-3 sm:p-4">
           {product.brand && (
             <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">
               {product.brand}
             </p>
           )}
 
-          <h3 className="font-medium text-gray-800 mb-1 line-clamp-1 hover:text-primary transition-colors">
+          <h3 className="text-sm sm:text-base font-medium text-gray-800 mb-1 line-clamp-1 hover:text-primary transition-colors">
             {product.name}
           </h3>
 
@@ -128,15 +155,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
           )}
 
           <div className="flex items-center justify-between mt-2">
-            <p className="text-primary font-semibold">
+            <p className="text-primary text-sm sm:text-base font-semibold">
               {formatPrice(product.price)}
             </p>
 
             {/* You can add star ratings here if available */}
-            {/* <div className="flex items-center">
-              <StarIcon className="w-4 h-4 text-yellow-400" />
-              <span className="text-sm text-gray-600 ml-1">4.5</span>
-            </div> */}
           </div>
         </div>
       </Link>

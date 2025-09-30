@@ -64,10 +64,10 @@ export default function HeroBanner() {
             transition={{ delay: 0.7, duration: 0.6 }}
           >
             <Link
-              href="/men/all"
+              href="/shop"
               className="group inline-flex items-center gap-3 bg-white/10 backdrop-blur-md text-white px-8 py-4 rounded-full border border-white/20 hover:bg-white hover:text-black transition-all duration-300 font-semibold text-sm md:text-base tracking-wide uppercase"
             >
-              <span>Explore Collection</span>
+              <span>Explore ALL Collection</span>
               <motion.svg
                 className="w-5 h-5"
                 fill="none"
@@ -86,15 +86,6 @@ export default function HeroBanner() {
             </Link>
           </motion.div>
         </div>
-      </div>
-
-      {/* Premium decorative elements */}
-      <div className="absolute top-6 right-6 md:top-12 md:right-12">
-        <motion.div
-          className="w-16 h-16 md:w-20 md:h-20 border-2 border-amber-400/30 rounded-full backdrop-blur-sm"
-          animate={{ rotate: 360 }}
-          transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-        />
       </div>
     </motion.div>
   );

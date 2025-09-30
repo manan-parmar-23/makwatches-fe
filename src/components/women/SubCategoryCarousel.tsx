@@ -1,10 +1,10 @@
-import ProductCard from "@/components/women/ProductCard";
+import ProductCard, { type WomenProduct } from "@/components/women/ProductCard";
 import ProductCardMobile from "@/components/women/ProductCardMobile";
 import { ProductQueryParams, fetchPublicProducts } from "@/utils/api";
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 
-export const PRODUCTS = [
+export const PRODUCTS: WomenProduct[] = [
   {
     id: undefined,
     name: "Black-blue T-shirt for women",
@@ -58,12 +58,12 @@ export default function SubcategoryCarousel({
   subcategoryId?: string;
   subcategoryName?: string;
   title?: string;
-  items?: Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }> | null;
+  items?: Array<WomenProduct> | null;
 }) {
   // use a different local state name to avoid shadowing the `items` prop
-  const [itemsState, setItemsState] = useState<Array<
-    (typeof PRODUCTS)[0] & { subcategory?: string | null }
-  > | null>(null);
+  const [itemsState, setItemsState] = useState<Array<WomenProduct> | null>(
+    null
+  );
   const carouselRef = useRef<HTMLDivElement>(null);
   const [scrollIndex, setScrollIndex] = useState(0);
   const [isMobile, setIsMobile] = useState(false);
@@ -79,25 +79,22 @@ export default function SubcategoryCarousel({
   };
 
   // Using useCallback to memoize the buildFinalList function
-  const buildFinalList = useCallback(
-    (source: Array<(typeof PRODUCTS)[0] & { subcategory?: string | null }>) => {
-      if (!Array.isArray(source) || source.length === 0) {
-        return PRODUCTS.map((p) => ({ ...p, subcategory: null }));
-      }
-      if (source.length < 5) {
-        const appended = [
-          ...source,
-          ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
-        ].slice(0, 5);
-        return appended.map((p) => ({
-          ...p,
-          subcategory: p.subcategory ?? null,
-        }));
-      }
-      return source;
-    },
-    []
-  );
+  const buildFinalList = useCallback((source: Array<WomenProduct>) => {
+    if (!Array.isArray(source) || source.length === 0) {
+      return PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+    }
+    if (source.length < 5) {
+      const appended = [
+        ...source,
+        ...PRODUCTS.map((p) => ({ ...p, subcategory: null })),
+      ].slice(0, 5);
+      return appended.map((p) => ({
+        ...p,
+        subcategory: p.subcategory ?? null,
+      }));
+    }
+    return source;
+  }, []);
 
   // If providedItems exist, use them (with fallback logic) and skip fetching
   useEffect(() => {
@@ -204,7 +201,7 @@ export default function SubcategoryCarousel({
                   ? p.images[0]
                   : "/placeholder.png",
               subcategory: sub,
-            } as (typeof PRODUCTS)[0] & { subcategory?: string | null };
+            } as WomenProduct;
           });
 
           const finalList = buildFinalList(transformed);

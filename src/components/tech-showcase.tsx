@@ -2,6 +2,10 @@
 import { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
+import type {
+  TechShowcaseCard,
+  TechShowcaseHighlight,
+} from "@/types/home-content";
 
 interface ProductCard {
   id: string;
@@ -14,7 +18,7 @@ interface ProductCard {
   color?: "amber" | "blue" | "gray";
 }
 
-const productCards: ProductCard[] = [
+const fallbackCards: ProductCard[] = [
   {
     id: "1",
     title: "MAK Classic",
@@ -41,7 +45,12 @@ const productCards: ProductCard[] = [
   },
 ];
 
-export default function TechShowcase() {
+interface TechShowcaseProps {
+  cards?: TechShowcaseCard[];
+  highlight?: TechShowcaseHighlight;
+}
+
+export default function TechShowcase({ cards, highlight }: TechShowcaseProps) {
   const [currentTime, setCurrentTime] = useState(new Date());
 
   useEffect(() => {
@@ -61,6 +70,38 @@ export default function TechShowcase() {
     });
   };
 
+  const toProductColor = (
+    color?: TechShowcaseCard["color"]
+  ): ProductCard["color"] => {
+    switch (color) {
+      case "amber":
+      case "blue":
+      case "gray":
+        return color;
+      case "slate":
+        return "gray";
+      default:
+        return "amber";
+    }
+  };
+
+  const productCards: ProductCard[] =
+    cards && cards.length
+      ? cards
+          .slice()
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((c) => ({
+            id: c.id,
+            title: c.title,
+            subtitle: c.subtitle,
+            image: c.image,
+            rating: c.rating,
+            reviewCount: c.reviewCount,
+            badge: c.badge,
+            color: toProductColor(c.color),
+          }))
+      : fallbackCards;
+
   return (
     <section className="bg-gradient-to-b from-gray-50 to-white py-16 md:py-24">
       <div className="container mx-auto px-4">
@@ -75,8 +116,8 @@ export default function TechShowcase() {
             Precision. Craftsmanship. Time.
           </h2>
           <p className="text-gray-600 text-lg md:text-xl max-w-2xl mx-auto">
-            MAK watches blend traditional watchmaking with modern materials and
-            engineering to deliver reliable performance and timeless style.
+            {highlight?.title ||
+              "MAK watches blend traditional watchmaking with modern materials and engineering to deliver reliable performance and timeless style."}
           </p>
         </motion.div>
 
@@ -140,13 +181,15 @@ export default function TechShowcase() {
               transition={{ duration: 0.8, delay: 0.3 }}
             >
               <div className="text-5xl md:text-7xl font-bold text-orange-500 mr-8">
-                8ATM
+                {highlight?.value || "8ATM"}
               </div>
               <div>
                 <div className="text-xl md:text-2xl font-semibold text-orange-500">
-                  Water Resistant
+                  {highlight?.title || "Water Resistant"}
                 </div>
-                <div className="text-lg text-orange-400">Up to 80 meters</div>
+                <div className="text-lg text-orange-400">
+                  {highlight?.subtitle || "Up to 80 meters"}
+                </div>
               </div>
             </motion.div>
           </div>

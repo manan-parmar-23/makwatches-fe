@@ -3,8 +3,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
+import type { WomenProduct } from "./ProductCard";
+
 // Watch product data for women's mobile
-export const PRODUCTS = [
+export const PRODUCTS: WomenProduct[] = [
   {
     id: "1",
     name: "MAK Elegance Rose",
@@ -74,7 +76,7 @@ export const PRODUCTS = [
 ];
 
 interface ProductCardMobileProps {
-  product: (typeof PRODUCTS)[0];
+  product: WomenProduct;
   index?: number;
 }
 

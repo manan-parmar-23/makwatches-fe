@@ -8,18 +8,43 @@ import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 
 const linkClass =
-  "uppercase font-bold text-xl tracking-wide text-accent transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
+  "uppercase font-bold text-xl tracking-wide text-black transition duration-200 ease-in-out hover:text-primary hover:underline underline-offset-4 hover:scale-105";
 
 // Mobile Navbar Component
 const MobileNavbar = () => {
   const [open, setOpen] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, role, logout } = useAuth();
 
   // refs to detect outside clicks
   const menuRef = useRef<HTMLDivElement | null>(null);
   const burgerRef = useRef<HTMLButtonElement | null>(null);
+
+  // Handle scroll visibility
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        // Always show at top of page
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past threshold - hide
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   // close menu when clicking outside the menu or hamburger
   useEffect(() => {
@@ -43,7 +68,12 @@ const MobileNavbar = () => {
   }, [open]);
 
   return (
-    <nav className="fixed top-0 left-0 w-full bg-secondary md:hidden shadow z-9999">
+    <motion.nav
+      className="fixed top-0 left-0 w-full bg-secondary md:hidden shadow z-9999"
+      initial={{ y: 0 }}
+      animate={{ y: isVisible ? 0 : -100 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+    >
       <div className="flex items-center justify-between px-4 py-2">
         {/* Logo */}
         <div className="flex items-center">
@@ -58,7 +88,7 @@ const MobileNavbar = () => {
         {/* Hamburger */}
         <motion.button
           ref={burgerRef}
-          className="text-accent focus:outline-none"
+          className="text-gray-700 focus:outline-none"
           onClick={() => setOpen(!open)}
           aria-label="Toggle menu"
           initial={false}
@@ -287,15 +317,41 @@ const MobileNavbar = () => {
           </motion.div>
         )}
       </AnimatePresence>
-    </nav>
+    </motion.nav>
   );
 };
 
 const Navbar = () => {
   const [showSearch, setShowSearch] = useState(false);
   const [showAccountMenu, setShowAccountMenu] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, role, logout } = useAuth();
   const pathname = usePathname();
+
+  // Handle scroll visibility for desktop
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
+      if (currentScrollY < 10) {
+        // Always show at top of page
+        setIsVisible(true);
+      } else if (currentScrollY > lastScrollY && currentScrollY > 100) {
+        // Scrolling down & past threshold - hide
+        setIsVisible(false);
+        setShowAccountMenu(false); // Close account menu when hiding
+      } else if (currentScrollY < lastScrollY) {
+        // Scrolling up - show
+        setIsVisible(true);
+      }
+
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [lastScrollY]);
 
   // Check if current route is admin
   const isAdminRoute = pathname?.startsWith("/admin");
@@ -308,7 +364,12 @@ const Navbar = () => {
   return (
     <>
       {/* Desktop Navbar */}
-      <nav className="fixed w-full bg-secondary hidden md:block shadow z-40">
+      <motion.nav
+        className="fixed w-full bg-secondary hidden md:block shadow z-40"
+        initial={{ y: 0 }}
+        animate={{ y: isVisible ? 0 : -100 }}
+        transition={{ duration: 0.3, ease: "easeInOut" }}
+      >
         <div className="max-w-screen-xl mx-auto flex items-center justify-between py-2 px-6">
           {/* Left menu */}
           <div className="flex gap-10">
@@ -465,7 +526,7 @@ const Navbar = () => {
             </motion.div>
           )}
         </AnimatePresence>
-      </nav>
+      </motion.nav>
       {/* Mobile Navbar */}
       <MobileNavbar />
     </>

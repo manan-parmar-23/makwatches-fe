@@ -138,7 +138,45 @@ export default function SettingsPage() {
         // Adjust the URL path since baseURL includes '/api' already
         const response = await api.get("admin/settings");
         if (response.data.success) {
-          setSettings(response.data.data);
+          const incoming = (response.data.data || {}) as Partial<Settings>;
+          // Normalize to avoid null/undefined arrays/objects causing runtime errors
+          const normalized: Settings = {
+            id: incoming.id,
+            storeName: incoming.storeName ?? "",
+            storeDescription: incoming.storeDescription ?? "",
+            contactEmail: incoming.contactEmail ?? "",
+            contactPhone: incoming.contactPhone ?? "",
+            address: incoming.address ?? "",
+            logo: incoming.logo ?? "",
+            currency: incoming.currency ?? "INR",
+            taxRate:
+              typeof incoming.taxRate === "number" ? incoming.taxRate : 18,
+            shippingMethods: Array.isArray(incoming.shippingMethods)
+              ? incoming.shippingMethods
+              : [],
+            paymentGateways: Array.isArray(incoming.paymentGateways)
+              ? incoming.paymentGateways
+              : [],
+            socialMedia: {
+              facebook: incoming.socialMedia?.facebook ?? "",
+              instagram: incoming.socialMedia?.instagram ?? "",
+              twitter: incoming.socialMedia?.twitter ?? "",
+              linkedin: incoming.socialMedia?.linkedin ?? "",
+              youtube: incoming.socialMedia?.youtube ?? "",
+            },
+            privacyPolicy: incoming.privacyPolicy ?? "",
+            termsOfService: incoming.termsOfService ?? "",
+            refundPolicy: incoming.refundPolicy ?? "",
+            enableRegistration:
+              typeof incoming.enableRegistration === "boolean"
+                ? incoming.enableRegistration
+                : true,
+            maintenanceMode:
+              typeof incoming.maintenanceMode === "boolean"
+                ? incoming.maintenanceMode
+                : false,
+          };
+          setSettings(normalized);
         }
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -200,7 +238,10 @@ export default function SettingsPage() {
     if (newShippingMethod.name && newShippingMethod.description) {
       setSettings({
         ...settings,
-        shippingMethods: [...settings.shippingMethods, newShippingMethod],
+        shippingMethods: [
+          ...(settings.shippingMethods ?? []),
+          newShippingMethod,
+        ],
       });
       setNewShippingMethod({
         name: "",
@@ -215,7 +256,7 @@ export default function SettingsPage() {
 
   // Remove shipping method
   const removeShippingMethod = (index: number) => {
-    const updatedMethods = [...settings.shippingMethods];
+    const updatedMethods = [...(settings.shippingMethods ?? [])];
     updatedMethods.splice(index, 1);
     setSettings({
       ...settings,
@@ -228,7 +269,10 @@ export default function SettingsPage() {
     if (newPaymentGateway.name && newPaymentGateway.description) {
       setSettings({
         ...settings,
-        paymentGateways: [...settings.paymentGateways, newPaymentGateway],
+        paymentGateways: [
+          ...(settings.paymentGateways ?? []),
+          newPaymentGateway,
+        ],
       });
       setNewPaymentGateway({
         name: "",
@@ -242,7 +286,7 @@ export default function SettingsPage() {
 
   // Remove payment gateway
   const removePaymentGateway = (index: number) => {
-    const updatedGateways = [...settings.paymentGateways];
+    const updatedGateways = [...(settings.paymentGateways ?? [])];
     updatedGateways.splice(index, 1);
     setSettings({
       ...settings,
@@ -252,7 +296,8 @@ export default function SettingsPage() {
 
   // Toggle shipping method enabled
   const toggleShippingMethod = (index: number) => {
-    const updatedMethods = [...settings.shippingMethods];
+    const updatedMethods = [...(settings.shippingMethods ?? [])];
+    if (!updatedMethods[index]) return;
     updatedMethods[index].enabled = !updatedMethods[index].enabled;
     setSettings({
       ...settings,
@@ -262,7 +307,8 @@ export default function SettingsPage() {
 
   // Toggle payment gateway enabled
   const togglePaymentGateway = (index: number) => {
-    const updatedGateways = [...settings.paymentGateways];
+    const updatedGateways = [...(settings.paymentGateways ?? [])];
+    if (!updatedGateways[index]) return;
     updatedGateways[index].enabled = !updatedGateways[index].enabled;
     setSettings({
       ...settings,

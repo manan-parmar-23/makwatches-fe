@@ -7,6 +7,7 @@ import HeroContent from "@/components/hero-content";
 import TechShowcase from "@/components/tech-showcase";
 import Collection from "@/components/collection";
 import { LogoLoop } from "@/components/LogoLoop";
+import { useHomeContent } from "@/hooks/useHomeContent";
 
 import Category from "@/components/category";
 
@@ -19,20 +20,25 @@ const demoLogos = [
 ];
 
 export default function Home() {
+  const { data } = useHomeContent();
+
   return (
     <>
       <section id="hero" className="relative">
-        <HeroContent />
+        <HeroContent slides={data?.heroSlides} />
       </section>
       <section className="px-4 py-8">
-        <Category />
+        <Category items={data?.categories} />
       </section>
 
       <section id="tech-showcase">
-        <TechShowcase />
+        <TechShowcase
+          cards={data?.techCards}
+          highlight={data?.highlight || undefined}
+        />
       </section>
       <section id="collections" className="px-4 py-8">
-        <Collection />
+        <Collection features={data?.collections} />
       </section>
       <section id="brands-logo" className="px-4 py-8">
         <LogoLoop

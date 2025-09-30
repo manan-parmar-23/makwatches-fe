@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import type { HomeCategoryCard } from "@/types/home-content";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -61,7 +62,7 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
               <h3 className="text-4xl sm:text-5xl lg:text-6xl font-black uppercase text-white mb-2 tracking-wider">
                 {title}
               </h3>
-              <p className="text-lg sm:text-xl text-white/90 font-medium mb-4">
+              <p className="text-lg sm:text-xl text-white/80 font-medium mb-4">
                 {subtitle}
               </p>
 
@@ -93,38 +94,51 @@ const CategoryCard: React.FC<CategoryCardProps> = ({
           </div>
 
           {/* Decorative Elements */}
-          <div className="absolute top-4 right-4 z-20">
+          {/* <div className="absolute top-4 right-4 z-20">
             <motion.div
               className="w-12 h-12 border-2 border-white/30 rounded-full backdrop-blur-sm"
               animate={{ rotate: 360 }}
               transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
             />
-          </div>
+          </div> */}
         </div>
       </Link>
     </motion.div>
   );
 };
 
-const Category: React.FC = () => {
-  const categories = [
-    {
-      title: "MEN",
-      subtitle: "Sophisticated Timepieces for Modern Gentlemen",
-      href: "/men",
-      imageSrc: "/categories/men.png",
-      bgGradient:
-        "bg-gradient-to-br from-slate-900/70 via-gray-800/50 to-black/80",
-    },
-    {
-      title: "WOMEN",
-      subtitle: "Elegant Designs for the Contemporary Woman",
-      href: "/women",
-      imageSrc: "/categories/image.png",
-      bgGradient:
-        "bg-gradient-to-br from-rose-800/70 via-pink-800/50 to-purple-900/70",
-    },
-  ];
+interface CategoryProps {
+  items?: HomeCategoryCard[];
+}
+
+const Category: React.FC<CategoryProps> = ({ items }) => {
+  const categories =
+    items && items.length
+      ? items.map((c) => ({
+          title: c.title,
+          subtitle: c.subtitle,
+          href: c.href,
+          imageSrc: c.image,
+          bgGradient: c.bgGradient,
+        }))
+      : [
+          {
+            title: "MEN",
+            subtitle: "Sophisticated Timepieces for Modern Gentlemen",
+            href: "/men",
+            imageSrc: "/categories/men.png",
+            bgGradient:
+              "bg-gradient-to-br from-slate-900/70 via-gray-800/50 to-black/80",
+          },
+          {
+            title: "WOMEN",
+            subtitle: "Elegant Designs for the Contemporary Woman",
+            href: "/women",
+            imageSrc: "/categories/image.png",
+            bgGradient:
+              "bg-gradient-to-br from-rose-800/70 via-pink-800/50 to-purple-900/70",
+          },
+        ];
 
   return (
     <div className="min-h-screen bg-transparent">

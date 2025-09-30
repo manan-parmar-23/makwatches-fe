@@ -2,8 +2,14 @@
 import React, { useRef, useEffect, useState } from "react";
 import Image from "next/image";
 import { fetchPublicProducts, ProductQueryParams } from "@/utils/api";
+import { useRouter } from "next/navigation";
 
-const PRODUCTS = [
+const PRODUCTS: Array<{
+  id?: string;
+  name: string;
+  price: string;
+  image: string;
+}> = [
   {
     name: "Black-blue T-shirt for men",
     price: "1799/-",
@@ -46,7 +52,13 @@ const COLORS = {
   progressActive: "#1a1a1a",
 };
 
-function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
+function ProductCard({
+  product,
+  onOpen,
+}: {
+  product: (typeof PRODUCTS)[0];
+  onOpen: (id?: string) => void;
+}) {
   return (
     <div
       className="flex flex-col items-center px-3 md:px-4"
@@ -54,7 +66,10 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
         minWidth: `calc(100%/3)`,
       }}
     >
-      <div className="relative flex flex-col items-center group w-full max-w-[320px]">
+      <div
+        className="relative flex flex-col items-center group w-full max-w-[320px] cursor-pointer"
+        onClick={() => onOpen(product.id)}
+      >
         {/* Modern card container */}
         <div
           className="relative w-full rounded-2xl overflow-hidden transition-all duration-500 ease-out group-hover:shadow-2xl"
@@ -126,6 +141,10 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
               background: COLORS.primary,
               boxShadow: `0 4px 12px ${COLORS.shadow}`,
             }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onOpen(product.id);
+            }}
           >
             <svg
               width="16"
@@ -144,7 +163,13 @@ function ProductCard({ product }: { product: (typeof PRODUCTS)[0] }) {
   );
 }
 
-function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
+function ProductCardMobile({
+  product,
+  onOpen,
+}: {
+  product: (typeof PRODUCTS)[0];
+  onOpen: (id?: string) => void;
+}) {
   return (
     <div
       className="flex flex-col items-center px-3"
@@ -153,7 +178,10 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
         maxWidth: "280px",
       }}
     >
-      <div className="relative flex flex-col items-center group w-full">
+      <div
+        className="relative flex flex-col items-center group w-full cursor-pointer"
+        onClick={() => onOpen(product.id)}
+      >
         {/* Mobile card container */}
         <div
           className="relative w-full rounded-xl overflow-hidden transition-all duration-400 ease-out active:scale-95"
@@ -211,6 +239,7 @@ function ProductCardMobile({ product }: { product: (typeof PRODUCTS)[0] }) {
 }
 
 export default function ProductCarousel() {
+  const router = useRouter();
   const [scrollIndex, setScrollIndex] = useState(0);
   const visibleCount = 3;
   const carouselRef = useRef<HTMLDivElement>(null);
@@ -326,6 +355,11 @@ export default function ProductCarousel() {
   }, []);
 
   const items = fetched || PRODUCTS.map((p) => ({ ...p, subcategory: null }));
+
+  const openDetails = (id?: string) => {
+    if (id) router.push(`/product_details?id=${encodeURIComponent(id)}`);
+    else router.push(`/product_details`);
+  };
 
   // Autoscroll logic (depends on items length)
   useEffect(() => {
@@ -454,9 +488,13 @@ export default function ProductCarousel() {
         >
           {items.map((product, idx) =>
             isMobile ? (
-              <ProductCardMobile key={idx} product={product} />
+              <ProductCardMobile
+                key={idx}
+                product={product}
+                onOpen={openDetails}
+              />
             ) : (
-              <ProductCard key={idx} product={product} />
+              <ProductCard key={idx} product={product} onOpen={openDetails} />
             )
           )}
         </div>
@@ -550,9 +588,7 @@ export default function ProductCarousel() {
             fontSize: "1rem",
             boxShadow: `0 4px 16px ${COLORS.primary}30`,
           }}
-          onClick={() => {
-            setScrollIndex(Math.max(0, items.length - visibleCount));
-          }}
+          onClick={() => (window.location.href = "/shop")}
         >
           <span className="relative z-10 flex items-center space-x-2">
             <span>Explore All Watches</span>

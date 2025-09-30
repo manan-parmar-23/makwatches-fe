@@ -278,7 +278,7 @@ export default function AccountsPage() {
                               className="w-4 h-4"
                               style={{
                                 color: account.id
-                                  ? COLORS.primary
+                                  ? COLORS.background
                                   : COLORS.error,
                               }}
                             />

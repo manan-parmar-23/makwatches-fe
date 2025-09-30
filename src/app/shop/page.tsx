@@ -1,12 +1,11 @@
 "use client";
-import Link from "next/link";
 
 import React, { useState, useEffect } from "react";
 import {
   FunnelIcon,
   XMarkIcon,
-  //ChevronRightIcon,
-  //HomeIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from "@heroicons/react/24/outline";
 import { productApi } from "@/services/api";
 import { Product, ProductFilters } from "@/types";
@@ -14,7 +13,7 @@ import EnhancedProductCard from "@/components/shared/EnhancedProductCard";
 import ProductQuickView from "@/components/shared/ProductQuickView";
 import EnhancedSearchBar from "@/components/shared/EnhancedSearchBar";
 import FilterSidebar from "@/components/shared/FilterSidebar";
-//import Link from "next/link";
+import { motion } from "framer-motion";
 
 export default function ShopPage() {
   // State for products and loading
@@ -56,6 +55,8 @@ export default function ShopPage() {
 
   // State for filter sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isDesktopSidebarCollapsed, setIsDesktopSidebarCollapsed] =
+    useState(false);
 
   // State for quick view modal
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -87,8 +88,6 @@ export default function ShopPage() {
 
     fetchProducts();
   }, [filters, searchQuery]);
-
-  // Note: Removed productsByCategory grouping to match reference design
 
   // Handle filter changes
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
@@ -219,527 +218,707 @@ export default function ShopPage() {
     });
   };
 
+  // Toggle desktop sidebar
+  const toggleDesktopSidebar = () => {
+    setIsDesktopSidebarCollapsed(!isDesktopSidebarCollapsed);
+  };
+
+  // Reset all filters function
+  const resetAllFilters = () => {
+    setFilters({
+      page: 1,
+      limit: 12,
+      sortBy: "createdAt",
+      order: "desc",
+    });
+    setSearchQuery("");
+  };
+
+  // Count active filters
+  const countActiveFilters = () => {
+    let count = 0;
+    if (filters.brand && filters.brand.length > 0) count++;
+    if (filters.gender) count++;
+    if (filters.dialColor) count++;
+    if (filters.dialShape) count++;
+    if (filters.dialType) count++;
+    if (filters.strapColor) count++;
+    if (filters.strapMaterial) count++;
+    if (filters.style) count++;
+    if (filters.dialThickness) count++;
+    if (filters.minPrice !== undefined || filters.maxPrice !== undefined)
+      count++;
+    return count;
+  };
+
+  const activeFilterCount = countActiveFilters();
+
   return (
     <main className="min-h-screen bg-gradient-to-b from-amber-50/30 to-white md:mt-22 mt-16 font-inter">
-      {/* Elegant header for shop page */}
-      <div className="bg-gradient-to-r from-accent/30 to-white border-b ">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <h1 className="text-2xl md:text-3xl font-inter font-bold text-gray-700 text-center">
+      {/* Elegant header with parallax effect - Same for mobile and desktop */}
+      <div className="bg-gradient-to-r from-amber-500/10 to-white border-b relative overflow-hidden">
+        <div className="absolute inset-0 bg-transparent opacity-10"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-10 relative">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-inter font-bold text-gray-800 text-center mb-2">
             Luxury Timepieces Collection
           </h1>
-          <p className="text-center text-gray-700 mt-2 text-sm md:text-base">
-            Discover the perfect expression of craftsmanship and elegance
+          <p className="text-center text-gray-600 mt-2 text-sm md:text-base max-w-2xl mx-auto">
+            Discover the perfect expression of craftsmanship and elegance. Each
+            timepiece tells a unique story of precision and sophistication.
           </p>
+
+          {/* Search Bar - Centered and elegant - Same on mobile and desktop */}
+          <div className="max-w-xl mx-auto mt-4 sm:mt-6">
+            <EnhancedSearchBar
+              onSearch={handleSearch}
+              initialValue={searchQuery}
+              placeholder="Search our luxury timepiece collection..."
+              className="bg-white/80 backdrop-blur-sm shadow-lg rounded-full"
+            />
+          </div>
         </div>
       </div>
 
-      {/* Main Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex gap-8">
-          {/* Left Sidebar - Filters */}
-          <div className="hidden lg:block w-64 flex-shrink-0">
-            <div className="bg-white rounded-lg shadow-md border border-amber-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-700 mb-4 font-inter border-b border-amber-200 pb-2">
-                REFINE SELECTION
-              </h3>
-
-              {/* Filter Categories */}
-              <div className="space-y-6">
-                {/* Search Bar */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Search
-                  </h4>
-                  <div className="space-y-2">
-                    <EnhancedSearchBar
-                      onSearch={handleSearch}
-                      initialValue={searchQuery}
-                      placeholder="Search timepieces..."
-                      className="w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500 rounded-md"
-                    />
+      {/* Main Container with Flexible Layout */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="flex">
+          {/* Collapsible Desktop Sidebar Toggle */}
+          <div className="hidden lg:flex">
+            <motion.div
+              initial={false}
+              animate={{ width: isDesktopSidebarCollapsed ? "0px" : "280px" }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden flex-shrink-0 mr-6"
+            >
+              <div className="w-[280px]">
+                <div className="bg-white rounded-xl shadow-md border border-amber-100 overflow-hidden">
+                  <div className="bg-gradient-to-r from-amber-50 to-white border-b border-amber-100 p-4 flex justify-between items-center">
+                    <h3 className="text-base font-semibold text-gray-800 font-inter">
+                      REFINE SELECTION
+                    </h3>
+                    {activeFilterCount > 0 && (
+                      <span className="bg-amber-500 text-white text-xs font-medium px-2 py-0.5 rounded-full">
+                        {activeFilterCount}
+                      </span>
+                    )}
                   </div>
-                </div>
 
-                {/* Price Range */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Price Range
-                  </h4>
-                  <div className="grid grid-cols-2 gap-2 mb-3">
+                  <div className="p-5 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto scrollbar-thin scrollbar-thumb-amber-200 scrollbar-track-transparent">
+                    {/* Search Bar */}
                     <div>
-                      <label className="text-xs text-gray-500">Min</label>
-                      <input
-                        type="number"
-                        value={filters.minPrice || 0}
-                        onChange={(e) =>
-                          handleFilterChange({
-                            minPrice: Number(e.target.value),
-                          })
-                        }
-                        className="w-full border rounded px-2 py-1 text-sm border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        min="0"
-                        max={filters.maxPrice || 10000}
-                      />
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Search
+                      </h4>
+                      <div className="space-y-2">
+                        <EnhancedSearchBar
+                          onSearch={handleSearch}
+                          initialValue={searchQuery}
+                          placeholder="Search timepieces..."
+                          className="w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500 rounded-md"
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-xs text-gray-500">Max</label>
-                      <input
-                        type="number"
-                        value={filters.maxPrice || 10000}
-                        onChange={(e) =>
-                          handleFilterChange({
-                            maxPrice: Number(e.target.value),
-                          })
-                        }
-                        className="w-full border rounded px-2 py-1 text-sm border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        min={filters.minPrice || 0}
-                      />
-                    </div>
-                  </div>
-                  <input
-                    type="range"
-                    min="0"
-                    max="10000"
-                    value={filters.maxPrice || 10000}
-                    onChange={(e) =>
-                      handleFilterChange({ maxPrice: Number(e.target.value) })
-                    }
-                    className="w-full accent-amber-600"
-                  />
-                </div>
 
-                {/* Brands */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Brands
-                  </h4>
-                  <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                    {watchFilterOptions.brands.map((brand) => (
-                      <label
-                        key={brand}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={(filters.brand || []).includes(brand)}
-                          onChange={(e) => {
-                            const currentBrands = filters.brand || [];
-                            if (e.target.checked) {
+                    {/* Price Range */}
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Price Range
+                      </h4>
+                      <div className="grid grid-cols-2 gap-2 mb-3">
+                        <div>
+                          <label className="text-xs text-gray-500">Min</label>
+                          <input
+                            type="number"
+                            value={filters.minPrice || 0}
+                            onChange={(e) =>
                               handleFilterChange({
-                                brand: [...currentBrands, brand],
-                              });
-                            } else {
-                              handleFilterChange({
-                                brand: currentBrands.filter((b) => b !== brand),
-                              });
+                                minPrice: Number(e.target.value),
+                              })
                             }
-                          }}
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{brand}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Gender */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Gender
-                  </h4>
-                  <div className="space-y-2">
-                    {watchFilterOptions.genders.map((genderOption) => (
-                      <label
-                        key={genderOption}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
+                            className="w-full border rounded px-2 py-1 text-sm border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            min="0"
+                            max={filters.maxPrice || 10000}
+                          />
+                        </div>
+                        <div>
+                          <label className="text-xs text-gray-500">Max</label>
+                          <input
+                            type="number"
+                            value={filters.maxPrice || 10000}
+                            onChange={(e) =>
+                              handleFilterChange({
+                                maxPrice: Number(e.target.value),
+                              })
+                            }
+                            className="w-full border rounded px-2 py-1 text-sm border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            min={filters.minPrice || 0}
+                          />
+                        </div>
+                      </div>
+                      <div className="mt-4">
                         <input
-                          type="radio"
-                          name="gender"
-                          checked={filters.gender === genderOption}
-                          onChange={() =>
-                            handleFilterChange({ gender: genderOption })
+                          type="range"
+                          min="0"
+                          max="10000"
+                          value={filters.maxPrice || 10000}
+                          onChange={(e) =>
+                            handleFilterChange({
+                              maxPrice: Number(e.target.value),
+                            })
                           }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                          className="w-full accent-amber-600"
                         />
-                        <span className="text-sm">{genderOption}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+                        <div className="flex justify-between text-xs text-gray-500 mt-1">
+                          <span>₹0</span>
+                          <span>₹10,000+</span>
+                        </div>
+                      </div>
+                    </div>
 
-                {/* Dial Color */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Dial Color
-                  </h4>
-                  <div className="space-y-2 max-h-36 overflow-y-auto pr-2">
-                    {watchFilterOptions.dialColors.map((color) => (
-                      <label
-                        key={color}
-                        className="flex items-center hover:text-amber-700 transition-colors"
+                    {/* Brands */}
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Brands
+                      </h4>
+                      <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
+                        {watchFilterOptions.brands.map((brand) => (
+                          <label
+                            key={brand}
+                            className="flex items-center hover:text-amber-700 transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={(filters.brand || []).includes(brand)}
+                              onChange={(e) => {
+                                const currentBrands = filters.brand || [];
+                                if (e.target.checked) {
+                                  handleFilterChange({
+                                    brand: [...currentBrands, brand],
+                                  });
+                                } else {
+                                  handleFilterChange({
+                                    brand: currentBrands.filter(
+                                      (b) => b !== brand
+                                    ),
+                                  });
+                                }
+                              }}
+                              className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                            />
+                            <span className="text-sm">{brand}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Gender */}
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Gender
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
+                        {watchFilterOptions.genders.map((genderOption) => (
+                          <button
+                            key={genderOption}
+                            onClick={() =>
+                              handleFilterChange({
+                                gender:
+                                  filters.gender === genderOption
+                                    ? undefined
+                                    : genderOption,
+                              })
+                            }
+                            className={`px-3 py-1.5 text-sm rounded-full border transition-all ${
+                              filters.gender === genderOption
+                                ? "bg-amber-500 text-white border-amber-500"
+                                : "border-amber-300 text-gray-700 hover:border-amber-400"
+                            }`}
+                          >
+                            {genderOption}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dial Color */}
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Dial Color
+                      </h4>
+                      <div className="grid grid-cols-3 gap-2">
+                        {watchFilterOptions.dialColors.map((color) => (
+                          <button
+                            key={color}
+                            onClick={() =>
+                              handleFilterChange({
+                                dialColor:
+                                  filters.dialColor === color
+                                    ? undefined
+                                    : color,
+                              })
+                            }
+                            className={`px-1 py-1 text-xs rounded border flex flex-col items-center transition-all ${
+                              filters.dialColor === color
+                                ? "bg-amber-500 text-white border-amber-500"
+                                : "border-amber-200 text-gray-700 hover:border-amber-400"
+                            }`}
+                          >
+                            <span
+                              className={`w-4 h-4 rounded-full mb-1 border border-gray-200`}
+                              style={{
+                                backgroundColor: color.toLowerCase(),
+                                boxShadow:
+                                  filters.dialColor === color
+                                    ? "0 0 0 2px rgba(245, 158, 11, 0.5)"
+                                    : "none",
+                              }}
+                            />
+                            <span>{color}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Dial Shape */}
+                    <div>
+                      <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                        Dial Shape
+                      </h4>
+                      <div className="space-y-2">
+                        {watchFilterOptions.dialShapes.map((shape) => (
+                          <label
+                            key={shape}
+                            className="flex items-center hover:text-amber-700 transition-colors"
+                          >
+                            <input
+                              type="radio"
+                              name="dialShape"
+                              checked={filters.dialShape === shape}
+                              onChange={() =>
+                                handleFilterChange({ dialShape: shape })
+                              }
+                              className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                            />
+                            <span className="text-sm">{shape}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Other filters collapsed to save space */}
+                    <details className="group">
+                      <summary className="flex cursor-pointer items-center justify-between font-medium text-amber-800 text-sm uppercase tracking-wider">
+                        <span>More Filters</span>
+                        <span className="transition group-open:rotate-180">
+                          <ChevronRightIcon className="h-4 w-4" />
+                        </span>
+                      </summary>
+
+                      <div className="mt-4 space-y-6">
+                        {/* Dial Type */}
+                        <div>
+                          <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                            Dial Type
+                          </h4>
+                          <div className="space-y-2">
+                            {watchFilterOptions.dialTypes.map((type) => (
+                              <label
+                                key={type}
+                                className="flex items-center hover:text-amber-700 transition-colors"
+                              >
+                                <input
+                                  type="radio"
+                                  name="dialType"
+                                  checked={filters.dialType === type}
+                                  onChange={() =>
+                                    handleFilterChange({ dialType: type })
+                                  }
+                                  className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                                />
+                                <span className="text-sm">{type}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Strap Color */}
+                        <div>
+                          <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                            Strap Color
+                          </h4>
+                          <div className="grid grid-cols-3 gap-2">
+                            {watchFilterOptions.strapColors.map((color) => (
+                              <button
+                                key={color}
+                                onClick={() =>
+                                  handleFilterChange({
+                                    strapColor:
+                                      filters.strapColor === color
+                                        ? undefined
+                                        : color,
+                                  })
+                                }
+                                className={`px-1 py-1 text-xs rounded border flex flex-col items-center transition-all ${
+                                  filters.strapColor === color
+                                    ? "bg-amber-500 text-white border-amber-500"
+                                    : "border-amber-200 text-gray-700 hover:border-amber-400"
+                                }`}
+                              >
+                                <span
+                                  className={`w-4 h-4 rounded-full mb-1 border border-gray-200`}
+                                  style={{
+                                    backgroundColor: color.toLowerCase(),
+                                    boxShadow:
+                                      filters.strapColor === color
+                                        ? "0 0 0 2px rgba(245, 158, 11, 0.5)"
+                                        : "none",
+                                  }}
+                                />
+                                <span>{color}</span>
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+
+                        {/* Strap Material */}
+                        <div>
+                          <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                            Strap Material
+                          </h4>
+                          <div className="space-y-2">
+                            {watchFilterOptions.strapMaterials.map(
+                              (material) => (
+                                <label
+                                  key={material}
+                                  className="flex items-center hover:text-amber-700 transition-colors"
+                                >
+                                  <input
+                                    type="radio"
+                                    name="strapMaterial"
+                                    checked={filters.strapMaterial === material}
+                                    onChange={() =>
+                                      handleFilterChange({
+                                        strapMaterial: material,
+                                      })
+                                    }
+                                    className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                                  />
+                                  <span className="text-sm">{material}</span>
+                                </label>
+                              )
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Style */}
+                        <div>
+                          <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
+                            Style
+                          </h4>
+                          <div className="space-y-2">
+                            {watchFilterOptions.styles.map((styleOption) => (
+                              <label
+                                key={styleOption}
+                                className="flex items-center hover:text-amber-700 transition-colors"
+                              >
+                                <input
+                                  type="radio"
+                                  name="style"
+                                  checked={filters.style === styleOption}
+                                  onChange={() =>
+                                    handleFilterChange({ style: styleOption })
+                                  }
+                                  className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                                />
+                                <span className="text-sm">{styleOption}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </details>
+
+                    {/* Clear Filters Button */}
+                    <div className="pt-4 border-t border-amber-200">
+                      <button
+                        onClick={resetAllFilters}
+                        className="w-full bg-amber-50 text-amber-800 text-sm font-medium py-2.5 px-4 rounded-md hover:bg-amber-100 transition-colors flex items-center justify-center gap-2"
                       >
-                        <input
-                          type="radio"
-                          name="dialColor"
-                          checked={filters.dialColor === color}
-                          onChange={() =>
-                            handleFilterChange({ dialColor: color })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{color}</span>
-                      </label>
-                    ))}
+                        <XMarkIcon className="h-4 w-4" />
+                        Clear All Filters
+                      </button>
+                    </div>
                   </div>
-                </div>
-
-                {/* Dial Shape */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Dial Shape
-                  </h4>
-                  <div className="space-y-2">
-                    {watchFilterOptions.dialShapes.map((shape) => (
-                      <label
-                        key={shape}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name="dialShape"
-                          checked={filters.dialShape === shape}
-                          onChange={() =>
-                            handleFilterChange({ dialShape: shape })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{shape}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Dial Type */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Dial Type
-                  </h4>
-                  <div className="space-y-2">
-                    {watchFilterOptions.dialTypes.map((type) => (
-                      <label
-                        key={type}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name="dialType"
-                          checked={filters.dialType === type}
-                          onChange={() =>
-                            handleFilterChange({ dialType: type })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{type}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Strap Color */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Strap Color
-                  </h4>
-                  <div className="space-y-2 max-h-36 overflow-y-auto pr-2">
-                    {watchFilterOptions.strapColors.map((color) => (
-                      <label
-                        key={color}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name="strapColor"
-                          checked={filters.strapColor === color}
-                          onChange={() =>
-                            handleFilterChange({ strapColor: color })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{color}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Strap Material */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Strap Material
-                  </h4>
-                  <div className="space-y-2">
-                    {watchFilterOptions.strapMaterials.map((material) => (
-                      <label
-                        key={material}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name="strapMaterial"
-                          checked={filters.strapMaterial === material}
-                          onChange={() =>
-                            handleFilterChange({ strapMaterial: material })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{material}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Style */}
-                <div>
-                  <h4 className="font-medium text-amber-800 mb-3 uppercase text-sm tracking-wider">
-                    Style
-                  </h4>
-                  <div className="space-y-2">
-                    {watchFilterOptions.styles.map((styleOption) => (
-                      <label
-                        key={styleOption}
-                        className="flex items-center hover:text-amber-700 transition-colors"
-                      >
-                        <input
-                          type="radio"
-                          name="style"
-                          checked={filters.style === styleOption}
-                          onChange={() =>
-                            handleFilterChange({ style: styleOption })
-                          }
-                          className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                        />
-                        <span className="text-sm">{styleOption}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Clear Filters Button */}
-                <div className="pt-4 border-t border-amber-200">
-                  <button
-                    onClick={() => {
-                      setFilters({
-                        page: 1,
-                        limit: 12,
-                        sortBy: "createdAt",
-                        order: "desc",
-                      });
-                      setSearchQuery("");
-                    }}
-                    className="w-full bg-amber-100 text-amber-800 text-xs font-semibold py-2.5 px-2 rounded shadow-sm hover:bg-amber-200 transition-colors uppercase tracking-wider"
-                  >
-                    Clear All Filters
-                  </button>
                 </div>
               </div>
+            </motion.div>
+
+            {/* Sidebar Collapse Button */}
+            <div className="mt-4">
+              <button
+                onClick={toggleDesktopSidebar}
+                className="bg-white border border-amber-200 rounded-full p-2 shadow-md hover:bg-amber-50 transition-colors"
+                aria-label={
+                  isDesktopSidebarCollapsed
+                    ? "Expand filters"
+                    : "Collapse filters"
+                }
+              >
+                {isDesktopSidebarCollapsed ? (
+                  <ChevronRightIcon className="h-5 w-5 text-amber-700" />
+                ) : (
+                  <ChevronLeftIcon className="h-5 w-5 text-amber-700" />
+                )}
+              </button>
             </div>
           </div>
 
-          {/* Right Content Area */}
+          {/* Right Content Area with Flex Grow */}
           <div className="flex-1">
-            {/* Search Bar */}
-            <div className="mb-6 bg-white p-4 rounded-lg shadow-md border border-amber-200 hidden">
-              <div className="relative">
-                <EnhancedSearchBar
-                  onSearch={handleSearch}
-                  initialValue={searchQuery}
-                  placeholder="Search our luxury timepiece collection..."
-                  className="w-full border-amber-300 focus:border-amber-500 focus:ring-amber-500 rounded-md pr-10"
-                />
-                <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-amber-600">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+            {/* Header with sorting and count - Improved mobile design */}
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
+              <div className="flex items-center justify-between w-full md:w-auto">
+                <div className="flex items-center space-x-3">
+                  {/* Mobile Filter Button - Enhanced with count */}
+                  <button
+                    onClick={() => setIsSidebarOpen(true)}
+                    className="lg:hidden flex items-center gap-2 px-3 py-2 border border-amber-300 rounded-lg text-sm hover:bg-amber-50 text-amber-800 shadow-sm"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={1.5}
-                      d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-                    />
-                  </svg>
+                    <FunnelIcon className="h-4 w-4" />
+                    <span className="font-medium">Filters</span>
+                    {activeFilterCount > 0 && (
+                      <span className="bg-amber-500 text-white text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </button>
+
+                  <div className="text-sm text-amber-700 font-medium">
+                    {isLoading
+                      ? "Discovering timepieces..."
+                      : `${totalProducts} Watches Found`}
+                  </div>
+                </div>
+
+                {/* Mobile Sort Dropdown - Positioned right */}
+                <div className="flex items-center lg:hidden">
+                  <select
+                    value={`${filters.sortBy}:${filters.order}`}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="pl-3 pr-8 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-700 appearance-none"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="pointer-events-none absolute right-4 flex items-center px-2">
+                    <ChevronRightIcon className="h-4 w-4 text-gray-500 rotate-90" />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Header with sorting and count */}
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
-              <div className="text-sm text-amber-700 font-medium">
-                {isLoading
-                  ? "Discovering luxury timepieces..."
-                  : `${Math.min(
-                      (filters.page || 1) * (filters.limit || 12),
-                      totalProducts
-                    )} of ${totalProducts} Timepieces`}
-              </div>
+              {/* Active Filters - Mobile view */}
+              {activeFilterCount > 0 && (
+                <div className="md:hidden overflow-x-auto scrollbar-hide -mx-4 px-4 py-1">
+                  <div className="flex gap-1.5 items-center whitespace-nowrap">
+                    {filters.brand && filters.brand.length > 0 && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        Brands: {filters.brand.length}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ brand: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.gender && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.gender}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ gender: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.dialColor && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.dialColor} Dial
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ dialColor: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.dialShape && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.dialShape} Shape
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ dialShape: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {(filters.minPrice !== undefined ||
+                      filters.maxPrice !== undefined) && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        ₹{filters.minPrice || 0} - ₹
+                        {filters.maxPrice || "10000+"}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({
+                              minPrice: undefined,
+                              maxPrice: undefined,
+                            })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
 
-              {/* Active Filters */}
-              {Object.entries(filters).some(
-                ([key, value]) =>
-                  [
-                    "brand",
-                    "gender",
-                    "dialColor",
-                    "dialShape",
-                    "dialType",
-                    "strapColor",
-                    "strapMaterial",
-                    "style",
-                    "dialThickness",
-                  ].includes(key) && value !== undefined
-              ) && (
-                <div className="flex flex-wrap gap-2 items-center">
-                  <span className="text-xs text-amber-800">
-                    Active filters:
-                  </span>
-                  {filters.brand && filters.brand.length > 0 && (
-                    <div className="bg-amber-100 px-2 py-1 rounded-md text-xs text-amber-800 flex items-center gap-1">
-                      Brands: {filters.brand.length}
-                      <button
-                        onClick={() => handleFilterChange({ brand: undefined })}
-                        className="hover:text-amber-600"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  {filters.gender && (
-                    <div className="bg-amber-100 px-2 py-1 rounded-md text-xs text-amber-800 flex items-center gap-1">
-                      {filters.gender}
-                      <button
-                        onClick={() =>
-                          handleFilterChange({ gender: undefined })
-                        }
-                        className="hover:text-amber-600"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  {filters.dialColor && (
-                    <div className="bg-amber-100 px-2 py-1 rounded-md text-xs text-amber-800 flex items-center gap-1">
-                      {filters.dialColor}
-                      <button
-                        onClick={() =>
-                          handleFilterChange({ dialColor: undefined })
-                        }
-                        className="hover:text-amber-600"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  {filters.dialShape && (
-                    <div className="bg-amber-100 px-2 py-1 rounded-md text-xs text-amber-800 flex items-center gap-1">
-                      {filters.dialShape} Shape
-                      <button
-                        onClick={() =>
-                          handleFilterChange({ dialShape: undefined })
-                        }
-                        className="hover:text-amber-600"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
-                  {(filters.minPrice !== undefined ||
-                    filters.maxPrice !== undefined) && (
-                    <div className="bg-amber-100 px-2 py-1 rounded-md text-xs text-amber-800 flex items-center gap-1">
-                      Price: ₹{filters.minPrice || 0} - ₹
-                      {filters.maxPrice || "10000+"}
-                      <button
-                        onClick={() =>
-                          handleFilterChange({
-                            minPrice: undefined,
-                            maxPrice: undefined,
-                          })
-                        }
-                        className="hover:text-amber-600"
-                      >
-                        <XMarkIcon className="h-3 w-3" />
-                      </button>
-                    </div>
-                  )}
+                    <button
+                      onClick={resetAllFilters}
+                      className="text-xs text-amber-700 hover:text-amber-900 flex items-center gap-0.5 underline-offset-2 bg-white/80 px-2.5 py-1 rounded-full border border-amber-100"
+                    >
+                      <XMarkIcon className="h-3 w-3" />
+                      Clear all
+                    </button>
+                  </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 md:gap-4">
-                {/* Active Filters Display */}
-                {Object.entries(filters).some(
-                  ([key, value]) =>
-                    [
-                      "brand",
-                      "gender",
-                      "dialColor",
-                      "dialShape",
-                      "dialType",
-                      "strapColor",
-                      "strapMaterial",
-                      "style",
-                      "dialThickness",
-                      "minPrice",
-                      "maxPrice",
-                    ].includes(key) && value !== undefined
-                ) && (
-                  <button
-                    onClick={() => {
-                      setFilters({
-                        page: 1,
-                        limit: 12,
-                        sortBy: "createdAt",
-                        order: "desc",
-                      });
-                      setSearchQuery("");
-                    }}
-                    className="hidden md:flex items-center gap-1 px-3 py-1.5 border border-amber-300 rounded-md text-xs hover:bg-amber-50 text-amber-800"
-                  >
-                    <XMarkIcon className="h-3 w-3" />
-                    Clear Filters
-                  </button>
+              {/* Desktop active filters and sort dropdown - unchanged */}
+              <div className="hidden md:flex flex-wrap gap-2 items-center">
+                {activeFilterCount > 0 && (
+                  <div className="hidden md:flex flex-wrap gap-1.5 items-center">
+                    {filters.brand && filters.brand.length > 0 && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        Brands: {filters.brand.length}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ brand: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.gender && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.gender}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ gender: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.dialColor && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.dialColor} Dial
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ dialColor: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {filters.dialShape && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        {filters.dialShape} Shape
+                        <button
+                          onClick={() =>
+                            handleFilterChange({ dialShape: undefined })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+                    {(filters.minPrice !== undefined ||
+                      filters.maxPrice !== undefined) && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 flex items-center gap-1 border border-amber-100">
+                        ₹{filters.minPrice || 0} - ₹
+                        {filters.maxPrice || "10000+"}
+                        <button
+                          onClick={() =>
+                            handleFilterChange({
+                              minPrice: undefined,
+                              maxPrice: undefined,
+                            })
+                          }
+                          className="hover:text-amber-600 ml-1"
+                        >
+                          <XMarkIcon className="h-3 w-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {activeFilterCount > 3 && (
+                      <div className="bg-amber-50 px-2.5 py-1 rounded-full text-xs text-amber-800 border border-amber-100">
+                        +{activeFilterCount - 3} more
+                      </div>
+                    )}
+
+                    <button
+                      onClick={resetAllFilters}
+                      className="text-xs text-amber-700 hover:text-amber-900 underline underline-offset-2"
+                    >
+                      Clear all
+                    </button>
+                  </div>
                 )}
 
-                {/* Mobile Filter Button */}
-                <button
-                  onClick={() => setIsSidebarOpen(true)}
-                  className="lg:hidden flex items-center gap-2 px-4 py-2 border border-amber-300 rounded-md text-sm hover:bg-amber-50 text-amber-800 shadow-sm"
-                >
-                  <FunnelIcon className="h-4 w-4" />
-                  Filter
-                </button>
-
                 {/* Sort Dropdown */}
-                <select
-                  value={`${filters.sortBy}:${filters.order}`}
-                  onChange={(e) => handleSortChange(e.target.value)}
-                  className="px-4 py-2 border border-amber-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-gradient-to-r from-amber-50 to-white text-amber-800"
-                >
-                  <option value="createdAt:desc">Best Sellers</option>
-                  {sortOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
+                <div className="flex items-center">
+                  <label className="text-xs text-gray-500 mr-2 hidden md:inline">
+                    Sort:
+                  </label>
+                  <select
+                    value={`${filters.sortBy}:${filters.order}`}
+                    onChange={(e) => handleSortChange(e.target.value)}
+                    className="px-3 py-2 border border-amber-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white text-gray-700"
+                  >
+                    {sortOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 
-            {/* Product Grid */}
-            <div className="bg-white rounded-lg shadow-md border border-amber-200 p-6">
+            {/* Product Grid - Improved mobile spacing */}
+            <div className="bg-white rounded-xl shadow-md border border-amber-100 p-4 sm:p-6">
               {isLoading ? (
-                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
                   {Array.from({ length: 8 }).map((_, index) => (
                     <div key={index} className="animate-pulse">
                       <div className="bg-gradient-to-b from-amber-50/30 to-white border border-amber-100 rounded-lg overflow-hidden">
@@ -755,45 +934,24 @@ export default function ShopPage() {
                   ))}
                 </div>
               ) : products.length > 0 ? (
-                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 gap-2 ">
+                <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-5">
                   {products.map((product) => (
-                    <div key={product.id} className="group cursor-pointer">
-                      <div className="bg-gradient-to-b from-amber-50/30 to-white border border-primary/20 rounded-xl overflow-hidden hover:shadow-lg transition-all duration-200 group-hover:border-amber-300">
-                        {/* Product Image */}
-                        <div className="aspect-square bg-gradient-to-b from-amber-50 to-white relative overflow-hidden">
-                          <EnhancedProductCard
-                            product={product}
-                            onQuickView={() => handleQuickView(product)}
-                          />
-                        </div>
-
-                        {/* Product Info */}
-                        <div className="p-5 text-center">
-                          <h3 className="font-bold text-amber-900 mb-1 uppercase text-sm font-inter">
-                            {product.brand || "MAK"}
-                          </h3>
-                          <p className="text-xs text-amber-700/80 mb-2 uppercase tracking-wider">
-                            {product.category || "LUXURY"}
-                          </p>
-                          <p className="font-bold text-amber-800 mb-4 text-lg">
-                            ₹ {product.price?.toLocaleString("en-IN") || "0"}
-                          </p>
-                          <Link
-                            href={`/product_details?id=${product.id}`}
-                            className="block"
-                          >
-                            <button className="w-full bg-accent text-white text-xs font-semibold py-2.5 px-2 rounded shadow-sm hover:bg-amber-800 transition-colors uppercase tracking-wider">
-                              View Details
-                            </button>
-                          </Link>
-                        </div>
+                    <div
+                      key={product.id}
+                      className="transform transition duration-300 hover:-translate-y-1"
+                    >
+                      <div className="h-full">
+                        <EnhancedProductCard
+                          product={product}
+                          onQuickView={() => handleQuickView(product)}
+                        />
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16">
-                  <div className="mx-auto w-20 h-20 mb-6 text-amber-300">
+                <div className="text-center py-12 sm:py-20">
+                  <div className="mx-auto w-20 h-20 sm:w-24 sm:h-24 mb-6 sm:mb-8 text-amber-300">
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
                       fill="none"
@@ -808,47 +966,96 @@ export default function ShopPage() {
                       />
                     </svg>
                   </div>
-                  <h3 className="text-xl font-medium text-amber-900 mb-3 font-inter">
+                  <h3 className="text-xl sm:text-2xl font-medium text-amber-900 mb-3 font-inter">
                     No Timepieces Found
                   </h3>
-                  <p className="text-amber-700">
+                  <p className="text-amber-700 mb-6">
                     Please adjust your search or filter criteria
                   </p>
+                  <button
+                    onClick={resetAllFilters}
+                    className="bg-amber-100 hover:bg-amber-200 text-amber-800 px-6 py-2 rounded-md text-sm font-medium transition-colors"
+                  >
+                    Clear All Filters
+                  </button>
                 </div>
               )}
             </div>
 
-            {/* Pagination */}
+            {/* Mobile Pagination - Simplified for small screens */}
             {totalPages > 1 && (
-              <div className="mt-10 flex justify-center">
-                <div className="flex items-center space-x-3">
+              <div className="mt-8 sm:mt-10 flex justify-center">
+                <nav className="flex items-center bg-white px-3 sm:px-4 py-2 sm:py-3 border border-amber-100 rounded-xl shadow-sm">
                   <button
                     onClick={() =>
                       handlePageChange(Math.max(1, (filters.page || 1) - 1))
                     }
                     disabled={(filters.page || 1) === 1}
-                    className="px-3 py-2 text-sm font-medium text-amber-800 hover:text-amber-600 disabled:opacity-40 border border-amber-200 rounded-md hover:border-amber-300 disabled:hover:border-amber-200"
+                    className="px-2 sm:px-3 py-1 text-sm font-medium text-amber-800 hover:text-amber-600 disabled:opacity-40 disabled:cursor-not-allowed mr-1 sm:mr-2"
                   >
-                    &lt;
+                    <ChevronLeftIcon className="h-5 w-5" />
                   </button>
 
-                  {Array.from({ length: Math.min(6, totalPages) }, (_, i) => {
-                    const pageNum = i + 1;
-                    const isActive = pageNum === (filters.page || 1);
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => handlePageChange(pageNum)}
-                        className={`px-4 py-2 text-sm font-medium rounded-md border ${
-                          isActive
-                            ? "bg-amber-600 text-white border-amber-600 shadow-sm"
-                            : "text-amber-800 hover:bg-amber-50 border-amber-200"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+                  <div className="flex space-x-1">
+                    {/* Mobile: Show fewer pagination buttons */}
+                    <div className="sm:hidden flex items-center">
+                      <span className="text-sm font-medium">
+                        {filters.page || 1} of {totalPages}
+                      </span>
+                    </div>
+
+                    {/* Desktop: Show pagination buttons */}
+                    <div className="hidden sm:flex space-x-1">
+                      {Array.from(
+                        { length: Math.min(5, totalPages) },
+                        (_, i) => {
+                          let pageNum;
+                          const currentPage = filters.page || 1;
+
+                          // Logic to show pages centered around current page
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+
+                          const isActive = pageNum === currentPage;
+
+                          return (
+                            <button
+                              key={pageNum}
+                              onClick={() => handlePageChange(pageNum)}
+                              className={`w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium transition-colors ${
+                                isActive
+                                  ? "bg-amber-500 text-white"
+                                  : "text-gray-700 hover:bg-amber-50"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          );
+                        }
+                      )}
+
+                      {totalPages > 5 && filters.page! < totalPages - 2 && (
+                        <>
+                          <span className="text-gray-400 flex items-center px-1">
+                            ...
+                          </span>
+                          <button
+                            onClick={() => handlePageChange(totalPages)}
+                            className="w-8 h-8 flex items-center justify-center rounded-md text-sm font-medium text-gray-700 hover:bg-amber-50"
+                          >
+                            {totalPages}
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
 
                   <button
                     onClick={() =>
@@ -857,18 +1064,18 @@ export default function ShopPage() {
                       )
                     }
                     disabled={(filters.page || 1) === totalPages}
-                    className="px-3 py-2 text-sm font-medium text-amber-800 hover:text-amber-600 disabled:opacity-40 border border-amber-200 rounded-md hover:border-amber-300 disabled:hover:border-amber-200"
+                    className="px-2 sm:px-3 py-1 text-sm font-medium text-amber-800 hover:text-amber-600 disabled:opacity-40 disabled:cursor-not-allowed ml-1 sm:ml-2"
                   >
-                    &gt;
+                    <ChevronRightIcon className="h-5 w-5" />
                   </button>
-                </div>
+                </nav>
               </div>
             )}
           </div>
         </div>
       </div>
 
-      {/* Mobile Filter Sidebar */}
+      {/* Mobile Filter Sidebar - Enhanced with updated design */}
       <FilterSidebar
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
