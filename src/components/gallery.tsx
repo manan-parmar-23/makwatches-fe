@@ -5,11 +5,11 @@ import Image from "next/image";
 type GalleryImage = string;
 
 const IMAGES: GalleryImage[] = [
-  "/watches/item-card-image-1.png",
-  "/watches/item-card-image-2.png",
-  "/watches/item-card-image-3.png",
-  "/watches/item-card-image-4.png",
-  "/watches/item-card-image-5.png",
+  "/item-card-image-1.png",
+  "/item-card-image-2.png",
+  "/item-card-image-3.png",
+  "/item-card-image-4.png",
+  "/item-card-image-5.png",
 ];
 
 const COLORS = {
