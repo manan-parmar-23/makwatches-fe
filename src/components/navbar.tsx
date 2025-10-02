@@ -13,7 +13,7 @@ const linkClass =
 // Mobile Navbar Component
 const MobileNavbar = () => {
   const [open, setOpen] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
+  // removed search; replaced with Shop link
   const [expandedMenu, setExpandedMenu] = useState<string | null>(null);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -124,31 +124,7 @@ const MobileNavbar = () => {
           </svg>
         </motion.button>
       </div>
-      {/* Search Bar (Mobile) */}
-      <AnimatePresence>
-        {showSearch && (
-          <motion.div
-            key="mobile-search"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="px-4 pb-2 pt-2 bg-secondary shadow-md flex items-center gap-2"
-          >
-            <input
-              type="text"
-              placeholder="Search..."
-              className="flex-1 border rounded px-3 py-2 focus:outline-none bg-secondary text-primary"
-              autoFocus
-            />
-            <button
-              className="text-accent font-bold px-3 py-2"
-              onClick={() => setShowSearch(false)}
-            >
-              Close
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+      {/* Search removed on mobile; replaced by Shop link in menu */}
       {/* Mobile Menu */}
       <AnimatePresence>
         {open && (
@@ -195,16 +171,16 @@ const MobileNavbar = () => {
             </Link>
 
             <hr className="border-accent/20" />
-            <button
-              className={linkClass + " block py-2 text-left w-full"}
+            <Link
+              href="/shop"
+              className={linkClass + " block py-2"}
               onClick={() => {
-                setShowSearch(true);
                 setOpen(false);
                 setExpandedMenu(null);
               }}
             >
-              Search
-            </button>
+              Shop
+            </Link>
             <Link
               href="/cart"
               className={linkClass + " block py-2"}
@@ -322,7 +298,7 @@ const MobileNavbar = () => {
 };
 
 const Navbar = () => {
-  const [showSearch, setShowSearch] = useState(false);
+  // removed search; replaced with Shop link
   const [showAccountMenu, setShowAccountMenu] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
@@ -395,9 +371,9 @@ const Navbar = () => {
           </div>
           {/* Right menu */}
           <div className="flex gap-10 items-center">
-            <button className={linkClass} onClick={() => setShowSearch(true)}>
-              Search
-            </button>
+            <Link href="/shop" className={linkClass}>
+              Shop
+            </Link>
             <Link href="/cart" className={linkClass}>
               Cart
             </Link>
@@ -501,31 +477,7 @@ const Navbar = () => {
             </div>
           </div>
         </div>
-        {/* Search Bar (Desktop) */}
-        <AnimatePresence>
-          {showSearch && (
-            <motion.div
-              key="desktop-search"
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="max-w-screen-xl mx-auto px-6 pb-4 flex items-center gap-2"
-            >
-              <input
-                type="text"
-                placeholder="Search..."
-                className="flex-1 border rounded px-3 py-2 focus:outline-none bg-secondary text-primary"
-                autoFocus
-              />
-              <button
-                className="text-accent font-bold px-3 py-2"
-                onClick={() => setShowSearch(false)}
-              >
-                Close
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {/* Search removed on desktop */}
       </motion.nav>
       {/* Mobile Navbar */}
       <MobileNavbar />

@@ -38,12 +38,25 @@ export const productApi = {
   // Get all products with optional filtering
   getProducts: async (params?: {
     category?: string;
+    mainCategory?: string;
+    subcategory?: string;
+    brand?: string[] | string;
+    gender?: string;
+    dialColor?: string;
+    dialShape?: string;
+    dialType?: string;
+    strapColor?: string;
+    strapMaterial?: string;
+    style?: string;
+    dialThickness?: string;
+    inStock?: boolean;
     minPrice?: number;
     maxPrice?: number;
     sortBy?: string;
     order?: 'asc' | 'desc';
     page?: number;
     limit?: number;
+    search?: string;
   }) => {
     const response = await api.get('/products', { params });
     return response.data;

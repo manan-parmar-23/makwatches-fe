@@ -67,16 +67,59 @@ export default function ShopPage() {
     const fetchProducts = async () => {
       setIsLoading(true);
       try {
-        const response = await productApi.getProducts({
+        // Use a larger page size when searching so we can filter client-side reliably
+        const originalLimit = filters.limit || 12;
+        const fetchLimit = searchQuery
+          ? Math.max(originalLimit, 200)
+          : originalLimit;
+
+        const requestParams: Record<string, unknown> = {
           ...filters,
-          ...(searchQuery && { search: searchQuery }),
-        });
+          limit: fetchLimit,
+        };
+        if (searchQuery) {
+          // Send multiple common search keys for broader backend compatibility
+          requestParams.search = searchQuery;
+          requestParams.q = searchQuery;
+          requestParams.name = searchQuery;
+          // Always start from first page when searching
+          requestParams.page = 1;
+        }
+
+        const response = await productApi.getProducts(requestParams);
 
         if (response.success) {
-          setProducts(response.data);
-          if (response.meta) {
-            setTotalProducts(response.meta.total);
-            setTotalPages(response.meta.pages);
+          const all: Product[] = Array.isArray(response.data)
+            ? (response.data as Product[])
+            : [];
+
+          if (searchQuery) {
+            // Client-side filtering fallback by name/brand
+            const q = searchQuery.toLowerCase();
+            const filtered = all.filter(
+              (p: Product) =>
+                (p?.name ?? "").toLowerCase().includes(q) ||
+                (p?.brand ?? "").toLowerCase().includes(q)
+            );
+
+            const total = filtered.length;
+            const page = filters.page || 1;
+            const start = (page - 1) * originalLimit;
+            const pageItems = filtered.slice(start, start + originalLimit);
+
+            setProducts(pageItems);
+            setTotalProducts(total);
+            setTotalPages(Math.max(1, Math.ceil(total / originalLimit)));
+          } else {
+            setProducts(all);
+            if (response.meta) {
+              setTotalProducts(response.meta.total);
+              setTotalPages(response.meta.pages);
+            } else {
+              // Fallback if meta is missing
+              setTotalProducts(all.length);
+              setTotalPages(Math.max(1, Math.ceil(all.length / originalLimit)));
+            }
           }
         }
       } catch (error) {
@@ -678,7 +721,7 @@ export default function ShopPage() {
             {/* Header with sorting and count - Improved mobile design */}
             <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-3">
               <div className="flex items-center justify-between w-full md:w-auto">
-                <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-4">
                   {/* Mobile Filter Button - Enhanced with count */}
                   <button
                     onClick={() => setIsSidebarOpen(true)}
@@ -693,7 +736,7 @@ export default function ShopPage() {
                     )}
                   </button>
 
-                  <div className="text-sm text-amber-700 font-medium">
+                  <div className="text-sm text-accent font-medium md:block hidden">
                     {isLoading
                       ? "Discovering timepieces..."
                       : `${totalProducts} Watches Found`}

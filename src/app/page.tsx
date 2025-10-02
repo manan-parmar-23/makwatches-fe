@@ -12,11 +12,11 @@ import { useHomeContent } from "@/hooks/useHomeContent";
 import Category from "@/components/category";
 
 const demoLogos = [
-  { src: "/logos/discord.png", alt: "Discord" },
-  { src: "/logos/whatsapp.png", alt: "WhatsApp" },
-  { src: "/logos/linkedin.png", alt: "LinkedIn" },
-  { src: "/logos/instagram.png", alt: "instagram" },
-  { src: "/logos/snapchat.png", alt: "Snapchat" },
+  { src: "/1Balmain 1.png", alt: "Brand 1" },
+  { src: "/1Balmain 2.png", alt: "Brand 2" },
+  { src: "/1Balmain 3.png", alt: "Brand 3" },
+  { src: "/1Balmain 4.png", alt: "Brand 4" },
+  { src: "/1Balmain 5.png", alt: "Brand 5" },
 ];
 
 export default function Home() {
@@ -40,17 +40,17 @@ export default function Home() {
       <section id="collections" className="px-4 py-8">
         <Collection features={data?.collections} />
       </section>
-      <section id="brands-logo" className="px-4 py-8">
+      <section id="brands-logo" className="px-4 pt-8">
         <LogoLoop
           logos={demoLogos}
           speed={120}
-          logoHeight={36}
+          logoHeight={48}
           gap={32}
           fadeOut
           pauseOnHover
         />
       </section>
-      <section id="products" className="px-4 py-8">
+      <section id="products" className="px-4 pt-8">
         <ProductCarousel />
       </section>
 
