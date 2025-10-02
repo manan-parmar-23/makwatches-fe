@@ -165,6 +165,13 @@ export const ProductFormModal: React.FC<Props> = ({
     setSaving(true);
     setError(null);
 
+    // Validate that at least one image is uploaded
+    if (!form.images || form.images.length === 0) {
+      setError("Please upload at least one product image");
+      setSaving(false);
+      return;
+    }
+
     // Transform form data to match backend expectations
     const payload: Partial<Product> = {
       ...form,
@@ -334,46 +341,105 @@ export const ProductFormModal: React.FC<Props> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-medium mb-1">
-                    Images
+                    Product Images{" "}
+                    {form.images.length > 0 && (
+                      <span className="text-gray-500">
+                        ({form.images.length} uploaded)
+                      </span>
+                    )}
                   </label>
-                  <input
-                    type="file"
-                    multiple
-                    onChange={(e) => onFiles(e.target.files)}
-                    className="text-sm"
-                  />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="file"
+                        multiple
+                        accept="image/*"
+                        onChange={(e) => onFiles(e.target.files)}
+                        className="text-sm flex-1"
+                        id="product-images-input"
+                      />
+                      <label
+                        htmlFor="product-images-input"
+                        className="cursor-pointer px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium transition"
+                      >
+                        Choose Files
+                      </label>
+                    </div>
+                    <p className="text-[10px] text-gray-500">
+                      You can select multiple images at once. First image will
+                      be used as the main product image.
+                    </p>
+                  </div>
                   {uploading && (
-                    <div className="text-[10px] text-gray-500 mt-1">
-                      Uploading...
+                    <div className="text-xs text-blue-600 mt-2 flex items-center gap-2">
+                      <svg
+                        className="animate-spin h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Uploading images to Firebase Storage...
                     </div>
                   )}
                   {form.images.length > 0 && (
-                    <div className="mt-2 grid grid-cols-5 gap-2">
-                      {form.images.map((url, i) => (
-                        <div
-                          key={i}
-                          className="relative group border rounded overflow-hidden"
-                        >
-                          {/* eslint-disable-next-line @next/next/no-img-element */}
-                          <img
-                            src={url}
-                            alt="img"
-                            className="object-cover w-full h-20"
-                          />
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleChange(
-                                "images",
-                                form.images.filter((_, idx) => idx !== i)
-                              )
-                            }
-                            className="absolute top-1 right-1 bg-black/60 text-white text-[10px] px-1 rounded opacity-0 group-hover:opacity-100 transition"
+                    <div className="mt-3">
+                      <div className="text-xs font-medium mb-2 text-gray-700">
+                        Uploaded Images:
+                      </div>
+                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                        {form.images.map((url, i) => (
+                          <div
+                            key={i}
+                            className="relative group border-2 rounded-lg overflow-hidden hover:border-blue-400 transition"
+                            style={{
+                              borderColor: i === 0 ? "#D4AF37" : "#e5e7eb",
+                            }}
                           >
-                            x
-                          </button>
-                        </div>
-                      ))}
+                            {i === 0 && (
+                              <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-[9px] px-1.5 py-0.5 rounded-br font-medium z-10">
+                                MAIN
+                              </div>
+                            )}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                              src={url}
+                              alt={`Product image ${i + 1}`}
+                              className="object-cover w-full h-20 group-hover:scale-105 transition-transform"
+                            />
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleChange(
+                                  "images",
+                                  form.images.filter((_, idx) => idx !== i)
+                                )
+                              }
+                              className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
+                              title="Remove image"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-gray-500 mt-2">
+                        Tip: The first image is used as the main product image.
+                        Drag images to reorder (if needed).
+                      </p>
                     </div>
                   )}
                 </div>
