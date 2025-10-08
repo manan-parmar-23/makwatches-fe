@@ -5,6 +5,7 @@ import CategoryCardsManager from "@/components/admin/home/CategoryCardsManager";
 import CollectionFeaturesManager from "@/components/admin/home/CollectionFeaturesManager";
 import TechShowcaseManager from "@/components/admin/home/TechShowcaseManager";
 import { ADMIN_COLORS } from "@/components/admin/home/constants";
+import GalleryManager from "@/components/admin/home/GalleryManager";
 
 export default function HomeContentPage() {
   return (
@@ -40,6 +41,7 @@ export default function HomeContentPage() {
       <CategoryCardsManager />
       <CollectionFeaturesManager />
       <TechShowcaseManager />
+      <GalleryManager />
     </div>
   );
 }

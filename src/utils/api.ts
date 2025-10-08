@@ -6,6 +6,7 @@ import {
   HomeContentResponse,
   TechShowcaseCard,
   TechShowcaseHighlight,
+  type GalleryImage,
 } from '@/types/home-content';
 
 export interface ApiResponse<T> {
@@ -127,3 +128,16 @@ export const upsertAdminTechHighlight = (payload: Partial<TechShowcaseHighlight>
 
 export const deleteAdminTechHighlight = () =>
   api.delete<ApiResponse<null>>(`${ADMIN_HOME_BASE}/tech-highlight`);
+
+// Admin gallery endpoints
+export const fetchAdminGallery = () =>
+  api.get<ApiResponse<GalleryImage[]>>(`${ADMIN_HOME_BASE}/gallery`);
+
+export const createAdminGalleryImage = (payload: Partial<GalleryImage>) =>
+  api.post<ApiResponse<GalleryImage>>(`${ADMIN_HOME_BASE}/gallery`, payload);
+
+export const updateAdminGalleryImage = (id: string, payload: Partial<GalleryImage>) =>
+  api.put<ApiResponse<GalleryImage>>(`${ADMIN_HOME_BASE}/gallery/${id}`, payload);
+
+export const deleteAdminGalleryImage = (id: string) =>
+  api.delete<ApiResponse<null>>(`${ADMIN_HOME_BASE}/gallery/${id}`);

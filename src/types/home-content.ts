@@ -77,4 +77,14 @@ export interface HomeContentResponse {
   collections: HomeCollectionFeature[];
   techCards: TechShowcaseCard[];
   highlight?: TechShowcaseHighlight | null;
+  gallery?: GalleryImage[];
+}
+
+export interface GalleryImage {
+  id: string;
+  url: string;
+  alt: string;
+  position: number;
+  createdAt?: string;
+  updatedAt?: string;
 }

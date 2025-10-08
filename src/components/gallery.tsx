@@ -1,10 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
+import type { GalleryImage } from "@/types/home-content";
 
-type GalleryImage = string;
-
-const IMAGES: GalleryImage[] = [
+const DEFAULT_IMAGES: string[] = [
   "/item-card-image-1.png",
   "/item-card-image-2.png",
   "/item-card-image-3.png",
@@ -210,9 +209,19 @@ const GalleryCardMobile: React.FC<CardProps> = ({
   );
 };
 
-const Gallery: React.FC = () => {
+interface Props {
+  images?: GalleryImage[] | undefined | null;
+}
+
+const Gallery: React.FC<Props> = ({ images }) => {
   const [expandedIdx, setExpandedIdx] = useState<number | null>(null);
   const [isMobile, setIsMobile] = useState<boolean>(false);
+  const IMAGES =
+    Array.isArray(images) && images.length
+      ? [...images]
+          .sort((a, b) => (a.position || 0) - (b.position || 0))
+          .map((g) => g.url)
+      : DEFAULT_IMAGES;
 
   useEffect(() => {
     const handleResize = (): void => setIsMobile(window.innerWidth < 768);

@@ -55,7 +55,7 @@ export default function Home() {
       </section>
 
       <section id="gallery" className="px-2">
-        <Gallery />
+        <Gallery images={data?.gallery} />
       </section>
     </>
   );

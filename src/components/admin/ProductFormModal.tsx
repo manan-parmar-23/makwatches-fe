@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Category,
@@ -41,6 +41,36 @@ export const ProductFormModal: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  // Ref to the scrollable inner content so we can forward wheel events to it
+  const contentRef = useRef<HTMLDivElement | null>(null);
+
+  // Handle wheel events on the overlay/root so that wheel/trackpad scrolls
+  // the inner content only. This prevents the background or the page from
+  // scrolling when the modal is open while allowing the form content to
+  // scroll with mouse wheel on desktop and with touch on mobile.
+  const handleWheel = useCallback((e: React.WheelEvent) => {
+    const el = contentRef.current;
+    if (!el) {
+      e.preventDefault();
+      return;
+    }
+
+    const delta = e.deltaY;
+    const atTop = el.scrollTop === 0;
+    const atBottom =
+      Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 1;
+
+    // If trying to scroll past bounds, prevent page/background from scrolling.
+    if ((delta < 0 && atTop) || (delta > 0 && atBottom)) {
+      e.preventDefault();
+      return;
+    }
+
+    // Otherwise, manually scroll the inner container and prevent default so
+    // the event doesn't bubble to the document.
+    e.preventDefault();
+    el.scrollTop += delta;
+  }, []);
 
   useEffect(() => {
     if (open) {
@@ -117,23 +147,25 @@ export const ProductFormModal: React.FC<Props> = ({
     const scrollbarWidth =
       window.innerWidth - document.documentElement.clientWidth;
 
+    // Only lock body scroll and avoid layout shift by reserving scrollbar width.
+    // Do NOT lock documentElement overflow — that prevents wheel scrolling
+    // from reaching the modal on desktop in some browsers.
     body.style.overflow = "hidden";
     if (scrollbarWidth > 0) {
       body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
-    // Also lock the root element to prevent scroll chaining (especially on mobile)
-    docEl.style.overflow = "hidden";
-    docEl.style.setProperty("overscroll-behavior", "none");
-
     return () => {
       body.style.overflow = originalOverflow;
       body.style.paddingRight = originalPaddingRight;
-      docEl.style.overflow = originalDocOverflow;
+      // Restore any documentElement changes only if we modified them earlier.
+      // We intentionally avoid touching docEl.style.overflow here to prevent
+      // interfering with desktop wheel event propagation to the modal.
+      if (originalDocOverflow) {
+        docEl.style.overflow = originalDocOverflow;
+      }
       if (originalDocOverscroll) {
         docEl.style.setProperty("overscroll-behavior", originalDocOverscroll);
-      } else {
-        docEl.style.removeProperty("overscroll-behavior");
       }
     };
   }, [open]);
@@ -202,266 +234,559 @@ export const ProductFormModal: React.FC<Props> = ({
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden overscroll-none"
+          className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          style={{ height: "100dvh" }}
+          // Allow pointer/touch/ wheel to reach the modal; the inner element
+          // is responsible for scrolling. 'touchAction: pan-y' helps on touch devices.
+          style={{ height: "100dvh", touchAction: "pan-y" }}
+          onWheel={handleWheel}
         >
           <div
-            className="absolute inset-0 bg-black/40"
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
             onClick={() => !saving && onClose()}
           />
           <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.95, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 220, damping: 20 }}
-            className="relative w-full max-w-2xl bg-white rounded-xl shadow-lg max-h-[90vh] flex flex-col overflow-hidden"
-            style={{ maxHeight: "min(90vh, 90dvh)" }}
+            initial={{ scale: 0.95, opacity: 0, y: 20 }}
+            animate={{ scale: 1, opacity: 1, y: 0 }}
+            exit={{ scale: 0.95, opacity: 0, y: 20 }}
+            transition={{ type: "spring", stiffness: 260, damping: 22 }}
+            className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl flex flex-col overflow-hidden mx-auto"
+            style={{
+              maxHeight: "calc(100dvh - 16px)",
+              height: "auto",
+            }}
           >
-            <div className="sticky top-0 z-10 bg-white p-4 border-b">
-              <h2 className="text-xl font-semibold">
-                {editing ? "Edit Product" : "Add Product"}
-              </h2>
+            {/* Enhanced Header */}
+            <div className="sticky top-0 z-10 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] px-4 sm:px-6 py-4 sm:py-5 border-b border-[#A67C00]/20">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <svg
+                      className="w-5 h-5 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h2 className="text-xl sm:text-2xl font-bold text-white">
+                      {editing ? "Edit Product" : "Add New Product"}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-white/80 mt-0.5">
+                      {editing
+                        ? "Update product information"
+                        : "Create a new product listing"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => !saving && onClose()}
+                  disabled={saving}
+                  className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-all duration-200 disabled:opacity-50"
+                  aria-label="Close"
+                >
+                  <svg
+                    className="w-5 h-5 text-white"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  </svg>
+                </button>
+              </div>
             </div>
+            {/* Scrollable Form Content */}
             <div
-              className="flex-1 overflow-y-auto overscroll-contain p-4 min-h-0"
+              ref={contentRef}
+              className="flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 py-5 sm:py-6 min-h-0 bg-gray-50"
               style={
                 { WebkitOverflowScrolling: "touch" } as React.CSSProperties
               }
             >
-              <form id="product-form" onSubmit={onSubmit} className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Name
-                    </label>
-                    <input
-                      value={form.name}
-                      onChange={(e) => handleChange("name", e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Brand
-                    </label>
-                    <input
-                      value={form.brand}
-                      onChange={(e) => handleChange("brand", e.target.value)}
-                      className="w-full border rounded px-3 py-2 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Main Category
-                    </label>
-                    <select
-                      value={form.mainCategory}
-                      onChange={(e) =>
-                        handleChange(
-                          "mainCategory",
-                          e.target.value as "Men" | "Women"
-                        )
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
+              <form
+                id="product-form"
+                onSubmit={onSubmit}
+                className="space-y-5 sm:space-y-6"
+              >
+                {/* Basic Information Section */}
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#0F0F0F] mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#D4AF37]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <option value="Men">Men</option>
-                      <option value="Women">Women</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className=" text-xs font-medium mb-1 flex items-center justify-between">
-                      Subcategory{" "}
-                      {loadingCats && (
-                        <span className="text-[10px] text-gray-400">
-                          loading...
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                      />
+                    </svg>
+                    Basic Information
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Product Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={form.name}
+                        onChange={(e) => handleChange("name", e.target.value)}
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200"
+                        placeholder="Enter product name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Brand <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        value={form.brand}
+                        onChange={(e) => handleChange("brand", e.target.value)}
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200"
+                        placeholder="Enter brand name"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Main Category <span className="text-red-500">*</span>
+                      </label>
+                      <select
+                        value={form.mainCategory}
+                        onChange={(e) =>
+                          handleChange(
+                            "mainCategory",
+                            e.target.value as "Men" | "Women"
+                          )
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200 bg-white"
+                      >
+                        <option value="Men">Men</option>
+                        <option value="Women">Women</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="flex items-center justify-between text-sm font-semibold text-gray-700 mb-2">
+                        <span>Subcategory</span>
+                        {loadingCats && (
+                          <svg
+                            className="animate-spin h-4 w-4 text-[#D4AF37]"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            ></circle>
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                        )}
+                      </label>
+                      <select
+                        value={form.subcategory}
+                        onChange={(e) =>
+                          handleChange("subcategory", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200 bg-white"
+                      >
+                        <option value="">-- Select Subcategory --</option>
+                        {subOptions.map((sc) => (
+                          <option key={sc.id} value={sc.name}>
+                            {sc.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Price (₹) <span className="text-red-500">*</span>
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-500 font-medium">
+                          ₹
                         </span>
-                      )}
-                    </label>
-                    <select
-                      value={form.subcategory}
-                      onChange={(e) =>
-                        handleChange("subcategory", e.target.value)
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={form.price}
+                          onChange={(e) =>
+                            handleChange(
+                              "price",
+                              parseFloat(e.target.value) || 0
+                            )
+                          }
+                          className="w-full border-2 border-gray-200 rounded-lg pl-8 pr-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200"
+                          placeholder="0.00"
+                          required
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Stock Quantity <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        value={form.stock}
+                        onChange={(e) =>
+                          handleChange("stock", parseInt(e.target.value) || 0)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200"
+                        placeholder="Enter stock quantity"
+                        required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Description Section */}
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#0F0F0F] mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#D4AF37]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
                     >
-                      <option value="">-- Select --</option>
-                      {subOptions.map((sc) => (
-                        <option key={sc.id} value={sc.name}>
-                          {sc.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 6h16M4 12h16M4 18h7"
+                      />
+                    </svg>
+                    Product Description
+                  </h3>
                   <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Price
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Description
                     </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      value={form.price}
+                    <textarea
+                      value={form.description}
                       onChange={(e) =>
-                        handleChange("price", parseFloat(e.target.value) || 0)
+                        handleChange("description", e.target.value)
                       }
-                      className="w-full border rounded px-3 py-2 text-sm"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium mb-1">
-                      Stock
-                    </label>
-                    <input
-                      type="number"
-                      value={form.stock}
-                      onChange={(e) =>
-                        handleChange("stock", parseInt(e.target.value) || 0)
-                      }
-                      className="w-full border rounded px-3 py-2 text-sm"
-                      required
+                      className="w-full border-2 border-gray-200 rounded-lg px-4 py-3 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200 resize-none"
+                      placeholder="Enter product description..."
+                      rows={4}
                     />
                   </div>
                 </div>
-                <div>
-                  <label className=" text-xs font-medium mb-1 flex items-center gap-2">
-                    Description
-                  </label>
-                  <textarea
-                    value={form.description}
-                    onChange={(e) =>
-                      handleChange("description", e.target.value)
-                    }
-                    className="w-full border rounded px-3 py-2 text-sm min-h-[100px]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-medium mb-1">
-                    Product Images{" "}
+
+                {/* Images Section */}
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#0F0F0F] mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-5 h-5 text-[#D4AF37]"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Product Images
                     {form.images.length > 0 && (
-                      <span className="text-gray-500">
+                      <span className="text-sm font-normal text-gray-500">
                         ({form.images.length} uploaded)
                       </span>
                     )}
-                  </label>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="file"
-                        multiple
-                        accept="image/*"
-                        onChange={(e) => onFiles(e.target.files)}
-                        className="text-sm flex-1"
-                        id="product-images-input"
-                      />
-                      <label
-                        htmlFor="product-images-input"
-                        className="cursor-pointer px-3 py-1.5 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium transition"
-                      >
-                        Choose Files
-                      </label>
-                    </div>
-                    <p className="text-[10px] text-gray-500">
-                      You can select multiple images at once. First image will
-                      be used as the main product image.
-                    </p>
-                  </div>
-                  {uploading && (
-                    <div className="text-xs text-blue-600 mt-2 flex items-center gap-2">
-                      <svg
-                        className="animate-spin h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
+                  </h3>
+
+                  <div className="space-y-4">
+                    {/* Upload Area */}
+                    <div className="border-2 border-dashed border-gray-300 rounded-xl p-6 hover:border-[#D4AF37] transition-colors duration-200">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <svg
+                          className="w-12 h-12 text-gray-400 mb-3"
+                          fill="none"
                           stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Uploading images to Firebase Storage...
-                    </div>
-                  )}
-                  {form.images.length > 0 && (
-                    <div className="mt-3">
-                      <div className="text-xs font-medium mb-2 text-gray-700">
-                        Uploaded Images:
-                      </div>
-                      <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
-                        {form.images.map((url, i) => (
-                          <div
-                            key={i}
-                            className="relative group border-2 rounded-lg overflow-hidden hover:border-blue-400 transition"
-                            style={{
-                              borderColor: i === 0 ? "#D4AF37" : "#e5e7eb",
-                            }}
-                          >
-                            {i === 0 && (
-                              <div className="absolute top-0 left-0 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white text-[9px] px-1.5 py-0.5 rounded-br font-medium z-10">
-                                MAIN
-                              </div>
-                            )}
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={url}
-                              alt={`Product image ${i + 1}`}
-                              className="object-cover w-full h-20 group-hover:scale-105 transition-transform"
-                            />
-                            <button
-                              type="button"
-                              onClick={() =>
-                                handleChange(
-                                  "images",
-                                  form.images.filter((_, idx) => idx !== i)
-                                )
-                              }
-                              className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white text-[10px] w-5 h-5 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-100 transition shadow-lg"
-                              title="Remove image"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                          />
+                        </svg>
+                        <label
+                          htmlFor="product-images-input"
+                          className="cursor-pointer"
+                        >
+                          <span className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] text-white rounded-lg font-medium text-sm hover:shadow-lg transition-all duration-200 hover:scale-105">
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
                             >
-                              ×
-                            </button>
-                          </div>
-                        ))}
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M12 4v16m8-8H4"
+                              />
+                            </svg>
+                            Choose Images
+                          </span>
+                        </label>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          onChange={(e) => onFiles(e.target.files)}
+                          className="hidden"
+                          id="product-images-input"
+                        />
+                        <p className="text-xs text-gray-500 mt-3">
+                          Upload multiple images at once. First image will be
+                          the main product image.
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Supported formats: JPG, PNG, WebP (Max 5MB each)
+                        </p>
                       </div>
-                      <p className="text-[10px] text-gray-500 mt-2">
-                        Tip: The first image is used as the main product image.
-                        Drag images to reorder (if needed).
-                      </p>
                     </div>
-                  )}
+
+                    {/* Upload Progress */}
+                    {uploading && (
+                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center gap-3">
+                        <svg
+                          className="animate-spin h-5 w-5 text-blue-600"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <div>
+                          <p className="text-sm font-medium text-blue-900">
+                            Uploading images...
+                          </p>
+                          <p className="text-xs text-blue-600">
+                            Please wait while we upload your images to Firebase
+                            Storage
+                          </p>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Uploaded Images Grid */}
+                    {form.images.length > 0 && (
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-700">
+                            Uploaded Images
+                          </p>
+                          <p className="text-xs text-gray-500">
+                            <span className="inline-flex items-center gap-1">
+                              <svg
+                                className="w-3.5 h-3.5 text-[#D4AF37]"
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                              >
+                                <path
+                                  fillRule="evenodd"
+                                  d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z"
+                                  clipRule="evenodd"
+                                />
+                              </svg>
+                              First image is main
+                            </span>
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                          {form.images.map((url, i) => (
+                            <div
+                              key={i}
+                              className="relative group border-2 rounded-xl overflow-hidden hover:border-[#D4AF37] transition-all duration-200 hover:shadow-md aspect-square"
+                              style={{
+                                borderColor: i === 0 ? "#D4AF37" : "#e5e7eb",
+                              }}
+                            >
+                              {i === 0 && (
+                                <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] text-white text-[10px] px-2 py-1 font-bold z-10 text-center">
+                                  MAIN IMAGE
+                                </div>
+                              )}
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={url}
+                                alt={`Product ${i + 1}`}
+                                className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                              />
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  handleChange(
+                                    "images",
+                                    form.images.filter((_, idx) => idx !== i)
+                                  )
+                                }
+                                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white w-7 h-7 flex items-center justify-center rounded-full opacity-70 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110"
+                                title="Remove image"
+                              >
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M6 18L18 6M6 6l12 12"
+                                  />
+                                </svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {error && <div className="text-xs text-red-600">{error}</div>}
+
+                {/* Error Message */}
+                {error && (
+                  <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex items-start gap-3">
+                    <svg
+                      className="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5"
+                      fill="currentColor"
+                      viewBox="0 0 20 20"
+                    >
+                      <path
+                        fillRule="evenodd"
+                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <div>
+                      <p className="text-sm font-semibold text-red-800">
+                        Error
+                      </p>
+                      <p className="text-sm text-red-700 mt-1">{error}</p>
+                    </div>
+                  </div>
+                )}
               </form>
             </div>
-            <div className="sticky bottom-0 bg-white p-3 border-t flex justify-end gap-2">
-              <button
-                type="button"
-                onClick={() => !saving && onClose()}
-                className="px-4 py-2 text-sm rounded border"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                form="product-form"
-                disabled={saving}
-                className="px-4 py-2 text-sm rounded bg-black text-white disabled:opacity-60"
-              >
-                {saving ? "Saving..." : "Save"}
-              </button>
+
+            {/* Enhanced Footer with Action Buttons */}
+            <div className="sticky bottom-0 bg-white px-4 sm:px-6 py-4 border-t border-gray-200 shadow-lg">
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                {/* Info Text */}
+                <p className="text-xs text-gray-500 text-center sm:text-left">
+                  <span className="text-red-500">*</span> Required fields
+                </p>
+
+                {/* Action Buttons */}
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => !saving && onClose()}
+                    disabled={saving}
+                    className="flex-1 sm:flex-initial px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border-2 border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    form="product-form"
+                    disabled={saving}
+                    className="flex-1 sm:flex-initial px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-[#D4AF37] to-[#A67C00] rounded-lg hover:shadow-lg hover:scale-105 transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  >
+                    {saving ? (
+                      <>
+                        <svg
+                          className="animate-spin h-4 w-4"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                        <span>Save Product</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </motion.div>
         </motion.div>
