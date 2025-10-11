@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { fetchPublicCategories, Category, Product } from "@/utils/api";
@@ -66,7 +66,8 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
     return () => {
       cancelled = true;
     };
-  }, [onLoad, localReload]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localReload]);
 
   if (loading) return <CategorySkeleton />;
   if (error)
@@ -100,6 +101,10 @@ export default function MenPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
 
+  const handleCategoriesLoad = useCallback((cats: Category[]) => {
+    setCategories(cats);
+  }, []);
+
   const handleProductClick = (product: Product) => {
     // Navigate to product details page with the product ID
     router.push(`/product_details?id=${product.id}`);
@@ -114,7 +119,7 @@ export default function MenPage() {
 
       {/* Categories Section (hidden) - kept for logic (populates categories for later sections) */}
       <section className="hidden">
-        <CategoriesClient onLoad={(cats) => setCategories(cats)} />
+        <CategoriesClient onLoad={handleCategoriesLoad} />
       </section>
 
       {/* Products Grid Section */}

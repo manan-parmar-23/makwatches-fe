@@ -1,0 +1,27 @@
+# robots.txt for makwatches.in
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /checkout/
+Disallow: /orders/
+Disallow: /api/
+
+# Sitemap
+Sitemap: https://makwatches.in/sitemap.xml
+
+# Crawl-delay for better server performance
+Crawl-delay: 1
+
+# Popular search engines
+User-agent: Googlebot
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/
+
+User-agent: Bingbot
+Allow: /
+Disallow: /admin/
+Disallow: /account/
+Disallow: /api/

@@ -85,7 +85,7 @@ export default function AdminAuthPage() {
               style={{ backgroundColor: `${COLORS.primary}10` }}
             >
               <Image
-                src="/mak-logo.png"
+                src="/mak-logo.svg"
                 alt="MAK Logo"
                 width={48}
                 height={48}

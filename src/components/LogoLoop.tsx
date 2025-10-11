@@ -410,7 +410,7 @@ export const LogoLoop = React.memo<LogoLoopProps>(
             {/* Small centered badge/icon above heading */}
             <div className="mx-auto w-16 h-16 rounded-2xl bg-gray-900 flex items-center justify-center mb-6">
               <img
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Mak logo"
                 className="w-16 h-16 object-contain filter invert rounded-2xl"
               />

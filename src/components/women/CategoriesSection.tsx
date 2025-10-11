@@ -115,7 +115,7 @@ function BrandTile() {
             transition={{ duration: 0.6 }}
           >
             <Image
-              src="/mak-logo.png"
+              src="/mak-logo.svg"
               alt="MAK Watches Logo"
               fill
               className="object-contain"
@@ -335,7 +335,7 @@ export default function CategoriesSection({
                 s.imageUrl ||
                 getImageForSubcategory(s.name) ||
                 `/subcategories/${slug}.jpg` ||
-                `/logo-1.png`,
+                `/logo.svg`,
             };
           }
         );

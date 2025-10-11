@@ -2,7 +2,7 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.makwatches.in';
 
 // Create axios instance
 const api = axios.create({

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 
 import { fetchPublicCategories, Category, Product } from "@/utils/api";
@@ -27,6 +27,7 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localReload, setLocalReload] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,16 +72,35 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
     return () => {
       cancelled = true;
     };
-  }, [onLoad]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localReload]);
 
   if (loading) return <CategorySkeleton />;
+  if (error)
+    return (
+      <div className="mb-4">
+        <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h4 className="font-semibold text-yellow-800">
+                Unable to load categories
+              </h4>
+              <p className="text-sm text-yellow-700 mt-1">{error}</p>
+            </div>
+            <div className="flex-shrink-0">
+              <button
+                onClick={() => setLocalReload((r) => r + 1)}
+                className="px-4 py-2 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50"
+              >
+                Retry
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   return (
     <div>
-      {error && (
-        <div className="mb-4 text-sm text-red-600 bg-red-50 border border-red-200 rounded p-2">
-          {error} (showing fallback categories)
-        </div>
-      )}
       <CategoriesSection categories={categories} />
     </div>
   );
@@ -89,6 +109,10 @@ function CategoriesClient({ onLoad }: { onLoad?: (cats: Category[]) => void }) {
 export default function WomenPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<Category[]>([]);
+
+  const handleCategoriesLoad = useCallback((cats: Category[]) => {
+    setCategories(cats);
+  }, []);
 
   const handleProductClick = (product: Product) => {
     // Navigate to product details page with the product ID
@@ -104,7 +128,7 @@ export default function WomenPage() {
 
       {/* Categories Section (hidden) - kept for logic but removed from UI */}
       <section className="hidden">
-        <CategoriesClient onLoad={(cats) => setCategories(cats)} />
+        <CategoriesClient onLoad={handleCategoriesLoad} />
       </section>
 
       {/* Products Grid Section */}

@@ -1,5 +1,5 @@
 // src/hooks/useProducts.ts
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { fetchPublicProducts, Product, ProductQueryParams } from '@/utils/api';
 
 export interface UseProductsOptions extends ProductQueryParams {
@@ -20,6 +20,17 @@ export const useProducts = (options: UseProductsOptions = {}): UseProductsReturn
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+
+  // Use a ref to track if params have changed to prevent unnecessary fetches
+  const prevParamsRef = useRef<string>('');
+  const currentParamsStr = JSON.stringify({
+    enabled,
+    mainCategory: queryParams.mainCategory,
+    category: queryParams.category,
+    subcategory: queryParams.subcategory,
+    page: queryParams.page,
+    limit: queryParams.limit,
+  });
 
   const fetchProducts = async () => {
     if (!enabled) return;
@@ -122,9 +133,17 @@ export const useProducts = (options: UseProductsOptions = {}): UseProductsReturn
   };
 
   useEffect(() => {
-    fetchProducts();
+    // Only fetch if params have actually changed
+    if (prevParamsRef.current !== currentParamsStr) {
+      prevParamsRef.current = currentParamsStr;
+      setRetryCount(0); // Reset retry count on param change
+      fetchProducts();
+    } else if (retryCount > 0) {
+      // Only fetch on retry count change if params haven't changed
+      fetchProducts();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [enabled, queryParams.mainCategory, queryParams.category, queryParams.subcategory, queryParams.page, queryParams.limit, retryCount]);
+  }, [currentParamsStr, retryCount]);
 
   return {
     products,

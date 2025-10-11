@@ -55,7 +55,7 @@ type WishlistItem = {
 
 export default function AccountPage() {
   const RAW_API_BASE =
-    process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080";
+    process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.makwatches.in";
   const API_BASE = RAW_API_BASE.replace(/\/+$/, "");
   // Replaced local state/fetch logic with the useAccount hook
   const {

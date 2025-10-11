@@ -3,7 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { motion } from "framer-motion";
 
 const API_BASE = (
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8080"
+  process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.makwatches.in"
 ).replace(/\/$/, "");
 
 // --- Mak Watches brand palette (black/white/gold) ---

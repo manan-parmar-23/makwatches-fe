@@ -78,7 +78,7 @@ const MobileNavbar = () => {
         {/* Logo */}
         <div className="flex items-center">
           <Image
-            src="/logo.png"
+            src="/logo.svg"
             alt="Logo"
             width={32}
             height={32}
@@ -382,7 +382,7 @@ const Navbar = () => {
           {/* Center logo */}
           <div className="flex-1 flex justify-center">
             <Image
-              src="/logo-1.png"
+              src="/logo.svg"
               alt="Logo"
               width={36}
               height={36}

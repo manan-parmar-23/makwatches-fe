@@ -77,7 +77,7 @@ export default function LoadingSpinner() {
               className="flex justify-center mb-8"
             >
               <Image
-                src="/logo.png"
+                src="/logo.svg"
                 alt="Makwatches Logo"
                 width={160}
                 height={80}
