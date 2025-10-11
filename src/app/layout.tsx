@@ -78,13 +78,21 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.ico" },
       { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/favicon.ico", sizes: "any" },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: ["/favicon.svg"],
     apple: [
-      { url: "/apple-icon.png" },
+      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/apple-icon.png", sizes: "192x192", type: "image/png" },
       { url: "/apple-icon-180x180.png", sizes: "180x180", type: "image/png" },
+    ],
+    other: [
+      {
+        rel: "mask-icon",
+        url: "/favicon.svg",
+        color: "#531A1A",
+      },
     ],
   },
   manifest: "/manifest.json",
