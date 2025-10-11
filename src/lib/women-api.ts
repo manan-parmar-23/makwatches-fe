@@ -39,7 +39,7 @@ export const fallbackProducts: Product[] = [
     subcategory: 'tops',
     imageUrl: '/products/women-tshirt-pink.jpg',
     images: ['/products/women-tshirt-pink.jpg'],
-    brand: 'PEHNAW',
+    brand: 'makwatches',
     stock: 10,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -54,7 +54,7 @@ export const fallbackProducts: Product[] = [
     subcategory: 'tops',
     imageUrl: '/products/women-tshirt-beige.jpg',
     images: ['/products/women-tshirt-beige.jpg'],
-    brand: 'PEHNAW',
+    brand: 'makwatches',
     stock: 15,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -69,7 +69,7 @@ export const fallbackProducts: Product[] = [
     subcategory: 'tops',
     imageUrl: '/products/women-tshirt-blue.jpg',
     images: ['/products/women-tshirt-blue.jpg'],
-    brand: 'PEHNAW',
+    brand: 'makwatches',
     stock: 8,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()
@@ -84,7 +84,7 @@ export const fallbackProducts: Product[] = [
     subcategory: 'tops',
     imageUrl: '/products/women-tshirt-pink-crop.jpg',
     images: ['/products/women-tshirt-pink-crop.jpg'],
-    brand: 'PEHNAW',
+    brand: 'makwatches',
     stock: 12,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString()

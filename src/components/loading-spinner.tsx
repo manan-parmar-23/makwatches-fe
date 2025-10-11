@@ -78,7 +78,7 @@ export default function LoadingSpinner() {
             >
               <Image
                 src="/logo.png"
-                alt="Pehnaw Logo"
+                alt="Makwatches Logo"
                 width={160}
                 height={80}
                 className="w-40 h-auto"

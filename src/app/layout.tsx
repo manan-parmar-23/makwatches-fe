@@ -10,6 +10,11 @@ import LenisProvider from "@/components/lenis-provider";
 export const metadata: Metadata = {
   title: "MAK Watches",
   description: "MAK — Premium watch e-commerce",
+  icons: {
+    icon: "/logo.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({

@@ -22,9 +22,9 @@ const COLORS = {
 };
 
 export default function AdminAuthPage() {
-  const { login, register, loading } = useAuth();
-  const [isLogin, setIsLogin] = useState(true);
-  const [form, setForm] = useState({ email: "", password: "", name: "" });
+  const { login, loading } = useAuth(); // register removed, login-only
+  //const isLogin = true; // locked to login-only
+  const [form, setForm] = useState({ email: "", password: "" }); // name removed
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -37,14 +37,8 @@ export default function AdminAuthPage() {
     setError("");
     setSubmitting(true);
     try {
-      if (isLogin) {
-        await login(form.email, form.password, "admin");
-      } else {
-        await register?.(
-          { email: form.email, password: form.password, name: form.name },
-          "admin"
-        );
-      }
+      // Always use admin login flow (login-only page)
+      await login(form.email, form.password, "admin");
     } catch (err: unknown) {
       if (typeof err === "object" && err !== null && "message" in err) {
         setError(
@@ -104,55 +98,19 @@ export default function AdminAuthPage() {
               className="text-3xl font-bold mb-2 transition-colors duration-300"
               style={{ color: COLORS.text }}
             >
-              Admin {isLogin ? "Login" : "Register"}
+              Admin Login
             </h1>
 
             <p
               className="text-sm transition-colors duration-300"
               style={{ color: COLORS.textMuted }}
             >
-              {isLogin
-                ? "Welcome back! Please sign in to continue."
-                : "Create your admin account to get started."}
+              Welcome back! Please sign in to continue.
             </p>
           </div>
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            {/* Name field for registration */}
-            <div
-              className={`transform transition-all duration-500 ${
-                isLogin
-                  ? "max-h-0 opacity-0 overflow-hidden"
-                  : "max-h-20 opacity-100"
-              }`}
-            >
-              <div className="relative">
-                <input
-                  type="text"
-                  name="name"
-                  placeholder="Full Name"
-                  value={form.name}
-                  onChange={handleChange}
-                  className="w-full px-4 py-4 rounded-xl border-2 transition-all duration-300 focus:outline-none focus:scale-[1.02] placeholder-opacity-70"
-                  style={{
-                    backgroundColor: COLORS.inputBg,
-                    borderColor: COLORS.inputBorder,
-                    color: COLORS.text,
-                  }}
-                  onFocus={(e) => {
-                    e.target.style.borderColor = COLORS.inputFocus;
-                    e.target.style.boxShadow = `0 0 0 3px ${COLORS.inputFocus}20`;
-                  }}
-                  onBlur={(e) => {
-                    e.target.style.borderColor = COLORS.inputBorder;
-                    e.target.style.boxShadow = "none";
-                  }}
-                  required={!isLogin}
-                />
-              </div>
-            </div>
-
             {/* Email field */}
             <div className="relative">
               <input
@@ -246,7 +204,7 @@ export default function AdminAuthPage() {
                     Please wait...
                   </span>
                 ) : (
-                  <span>{isLogin ? "Sign In" : "Create Account"}</span>
+                  <span>Sign In</span>
                 )}
               </span>
               {!submitting && !loading && (
@@ -256,7 +214,7 @@ export default function AdminAuthPage() {
           </form>
 
           {/* Toggle authentication mode */}
-          <div className="mt-8 text-center">
+          {/* <div className="mt-8 text-center">
             <button
               type="button"
               className="text-sm transition-all duration-300 hover:underline focus:outline-none focus:underline relative group"
@@ -279,7 +237,7 @@ export default function AdminAuthPage() {
                 />
               </span>
             </button>
-          </div>
+          </div> */}
         </div>
       </div>
     </div>

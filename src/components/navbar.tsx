@@ -78,7 +78,7 @@ const MobileNavbar = () => {
         {/* Logo */}
         <div className="flex items-center">
           <Image
-            src="/logo-1.png"
+            src="/logo.png"
             alt="Logo"
             width={32}
             height={32}
@@ -190,18 +190,35 @@ const MobileNavbar = () => {
             </Link>
             {/* Account Button Logic */}
             <div>
-              <button
-                className={linkClass + " block py-2 text-left w-full"}
-                onClick={() =>
-                  setExpandedMenu(expandedMenu === "account" ? null : "account")
-                }
-              >
-                {role === "customer" && user
-                  ? "Account"
-                  : role === "admin" && user
-                  ? "Dashboard"
-                  : "Login"}
-              </button>
+              {!user || !role ? (
+                // When not logged in, route directly to customer login
+                <Link
+                  href="/login"
+                  className={linkClass + " block py-2 text-left w-full"}
+                  onClick={() => {
+                    setOpen(false);
+                    setExpandedMenu(null);
+                  }}
+                >
+                  Login
+                </Link>
+              ) : (
+                // Logged-in users keep dropdown behavior
+                <button
+                  className={linkClass + " block py-2 text-left w-full"}
+                  onClick={() =>
+                    setExpandedMenu(
+                      expandedMenu === "account" ? null : "account"
+                    )
+                  }
+                >
+                  {role === "customer" && user
+                    ? "Account"
+                    : role === "admin" && user
+                    ? "Dashboard"
+                    : "Login"}
+                </button>
+              )}
               <AnimatePresence>
                 {expandedMenu === "account" && (
                   <motion.div
@@ -220,6 +237,8 @@ const MobileNavbar = () => {
                         >
                           Customer Login
                         </Link>
+                        {/* Admin Login removed per request */}
+                        {/*
                         <Link
                           href="/admin/login"
                           className="block py-2 text-accent"
@@ -227,6 +246,7 @@ const MobileNavbar = () => {
                         >
                           Admin Login
                         </Link>
+                        */}
                         <Link
                           href="/"
                           className="block py-2 text-accent"
@@ -379,16 +399,28 @@ const Navbar = () => {
             </Link>
             {/* Account Button Logic */}
             <div className="relative">
-              <button
-                className={linkClass}
-                onClick={() => setShowAccountMenu((v) => !v)}
-              >
-                {role === "customer" && user
-                  ? "Account"
-                  : role === "admin" && user
-                  ? "Dashboard"
-                  : "Login"}
-              </button>
+              {!user || !role ? (
+                // When not logged in, route directly to customer login
+                <Link
+                  href="/login"
+                  className={linkClass}
+                  onClick={() => setShowAccountMenu(false)}
+                >
+                  Login
+                </Link>
+              ) : (
+                // Logged-in users keep dropdown behavior
+                <button
+                  className={linkClass}
+                  onClick={() => setShowAccountMenu((v) => !v)}
+                >
+                  {role === "customer" && user
+                    ? "Account"
+                    : role === "admin" && user
+                    ? "Dashboard"
+                    : "Login"}
+                </button>
+              )}
               <AnimatePresence>
                 {showAccountMenu && (
                   <motion.div
@@ -407,6 +439,8 @@ const Navbar = () => {
                         >
                           Customer Login
                         </Link>
+                        {/* Admin Login removed per request */}
+                        {/*
                         <Link
                           href="/admin/login"
                           className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
@@ -414,6 +448,7 @@ const Navbar = () => {
                         >
                           Admin Login
                         </Link>
+                        */}
                         <Link
                           href="/"
                           className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"

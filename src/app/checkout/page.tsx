@@ -531,7 +531,7 @@ export default function CheckoutPage() {
         key: pj.key,
         amount: rzpData.amount,
         currency: rzpData.currency,
-        name: "Pehnaw",
+        name: "makwatches",
         order_id: rzpData.id,
         prefill: { contact: mobile },
         theme: { color: "#531A1A" },

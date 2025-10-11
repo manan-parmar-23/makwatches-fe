@@ -146,7 +146,7 @@ export default function OrdersPage() {
         key: pj.key,
         amount: pj.amount,
         currency: pj.currency,
-        name: "Pehnaw",
+        name: "makwatches",
         order_id: rzpData.id,
         handler: async (resp: {
           razorpay_order_id: string;

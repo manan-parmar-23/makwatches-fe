@@ -91,7 +91,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState<Settings>({
-    storeName: "Pehnaw",
+    storeName: "Makwatches",
     storeDescription: "",
     contactEmail: "",
     contactPhone: "",

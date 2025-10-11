@@ -2,9 +2,9 @@
 // Replace these images with actual assets in your project
 // Required images:
 // - /hero-women.jpg (Hero banner image)
-// - /logo-icon.png (Pehnaw logo)
+// - /logo-icon.png (makwatches logo)
 // - /categories/tops.jpg (Category image)
-// - /pehnaw-must.jpg (Featured product image)
+// - /makwatches-must.jpg (Featured product image)
 // - /promo-champions.jpg (Promo banner image)
 // - /products/women-tshirt-pink.jpg (Product image)
 // - /products/women-tshirt-beige.jpg (Product image)
