@@ -121,3 +121,42 @@ export const categoryApi = {
 };
 
 export default api;
+
+// Payment API (Razorpay)
+export const paymentApi = {
+  // Create a Razorpay order from current cart on server
+  createRazorpayOrder: async () => {
+    const res = await api.post('/payments/razorpay/order', {});
+    return res.data as {
+      success: boolean;
+      key: string;
+      amount: number; // paise
+      currency: string;
+      data: unknown; // contains order details from Razorpay
+    };
+  },
+};
+
+// Checkout API
+export const checkoutApi = {
+  placeOrder: async (payload: {
+    shippingAddress: {
+      street: string;
+      city: string;
+      state: string;
+      zipCode: string;
+      country: string;
+      landmark?: string;
+    };
+    paymentInfo: {
+      method: 'razorpay' | 'cod';
+      razorpayOrderId?: string;
+      razorpayPaymentId?: string;
+      razorpaySignature?: string;
+    };
+    clientTotal?: number;
+  }) => {
+    const res = await api.post('/checkout', payload);
+    return res.data;
+  },
+};

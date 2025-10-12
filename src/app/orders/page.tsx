@@ -34,9 +34,10 @@ type OrderItem = {
 type Order = {
   id: string;
   status: string;
+  paymentStatus?: string;
   total: number;
   createdAt: string;
-  paymentInfo: { method: string };
+  paymentInfo: { method: string; razorpayPaymentId?: string };
   items: OrderItem[];
 };
 
@@ -250,6 +251,28 @@ export default function OrdersPage() {
     }
   };
 
+  // Payment status badge styles
+  const getPaymentStatusStyle = (status: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "paid":
+        return { bg: "#ECFDF5", text: "#065F46", border: "#10B981", icon: "₹" };
+      case "unpaid":
+        return {
+          bg: "#FEF3C7",
+          text: "#92400E",
+          border: "#F59E0B",
+          icon: "⏳",
+        };
+      case "failed":
+        return { bg: "#FEE2E2", text: "#991B1B", border: "#EF4444", icon: "!" };
+      case "refunded":
+        return { bg: "#E0E7FF", text: "#3730A3", border: "#6366F1", icon: "↩" };
+      default:
+        return { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF", icon: "₹" };
+    }
+  };
+
   // Format date helper
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
@@ -390,6 +413,8 @@ export default function OrdersPage() {
       <div className="space-y-6 mt-6">
         {orders.map((o) => {
           const statusStyle = getStatusStyle(o.status);
+          const paymentStatus = o.paymentStatus || "";
+          const payStyle = getPaymentStatusStyle(paymentStatus);
           return (
             <article
               key={o.id}
@@ -420,6 +445,18 @@ export default function OrdersPage() {
                       }}
                     >
                       {statusStyle.icon} {o.status}
+                    </span>
+                    <span
+                      className="px-3 py-1 rounded-full text-sm font-medium border"
+                      style={{
+                        backgroundColor: payStyle.bg,
+                        color: payStyle.text,
+                        borderColor: payStyle.border,
+                      }}
+                      title="Payment status"
+                    >
+                      {payStyle.icon}{" "}
+                      {(paymentStatus || "unpaid").toUpperCase()}
                     </span>
                   </div>
                   <div

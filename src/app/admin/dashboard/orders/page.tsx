@@ -62,9 +62,11 @@ interface PaymentInfo {
 interface Order {
   id: string;
   userId: string;
+  customerName?: string;
   items: OrderItem[];
   total: number;
   status: string;
+  paymentStatus?: string;
   shippingAddress: Address;
   paymentInfo: PaymentInfo;
   createdAt: string;
@@ -77,6 +79,7 @@ export default function OrdersPage() {
   const [viewOrder, setViewOrder] = useState<Order | null>(null);
   const [updateOrder, setUpdateOrder] = useState<string | null>(null);
   const [newStatus, setNewStatus] = useState<string>("processing");
+  const [newPaymentStatus, setNewPaymentStatus] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
 
@@ -113,7 +116,9 @@ export default function OrdersPage() {
     if (!updateOrder || !newStatus) return;
 
     try {
-      await api.patch(`/orders/${updateOrder}/status`, { status: newStatus });
+      const payload: Record<string, string> = { status: newStatus };
+      if (newPaymentStatus) payload.paymentStatus = newPaymentStatus;
+      await api.patch(`/orders/${updateOrder}/status`, payload);
 
       // Update order in local state
       setOrders(
@@ -122,6 +127,7 @@ export default function OrdersPage() {
             ? {
                 ...order,
                 status: newStatus,
+                paymentStatus: newPaymentStatus || order.paymentStatus,
                 updatedAt: new Date().toISOString(),
               }
             : order
@@ -129,6 +135,7 @@ export default function OrdersPage() {
       );
 
       setUpdateOrder(null);
+      setNewPaymentStatus("");
       alert("Order status updated successfully");
     } catch (error) {
       console.error("Error updating order status", error);
@@ -184,6 +191,22 @@ export default function OrdersPage() {
         return { bg: "#D1FAE5", text: "#065F46", border: "#10B981" };
       case "cancelled":
         return { bg: "#FEE2E2", text: "#B91C1C", border: "#EF4444" };
+      default:
+        return { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF" };
+    }
+  };
+
+  const getPaymentStatusColor = (status?: string) => {
+    const s = (status || "").toLowerCase();
+    switch (s) {
+      case "paid":
+        return { bg: "#ECFDF5", text: "#065F46", border: "#10B981" };
+      case "unpaid":
+        return { bg: "#FEF3C7", text: "#92400E", border: "#F59E0B" };
+      case "failed":
+        return { bg: "#FEE2E2", text: "#991B1B", border: "#EF4444" };
+      case "refunded":
+        return { bg: "#E0E7FF", text: "#3730A3", border: "#6366F1" };
       default:
         return { bg: "#F3F4F6", text: "#374151", border: "#9CA3AF" };
     }
@@ -368,6 +391,33 @@ export default function OrdersPage() {
                 </select>
               </div>
 
+              <div>
+                <label
+                  className="block text-xs mb-1.5"
+                  style={{ color: COLORS.textMuted }}
+                >
+                  Payment Status (optional)
+                </label>
+                <select
+                  value={newPaymentStatus}
+                  onChange={(e) => setNewPaymentStatus(e.target.value)}
+                  className="w-full rounded-lg px-3 py-2 text-sm transition-all duration-300"
+                  style={{
+                    backgroundColor: COLORS.inputBg,
+                    borderColor: COLORS.inputBorder,
+                    border: `1px solid ${COLORS.inputBorder}`,
+                    color: COLORS.text,
+                    outline: "none",
+                  }}
+                >
+                  <option value="">No change</option>
+                  <option value="unpaid">Unpaid</option>
+                  <option value="paid">Paid</option>
+                  <option value="failed">Failed</option>
+                  <option value="refunded">Refunded</option>
+                </select>
+              </div>
+
               <div className="flex gap-2 sm:justify-end">
                 <button
                   type="button"
@@ -501,6 +551,26 @@ export default function OrdersPage() {
                       }}
                     >
                       {viewOrder.status.toUpperCase()}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Payment:
+                    </span>
+                    <span
+                      className="px-2 rounded-full text-xs border"
+                      style={{
+                        backgroundColor: getPaymentStatusColor(
+                          viewOrder.paymentStatus
+                        ).bg,
+                        color: getPaymentStatusColor(viewOrder.paymentStatus)
+                          .text,
+                        borderColor: getPaymentStatusColor(
+                          viewOrder.paymentStatus
+                        ).border,
+                      }}
+                    >
+                      {(viewOrder.paymentStatus || "unpaid").toUpperCase()}
                     </span>
                   </div>
                 </div>
@@ -827,18 +897,23 @@ export default function OrdersPage() {
                         <div className="flex items-center space-x-2">
                           <div
                             className="w-7 h-7 rounded-lg flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-all duration-300"
-                            style={{ backgroundColor: `${COLORS.secondary}40` }}
+                            style={{ backgroundColor: `${COLORS.secondary}90` }}
                           >
                             <UserIcon
                               className="w-3.5 h-3.5"
-                              style={{ color: COLORS.primary }}
+                              style={{ color: "white" }}
                             />
                           </div>
                           <span
                             className="text-xs font-medium overflow-hidden text-ellipsis"
                             style={{ color: COLORS.text }}
+                            title={order.customerName || order.userId}
                           >
-                            {order.userId.substring(0, 8)}...
+                            {order.customerName
+                              ? order.customerName.length > 18
+                                ? order.customerName.slice(0, 15) + "..."
+                                : order.customerName
+                              : order.userId.substring(0, 8) + "..."}
                           </span>
                         </div>
                       </td>

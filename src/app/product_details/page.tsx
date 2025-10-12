@@ -102,7 +102,9 @@ function ProductDetailsInner() {
         return;
       }
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"}/cart`,
+        `${
+          process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
+        }/cart`,
         {
           method: "POST",
           headers: {

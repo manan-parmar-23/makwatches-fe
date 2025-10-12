@@ -3,12 +3,14 @@
 ## Pre-Deployment SEO Setup
 
 ### 1. Vercel Project Settings
+
 - [ ] Set custom domain: `makwatches.in`
 - [ ] Set `www.makwatches.in` as alias (redirects to main domain)
 - [ ] Enable HTTPS (automatic with Vercel)
 - [ ] Set environment variables if needed
 
 ### 2. Domain Configuration (Vercel DNS)
+
 ```
 Type: A
 Name: @
@@ -20,12 +22,15 @@ Value: cname.vercel-dns.com
 ```
 
 ### 3. Environment Variables (.env)
+
 Already configured:
+
 ```
 NEXT_PUBLIC_API_BASE_URL=https://api.makwatches.in
 ```
 
 ### 4. Build Settings
+
 - Framework Preset: Next.js
 - Build Command: `npm run build`
 - Output Directory: `.next`
@@ -34,6 +39,7 @@ NEXT_PUBLIC_API_BASE_URL=https://api.makwatches.in
 ### 5. SEO Files Verification
 
 Check these URLs after deployment:
+
 - ✅ https://makwatches.in/robots.txt
 - ✅ https://makwatches.in/sitemap.xml
 - ✅ https://makwatches.in/manifest.json
@@ -43,11 +49,13 @@ Check these URLs after deployment:
 ### 6. Meta Tags Verification
 
 Use these tools to verify:
+
 - [Facebook Sharing Debugger](https://developers.facebook.com/tools/debug/)
 - [Twitter Card Validator](https://cards-dev.twitter.com/validator)
 - [LinkedIn Post Inspector](https://www.linkedin.com/post-inspector/)
 
 Test URLs:
+
 - https://makwatches.in
 - https://makwatches.in/men
 - https://makwatches.in/women
@@ -55,6 +63,7 @@ Test URLs:
 ### 7. Favicon Display
 
 After deployment, verify favicon appears in:
+
 - Browser tab
 - Bookmarks
 - Mobile home screen (when "Add to Home Screen")
@@ -63,6 +72,7 @@ After deployment, verify favicon appears in:
 ### 8. Google Search Console
 
 **After deployment:**
+
 1. Go to [Google Search Console](https://search.google.com/search-console)
 2. Add property: `https://makwatches.in`
 3. Verify ownership using one of these methods:
@@ -71,11 +81,13 @@ After deployment, verify favicon appears in:
    - HTML file upload
 
 **Get verification code:**
+
 - Click on your property
 - Settings > Ownership verification
 - Copy the verification code
 
 **Add to layout.tsx:**
+
 ```typescript
 verification: {
   google: "paste-your-code-here",
@@ -91,12 +103,13 @@ verification: {
 3. Add to your project:
 
 Create `/src/lib/gtag.ts`:
+
 ```typescript
-export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || '';
+export const GA_MEASUREMENT_ID = process.env.NEXT_PUBLIC_GA_ID || "";
 
 export const pageview = (url: string) => {
-  if (typeof window !== 'undefined' && (window as any).gtag) {
-    (window as any).gtag('config', GA_MEASUREMENT_ID, {
+  if (typeof window !== "undefined" && (window as any).gtag) {
+    (window as any).gtag("config", GA_MEASUREMENT_ID, {
       page_path: url,
     });
   }
@@ -104,6 +117,7 @@ export const pageview = (url: string) => {
 ```
 
 Add to `layout.tsx`:
+
 ```typescript
 <Script
   strategy="afterInteractive"
@@ -128,11 +142,13 @@ Add to `layout.tsx`:
 ### 10. Performance Testing
 
 After deployment, test with:
+
 - [Google PageSpeed Insights](https://pagespeed.web.dev/)
 - [GTmetrix](https://gtmetrix.com/)
 - [WebPageTest](https://www.webpagetest.org/)
 
 **Target Scores:**
+
 - Performance: 90+
 - SEO: 100
 - Accessibility: 90+
@@ -141,6 +157,7 @@ After deployment, test with:
 ### 11. Social Media Verification
 
 **Test social sharing:**
+
 1. Share on Facebook - verify OG image appears
 2. Share on Twitter - verify card displays correctly
 3. Share on LinkedIn - verify preview looks good
@@ -149,6 +166,7 @@ After deployment, test with:
 ### 12. Instagram Bio Update
 
 Update Instagram bio (@mak_watches.23) with:
+
 ```
 🕐 Premium Luxury Watches
 🛍️ Shop Now 👇
@@ -158,12 +176,14 @@ makwatches.in
 ### 13. Search Visibility Timeline
 
 **Expected timeline for "MAK Watches" to appear in Google:**
+
 - Week 1: Site indexed
 - Week 2-4: Brand name appears
 - Month 2-3: Organic traffic begins
 - Month 3-6: Rankings improve
 
 **Accelerate indexing:**
+
 - Request indexing in Search Console
 - Share on social media
 - Get backlinks
@@ -172,12 +192,14 @@ makwatches.in
 ### 14. Monitoring Setup
 
 **Weekly checks:**
+
 - [ ] Search Console for errors
 - [ ] Google Analytics traffic
 - [ ] Website uptime
 - [ ] Favicon display across browsers
 
 **Monthly checks:**
+
 - [ ] Ranking for "MAK Watches"
 - [ ] Organic traffic growth
 - [ ] Page speed scores
@@ -186,6 +208,7 @@ makwatches.in
 ## Post-Deployment Tasks
 
 ### Immediate (Day 1)
+
 - [ ] Verify site is live at makwatches.in
 - [ ] Check all pages load correctly
 - [ ] Test favicon on desktop & mobile
@@ -196,6 +219,7 @@ makwatches.in
 - [ ] Install Google Analytics
 
 ### Week 1
+
 - [ ] Request indexing for key pages
 - [ ] Share website on Instagram
 - [ ] Share on other social platforms
@@ -203,6 +227,7 @@ makwatches.in
 - [ ] Check initial Analytics data
 
 ### Month 1
+
 - [ ] Review Search Console performance
 - [ ] Analyze traffic sources
 - [ ] Create first blog post
@@ -212,17 +237,20 @@ makwatches.in
 ## Quick Commands
 
 **Build locally to test:**
+
 ```bash
 npm run build
 npm run start
 ```
 
 **Check for errors:**
+
 ```bash
 npm run lint
 ```
 
 **Test production build:**
+
 ```bash
 npm run build && npm run start
 ```

@@ -87,9 +87,9 @@ export default function AdminAuthPage() {
               <Image
                 src="/mak-logo.svg"
                 alt="MAK Logo"
-                width={48}
-                height={48}
-                className="object-contain"
+                width={64}
+                height={64}
+                className="object-fill"
                 priority
               />
             </div>

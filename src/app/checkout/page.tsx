@@ -55,7 +55,8 @@ interface PlacedOrder {
   paymentInfo: { method: string };
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
 
 // Resolve any token (customer/admin) from storage
 function getToken(): string | null {
