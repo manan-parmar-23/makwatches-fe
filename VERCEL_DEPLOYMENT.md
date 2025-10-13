@@ -26,7 +26,7 @@ Value: cname.vercel-dns.com
 Already configured:
 
 ```
-NEXT_PUBLIC_API_BASE_URL=https://api.makwatches.in
+NEXT_PUBLIC_API_BASE_URL=https://api.makwatches.in/
 ```
 
 ### 4. Build Settings
