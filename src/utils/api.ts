@@ -33,6 +33,11 @@ export interface Product {
   description: string;
   images: string[];
   imageUrl?: string;
+  // Discount fields (optional)
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
   createdAt?: string;
   updatedAt?: string;
 }

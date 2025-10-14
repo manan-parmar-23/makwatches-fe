@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Category,
@@ -8,6 +8,7 @@ import {
   uploadImages,
 } from "../../utils/api";
 import { useProductsStore } from "../../store/useProductsStore";
+import { DiscountSection } from "./DiscountSection";
 
 interface Props {
   open: boolean;
@@ -24,6 +25,10 @@ const emptyForm = () => ({
   stock: 0,
   description: "",
   images: [] as string[],
+  discountPercentage: null as number | null,
+  discountAmount: null as number | null,
+  discountStartDate: null as string | null,
+  discountEndDate: null as string | null,
 });
 
 export const ProductFormModal: React.FC<Props> = ({
@@ -41,36 +46,50 @@ export const ProductFormModal: React.FC<Props> = ({
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [discountType, setDiscountType] = useState<"percentage" | "amount">(
+    "percentage"
+  );
   // Ref to the scrollable inner content so we can forward wheel events to it
   const contentRef = useRef<HTMLDivElement | null>(null);
+  const modalRef = useRef<HTMLDivElement | null>(null);
 
-  // Handle wheel events on the overlay/root so that wheel/trackpad scrolls
-  // the inner content only. This prevents the background or the page from
-  // scrolling when the modal is open while allowing the form content to
-  // scroll with mouse wheel on desktop and with touch on mobile.
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    const el = contentRef.current;
-    if (!el) {
+  // Handle wheel events using native event listener to avoid passive event warning
+  useEffect(() => {
+    if (!open || !modalRef.current) return;
+
+    const modalElement = modalRef.current;
+
+    const handleWheel = (e: WheelEvent) => {
+      const el = contentRef.current;
+      if (!el) {
+        e.preventDefault();
+        return;
+      }
+
+      const delta = e.deltaY;
+      const atTop = el.scrollTop === 0;
+      const atBottom =
+        Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 1;
+
+      // If trying to scroll past bounds, prevent page/background from scrolling.
+      if ((delta < 0 && atTop) || (delta > 0 && atBottom)) {
+        e.preventDefault();
+        return;
+      }
+
+      // Otherwise, manually scroll the inner container and prevent default so
+      // the event doesn't bubble to the document.
       e.preventDefault();
-      return;
-    }
+      el.scrollTop += delta;
+    };
 
-    const delta = e.deltaY;
-    const atTop = el.scrollTop === 0;
-    const atBottom =
-      Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < 1;
+    // Add as non-passive listener to allow preventDefault
+    modalElement.addEventListener("wheel", handleWheel, { passive: false });
 
-    // If trying to scroll past bounds, prevent page/background from scrolling.
-    if ((delta < 0 && atTop) || (delta > 0 && atBottom)) {
-      e.preventDefault();
-      return;
-    }
-
-    // Otherwise, manually scroll the inner container and prevent default so
-    // the event doesn't bubble to the document.
-    e.preventDefault();
-    el.scrollTop += delta;
-  }, []);
+    return () => {
+      modalElement.removeEventListener("wheel", handleWheel);
+    };
+  }, [open]);
 
   useEffect(() => {
     if (open) {
@@ -102,6 +121,10 @@ export const ProductFormModal: React.FC<Props> = ({
           stock: editing.stock,
           description: editing.description,
           images: editing.images || [],
+          discountPercentage: editing.discountPercentage ?? null,
+          discountAmount: editing.discountAmount ?? null,
+          discountStartDate: editing.discountStartDate ?? null,
+          discountEndDate: editing.discountEndDate ?? null,
         });
       } else {
         setForm(emptyForm());
@@ -192,6 +215,23 @@ export const ProductFormModal: React.FC<Props> = ({
     }
   };
 
+  // Discount handlers
+  const handleDiscountTypeChange = (type: "percentage" | "amount") => {
+    setDiscountType(type);
+    if (type === "percentage") {
+      handleChange("discountAmount", null);
+    } else {
+      handleChange("discountPercentage", null);
+    }
+  };
+
+  const handleClearDiscount = () => {
+    handleChange("discountPercentage", null);
+    handleChange("discountAmount", null);
+    handleChange("discountStartDate", null);
+    handleChange("discountEndDate", null);
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
@@ -234,6 +274,7 @@ export const ProductFormModal: React.FC<Props> = ({
     <AnimatePresence>
       {open && (
         <motion.div
+          ref={modalRef}
           className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -241,7 +282,6 @@ export const ProductFormModal: React.FC<Props> = ({
           // Allow pointer/touch/ wheel to reach the modal; the inner element
           // is responsible for scrolling. 'touchAction: pan-y' helps on touch devices.
           style={{ height: "100dvh", touchAction: "pan-y" }}
-          onWheel={handleWheel}
         >
           <div
             className="absolute inset-0 bg-black/50 backdrop-blur-sm"
@@ -500,6 +540,29 @@ export const ProductFormModal: React.FC<Props> = ({
                     />
                   </div>
                 </div>
+
+                {/* Discount Section */}
+                <DiscountSection
+                  discountType={discountType}
+                  discountPercentage={form.discountPercentage}
+                  discountAmount={form.discountAmount}
+                  discountStartDate={form.discountStartDate}
+                  discountEndDate={form.discountEndDate}
+                  onDiscountTypeChange={handleDiscountTypeChange}
+                  onDiscountPercentageChange={(value) =>
+                    handleChange("discountPercentage", value)
+                  }
+                  onDiscountAmountChange={(value) =>
+                    handleChange("discountAmount", value)
+                  }
+                  onDiscountStartDateChange={(value) =>
+                    handleChange("discountStartDate", value)
+                  }
+                  onDiscountEndDateChange={(value) =>
+                    handleChange("discountEndDate", value)
+                  }
+                  onClearDiscount={handleClearDiscount}
+                />
 
                 {/* Images Section */}
                 <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">

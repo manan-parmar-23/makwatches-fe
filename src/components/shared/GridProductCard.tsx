@@ -3,6 +3,11 @@ import React from "react";
 import Image from "next/image";
 import { Product } from "@/utils/api";
 import { useShoppingContext } from "@/context/ShoppingContext";
+import DiscountBadge, {
+  PriceWithDiscount,
+  SavingsBadge,
+} from "./DiscountBadge";
+import { calculateDiscount } from "@/utils/discount";
 
 interface GridProductCardProps {
   product: Product;
@@ -26,10 +31,6 @@ const GridProductCard: React.FC<GridProductCardProps> = ({
     addToCart(product.id, 1);
   };
 
-  const formatPrice = (price: number) => {
-    return `₹${price.toLocaleString()}`;
-  };
-
   const getImageSrc = () => {
     if (product.images && product.images.length > 0) {
       return product.images[0];
@@ -39,6 +40,15 @@ const GridProductCard: React.FC<GridProductCardProps> = ({
     }
     return "/placeholder.png";
   };
+
+  // Calculate discount information
+  const discountInfo = calculateDiscount(
+    product.price,
+    product.discountPercentage,
+    product.discountAmount,
+    product.discountStartDate,
+    product.discountEndDate
+  );
 
   return (
     <div
@@ -55,6 +65,16 @@ const GridProductCard: React.FC<GridProductCardProps> = ({
           sizes="(max-width: 768px) 50vw, (max-width: 1200px) 33vw, 25vw"
         />
         <div className="absolute inset-0 bg-black opacity-0 group-hover:opacity-5 transition-opacity duration-500"></div>
+
+        {/* Discount Badge */}
+        {discountInfo.isActive && discountInfo.discountPercentage && (
+          <DiscountBadge
+            discountPercentage={discountInfo.discountPercentage}
+            position="top-right"
+            size="sm"
+            variant="premium"
+          />
+        )}
 
         {/* Stock indicator */}
         {product.stock && product.stock < 10 && product.stock > 0 && (
@@ -95,24 +115,34 @@ const GridProductCard: React.FC<GridProductCardProps> = ({
         )}
 
         {/* Price with elegant presentation */}
-        <div className="flex items-center justify-between border-t border-gray-50 pt-3">
-          <span className="font-semibold text-lg md:text-xl text-primary">
-            {formatPrice(product.price)}
-          </span>
+        <div className="border-t border-gray-50 pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <PriceWithDiscount
+              originalPrice={discountInfo.originalPrice}
+              finalPrice={discountInfo.finalPrice}
+              isActive={discountInfo.isActive}
+              size="sm"
+            />
 
-          {/* Add to cart button */}
-          <button
-            className={`opacity-100 transition-opacity duration-500 px-2 py-1 rounded-sm text-xs 
-              ${
-                isInCart(product.id)
-                  ? "bg-green-500 hover:bg-green-600"
-                  : "bg-accent hover:bg-primary/90"
-              } text-white`}
-            onClick={handleAddToCart}
-            disabled={product.stock === 0}
-          >
-            {isInCart(product.id) ? "In Cart" : "Add to Cart"}
-          </button>
+            {/* Add to cart button */}
+            <button
+              className={`opacity-100 transition-opacity duration-500 px-2 py-1 rounded-sm text-xs 
+                ${
+                  isInCart(product.id)
+                    ? "bg-green-500 hover:bg-green-600"
+                    : "bg-accent hover:bg-primary/90"
+                } text-white`}
+              onClick={handleAddToCart}
+              disabled={product.stock === 0}
+            >
+              {isInCart(product.id) ? "In Cart" : "Add to Cart"}
+            </button>
+          </div>
+
+          {/* Savings Badge */}
+          {discountInfo.isActive && (
+            <SavingsBadge savingsText={discountInfo.savingsText} />
+          )}
         </div>
       </div>
     </div>
