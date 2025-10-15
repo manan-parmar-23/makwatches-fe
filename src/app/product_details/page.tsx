@@ -3,6 +3,11 @@ import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { fetchPublicProductById } from "@/utils/api";
+import DiscountBadge, {
+  PriceWithDiscount,
+  SavingsBadge,
+} from "@/components/shared/DiscountBadge";
+import { calculateDiscount } from "@/utils/discount";
 
 interface DisplayProduct {
   id: string;
@@ -13,6 +18,10 @@ interface DisplayProduct {
   brand?: string;
   category?: string;
   stock?: number;
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
 }
 
 // Professional loading state instead of fallback data
@@ -56,6 +65,10 @@ function ProductDetailsInner() {
           brand?: string;
           category?: string;
           stock?: number;
+          discountPercentage?: number | null;
+          discountAmount?: number | null;
+          discountStartDate?: string | null;
+          discountEndDate?: string | null;
         };
         const p: PublicPartial = data.data as PublicPartial;
         if (!cancelled && p) {
@@ -71,6 +84,14 @@ function ProductDetailsInner() {
             brand: p.brand || FALLBACK.brand,
             category: p.category || FALLBACK.category,
             stock: typeof p.stock === "number" ? p.stock : FALLBACK.stock,
+            discountPercentage:
+              typeof p.discountPercentage === "number"
+                ? p.discountPercentage
+                : null,
+            discountAmount:
+              typeof p.discountAmount === "number" ? p.discountAmount : null,
+            discountStartDate: p.discountStartDate || null,
+            discountEndDate: p.discountEndDate || null,
           });
         }
       } catch {
@@ -134,8 +155,14 @@ function ProductDetailsInner() {
     }
   }
 
-  const priceTag = `₹${Math.round(product.price)}`;
   const isOutOfStock = (product.stock || 0) < 1;
+  const discountInfo = calculateDiscount(
+    product.price,
+    product.discountPercentage,
+    product.discountAmount,
+    product.discountStartDate,
+    product.discountEndDate
+  );
 
   return (
     <main className="container mx-auto px-4 md:px-8 py-12 max-w-7xl text-gray-800 mt-10 md:mt-20 font-inter">
@@ -155,7 +182,16 @@ function ProductDetailsInner() {
           <div className="grid md:grid-cols-2 gap-10">
             {/* Left: Images */}
             <div className="space-y-4">
-              <div className="aspect-square w-full bg-gradient-to-b from-amber-50 to-white flex items-center justify-center border border-amber-200 rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
+              <div className="aspect-square w-full bg-gradient-to-b from-amber-50 to-white flex items-center justify-center border border-amber-200 rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg relative">
+                {/* Discount badge over image */}
+                {discountInfo.isActive && discountInfo.discountPercentage && (
+                  <DiscountBadge
+                    discountPercentage={discountInfo.discountPercentage}
+                    position="top-left"
+                    variant="premium"
+                    size="sm"
+                  />
+                )}
                 <Image
                   src={product.images[imgIndex]}
                   alt={product.name}
@@ -198,9 +234,16 @@ function ProductDetailsInner() {
                   {product.name}
                 </h1>
                 <div className="flex items-center gap-3">
-                  <span className="text-xl md:text-2xl font-semibold text-amber-800">
-                    {priceTag}
-                  </span>
+                  <PriceWithDiscount
+                    originalPrice={discountInfo.originalPrice}
+                    finalPrice={discountInfo.finalPrice}
+                    isActive={discountInfo.isActive}
+                    size="lg"
+                    className="text-amber-900"
+                  />
+                  {discountInfo.isActive && discountInfo.savingsText && (
+                    <SavingsBadge savingsText={discountInfo.savingsText} />
+                  )}
                   {isOutOfStock ? (
                     <span className="text-xs px-2 py-1 bg-red-100 text-red-800 rounded-md border border-red-200">
                       Out of Stock
@@ -370,8 +413,13 @@ function ProductDetailsInner() {
                   <div className="text-center text-sm font-medium truncate w-full group-hover:text-amber-800 transition-colors">
                     {product.name}
                   </div>
-                  <div className="text-center text-xs text-amber-700">
-                    {priceTag}
+                  <div className="text-center text-xs text-amber-700 flex items-center justify-center gap-2">
+                    <PriceWithDiscount
+                      originalPrice={discountInfo.originalPrice}
+                      finalPrice={discountInfo.finalPrice}
+                      isActive={discountInfo.isActive}
+                      size="sm"
+                    />
                   </div>
                 </div>
               ))}

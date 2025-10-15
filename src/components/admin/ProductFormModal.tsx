@@ -29,6 +29,15 @@ const emptyForm = () => ({
   discountAmount: null as number | null,
   discountStartDate: null as string | null,
   discountEndDate: null as string | null,
+  // filter attributes
+  gender: "",
+  dialColor: "",
+  dialShape: "",
+  dialType: "",
+  strapColor: "",
+  strapMaterial: "",
+  style: "",
+  dialThickness: "",
 });
 
 export const ProductFormModal: React.FC<Props> = ({
@@ -112,6 +121,10 @@ export const ProductFormModal: React.FC<Props> = ({
           subcategory = editing.subcategory || "";
         }
 
+        const extra: Record<string, unknown> = editing as unknown as Record<
+          string,
+          unknown
+        >;
         setForm({
           name: editing.name,
           brand: editing.brand || "",
@@ -125,6 +138,18 @@ export const ProductFormModal: React.FC<Props> = ({
           discountAmount: editing.discountAmount ?? null,
           discountStartDate: editing.discountStartDate ?? null,
           discountEndDate: editing.discountEndDate ?? null,
+          // filter attributes
+          gender: typeof extra.gender === "string" ? extra.gender : "",
+          dialColor: typeof extra.dialColor === "string" ? extra.dialColor : "",
+          dialShape: typeof extra.dialShape === "string" ? extra.dialShape : "",
+          dialType: typeof extra.dialType === "string" ? extra.dialType : "",
+          strapColor:
+            typeof extra.strapColor === "string" ? extra.strapColor : "",
+          strapMaterial:
+            typeof extra.strapMaterial === "string" ? extra.strapMaterial : "",
+          style: typeof extra.style === "string" ? extra.style : "",
+          dialThickness:
+            typeof extra.dialThickness === "string" ? extra.dialThickness : "",
         });
       } else {
         setForm(emptyForm());
@@ -502,6 +527,119 @@ export const ProductFormModal: React.FC<Props> = ({
                         className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20 outline-none transition-all duration-200"
                         placeholder="Enter stock quantity"
                         required
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Watch Attributes (Filters) */}
+                <div className="bg-white rounded-xl p-4 sm:p-5 shadow-sm border border-gray-100">
+                  <h3 className="text-base sm:text-lg font-semibold text-[#0F0F0F] mb-4">
+                    Watch Attributes (Optional)
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Gender
+                      </label>
+                      <select
+                        value={form.gender}
+                        onChange={(e) => handleChange("gender", e.target.value)}
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                      >
+                        <option value="">—</option>
+                        <option value="Men">Men</option>
+                        <option value="Women">Women</option>
+                        <option value="Unisex">Unisex</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Dial Color
+                      </label>
+                      <input
+                        value={form.dialColor}
+                        onChange={(e) =>
+                          handleChange("dialColor", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Black, White"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Dial Shape
+                      </label>
+                      <input
+                        value={form.dialShape}
+                        onChange={(e) =>
+                          handleChange("dialShape", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Round, Square"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Dial Type
+                      </label>
+                      <input
+                        value={form.dialType}
+                        onChange={(e) =>
+                          handleChange("dialType", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Analog, Digital"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Strap Color
+                      </label>
+                      <input
+                        value={form.strapColor}
+                        onChange={(e) =>
+                          handleChange("strapColor", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Black, Brown"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Strap Material
+                      </label>
+                      <input
+                        value={form.strapMaterial}
+                        onChange={(e) =>
+                          handleChange("strapMaterial", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Leather, Metal"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Style
+                      </label>
+                      <input
+                        value={form.style}
+                        onChange={(e) => handleChange("style", e.target.value)}
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., Casual, Luxury"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-gray-700 mb-2">
+                        Dial Thickness
+                      </label>
+                      <input
+                        value={form.dialThickness}
+                        onChange={(e) =>
+                          handleChange("dialThickness", e.target.value)
+                        }
+                        className="w-full border-2 border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-[#D4AF37] focus:ring-2 focus:ring-[#D4AF37]/20"
+                        placeholder="e.g., 8mm, Slim"
                       />
                     </div>
                   </div>

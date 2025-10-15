@@ -7,8 +7,8 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
 } from "@heroicons/react/24/outline";
-import { productApi } from "@/services/api";
 import { Product, ProductFilters } from "@/types";
+import { fetchCatalogFilters, fetchPublicProducts } from "@/utils/api";
 import EnhancedProductCard from "@/components/shared/EnhancedProductCard";
 import ProductQuickView from "@/components/shared/ProductQuickView";
 import EnhancedSearchBar from "@/components/shared/EnhancedSearchBar";
@@ -33,25 +33,30 @@ export default function ShopPage() {
   // State for search query
   const [searchQuery, setSearchQuery] = useState("");
 
-  // State for watch-specific filter options
-  const watchFilterOptions = {
-    brands: ["MOVADA", "BALMAIN", "GUESS", "VERSACE", "TITAN", "FOSSIL"],
-    genders: ["Men", "Women", "Unisex"],
-    dialColors: ["Black", "White", "Blue", "Gold", "Silver", "Green"],
-    dialShapes: ["Round", "Square", "Rectangle", "Oval", "Tonneau"],
-    dialTypes: ["Analog", "Digital", "Automatic", "Chronograph"],
-    strapColors: ["Black", "Brown", "Silver", "Gold", "Blue", "Green"],
-    strapMaterials: [
-      "Leather",
-      "Metal",
-      "Rubber",
-      "Fabric",
-      "Ceramic",
-      "Silicone",
-    ],
-    styles: ["Casual", "Dress", "Sports", "Luxury", "Smart", "Vintage"],
-    dialThicknesses: ["Ultra-thin", "Slim", "Medium", "Thick"],
-  };
+  // State for dynamic catalog filter options
+  const [availableFilters, setAvailableFilters] = useState<{
+    brands: string[];
+    genders: string[];
+    dialColors: string[];
+    dialShapes: string[];
+    dialTypes: string[];
+    strapColors: string[];
+    strapMaterials: string[];
+    styles: string[];
+    dialThicknesses: string[];
+    minPrice?: number;
+    maxPrice?: number;
+  }>({
+    brands: [],
+    genders: [],
+    dialColors: [],
+    dialShapes: [],
+    dialTypes: [],
+    strapColors: [],
+    strapMaterials: [],
+    styles: [],
+    dialThicknesses: [],
+  });
 
   // State for filter sidebar
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -62,7 +67,7 @@ export default function ShopPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isQuickViewOpen, setIsQuickViewOpen] = useState(false);
 
-  // Fetch products with filters
+  // Fetch products with filters (public catalog endpoint)
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
@@ -86,11 +91,13 @@ export default function ShopPage() {
           requestParams.page = 1;
         }
 
-        const response = await productApi.getProducts(requestParams);
+        const { data: resp } = await fetchPublicProducts(
+          requestParams as import("@/utils/api").ProductQueryParams
+        );
 
-        if (response.success) {
-          const all: Product[] = Array.isArray(response.data)
-            ? (response.data as Product[])
+        if (resp.success) {
+          const all: Product[] = Array.isArray(resp.data)
+            ? (resp.data as Product[])
             : [];
 
           if (searchQuery) {
@@ -112,14 +119,9 @@ export default function ShopPage() {
             setTotalPages(Math.max(1, Math.ceil(total / originalLimit)));
           } else {
             setProducts(all);
-            if (response.meta) {
-              setTotalProducts(response.meta.total);
-              setTotalPages(response.meta.pages);
-            } else {
-              // Fallback if meta is missing
-              setTotalProducts(all.length);
-              setTotalPages(Math.max(1, Math.ceil(all.length / originalLimit)));
-            }
+            // Public catalog response may not include meta; derive from length
+            setTotalProducts(all.length);
+            setTotalPages(Math.max(1, Math.ceil(all.length / originalLimit)));
           }
         }
       } catch (error) {
@@ -131,6 +133,46 @@ export default function ShopPage() {
 
     fetchProducts();
   }, [filters, searchQuery]);
+
+  // Fetch dynamic filter options once (or whenever category scope changes)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const { data } = await fetchCatalogFilters({
+          category: filters.category,
+        });
+        if (!cancelled && data?.success && data.data) {
+          const f = data.data;
+          setAvailableFilters({
+            brands: f.brands || [],
+            genders: f.genders || [],
+            dialColors: f.dialColors || [],
+            dialShapes: f.dialShapes || [],
+            dialTypes: f.dialTypes || [],
+            strapColors: f.strapColors || [],
+            strapMaterials: f.strapMaterials || [],
+            styles: f.styles || [],
+            dialThicknesses: f.dialThicknesses || [],
+            minPrice: f.minPrice,
+            maxPrice: f.maxPrice,
+          });
+          // If server provides price range and current is default, align
+          setFilters((prev) => ({
+            ...prev,
+            minPrice: prev.minPrice ?? f.minPrice,
+            maxPrice: prev.maxPrice ?? f.maxPrice,
+          }));
+        }
+      } catch (e) {
+        console.warn("Failed to load catalog filters", e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Handle filter changes
   const handleFilterChange = (newFilters: Partial<ProductFilters>) => {
@@ -424,7 +466,17 @@ export default function ShopPage() {
                         Brands
                       </h4>
                       <div className="space-y-2 max-h-40 overflow-y-auto pr-2">
-                        {watchFilterOptions.brands.map((brand) => (
+                        {(availableFilters.brands.length
+                          ? availableFilters.brands
+                          : [
+                              "MOVADA",
+                              "BALMAIN",
+                              "GUESS",
+                              "VERSACE",
+                              "TITAN",
+                              "FOSSIL",
+                            ]
+                        ).map((brand) => (
                           <label
                             key={brand}
                             className="flex items-center hover:text-amber-700 transition-colors"
@@ -460,7 +512,10 @@ export default function ShopPage() {
                         Gender
                       </h4>
                       <div className="flex flex-wrap gap-2">
-                        {watchFilterOptions.genders.map((genderOption) => (
+                        {(availableFilters.genders.length
+                          ? availableFilters.genders
+                          : ["Men", "Women", "Unisex"]
+                        ).map((genderOption) => (
                           <button
                             key={genderOption}
                             onClick={() =>
@@ -489,7 +544,17 @@ export default function ShopPage() {
                         Dial Color
                       </h4>
                       <div className="grid grid-cols-3 gap-2">
-                        {watchFilterOptions.dialColors.map((color) => (
+                        {(availableFilters.dialColors.length
+                          ? availableFilters.dialColors
+                          : [
+                              "Black",
+                              "White",
+                              "Blue",
+                              "Gold",
+                              "Silver",
+                              "Green",
+                            ]
+                        ).map((color) => (
                           <button
                             key={color}
                             onClick={() =>
@@ -528,7 +593,10 @@ export default function ShopPage() {
                         Dial Shape
                       </h4>
                       <div className="space-y-2">
-                        {watchFilterOptions.dialShapes.map((shape) => (
+                        {(availableFilters.dialShapes.length
+                          ? availableFilters.dialShapes
+                          : ["Round", "Square", "Rectangle", "Oval", "Tonneau"]
+                        ).map((shape) => (
                           <label
                             key={shape}
                             className="flex items-center hover:text-amber-700 transition-colors"
@@ -564,7 +632,15 @@ export default function ShopPage() {
                             Dial Type
                           </h4>
                           <div className="space-y-2">
-                            {watchFilterOptions.dialTypes.map((type) => (
+                            {(availableFilters.dialTypes.length
+                              ? availableFilters.dialTypes
+                              : [
+                                  "Analog",
+                                  "Digital",
+                                  "Automatic",
+                                  "Chronograph",
+                                ]
+                            ).map((type) => (
                               <label
                                 key={type}
                                 className="flex items-center hover:text-amber-700 transition-colors"
@@ -590,7 +666,17 @@ export default function ShopPage() {
                             Strap Color
                           </h4>
                           <div className="grid grid-cols-3 gap-2">
-                            {watchFilterOptions.strapColors.map((color) => (
+                            {(availableFilters.strapColors.length
+                              ? availableFilters.strapColors
+                              : [
+                                  "Black",
+                                  "Brown",
+                                  "Silver",
+                                  "Gold",
+                                  "Blue",
+                                  "Green",
+                                ]
+                            ).map((color) => (
                               <button
                                 key={color}
                                 onClick={() =>
@@ -629,27 +715,35 @@ export default function ShopPage() {
                             Strap Material
                           </h4>
                           <div className="space-y-2">
-                            {watchFilterOptions.strapMaterials.map(
-                              (material) => (
-                                <label
-                                  key={material}
-                                  className="flex items-center hover:text-amber-700 transition-colors"
-                                >
-                                  <input
-                                    type="radio"
-                                    name="strapMaterial"
-                                    checked={filters.strapMaterial === material}
-                                    onChange={() =>
-                                      handleFilterChange({
-                                        strapMaterial: material,
-                                      })
-                                    }
-                                    className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
-                                  />
-                                  <span className="text-sm">{material}</span>
-                                </label>
-                              )
-                            )}
+                            {(availableFilters.strapMaterials.length
+                              ? availableFilters.strapMaterials
+                              : [
+                                  "Leather",
+                                  "Metal",
+                                  "Rubber",
+                                  "Fabric",
+                                  "Ceramic",
+                                  "Silicone",
+                                ]
+                            ).map((material) => (
+                              <label
+                                key={material}
+                                className="flex items-center hover:text-amber-700 transition-colors"
+                              >
+                                <input
+                                  type="radio"
+                                  name="strapMaterial"
+                                  checked={filters.strapMaterial === material}
+                                  onChange={() =>
+                                    handleFilterChange({
+                                      strapMaterial: material,
+                                    })
+                                  }
+                                  className="mr-2 text-amber-600 rounded border-amber-300 focus:ring-amber-500"
+                                />
+                                <span className="text-sm">{material}</span>
+                              </label>
+                            ))}
                           </div>
                         </div>
 
@@ -659,7 +753,17 @@ export default function ShopPage() {
                             Style
                           </h4>
                           <div className="space-y-2">
-                            {watchFilterOptions.styles.map((styleOption) => (
+                            {(availableFilters.styles.length
+                              ? availableFilters.styles
+                              : [
+                                  "Casual",
+                                  "Dress",
+                                  "Sports",
+                                  "Luxury",
+                                  "Smart",
+                                  "Vintage",
+                                ]
+                            ).map((styleOption) => (
                               <label
                                 key={styleOption}
                                 className="flex items-center hover:text-amber-700 transition-colors"
@@ -1125,20 +1229,20 @@ export default function ShopPage() {
         onFilterChange={handleWatchFilterChange}
         availableFilters={{
           sortOptions,
-          brands: watchFilterOptions.brands,
-          genders: watchFilterOptions.genders,
-          dialColors: watchFilterOptions.dialColors,
-          dialShapes: watchFilterOptions.dialShapes,
-          dialTypes: watchFilterOptions.dialTypes,
-          strapColors: watchFilterOptions.strapColors,
-          strapMaterials: watchFilterOptions.strapMaterials,
-          styles: watchFilterOptions.styles,
-          dialThicknesses: watchFilterOptions.dialThicknesses,
+          brands: availableFilters.brands,
+          genders: availableFilters.genders,
+          dialColors: availableFilters.dialColors,
+          dialShapes: availableFilters.dialShapes,
+          dialTypes: availableFilters.dialTypes,
+          strapColors: availableFilters.strapColors,
+          strapMaterials: availableFilters.strapMaterials,
+          styles: availableFilters.styles,
+          dialThicknesses: availableFilters.dialThicknesses,
         }}
         currentFilters={{
           priceRange: {
-            min: filters.minPrice || 0,
-            max: filters.maxPrice || 10000,
+            min: filters.minPrice || availableFilters.minPrice || 0,
+            max: filters.maxPrice || availableFilters.maxPrice || 10000,
           },
           sortBy: `${filters.sortBy}:${filters.order}`,
           inStock: filters.inStock || false,

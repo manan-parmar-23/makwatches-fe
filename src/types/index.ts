@@ -13,6 +13,20 @@ export interface Product {
   stock: number;
   createdAt: string;
   updatedAt: string;
+  // Optional discount fields for storefront display
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
+  // Optional filter attributes (watches)
+  gender?: string | null;
+  dialColor?: string | null;
+  dialShape?: string | null;
+  dialType?: string | null;
+  strapColor?: string | null;
+  strapMaterial?: string | null;
+  style?: string | null;
+  dialThickness?: string | null;
 }
 
 // Cart item type

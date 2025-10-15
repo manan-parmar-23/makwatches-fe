@@ -480,7 +480,8 @@ function AdminDashboardPage() {
                 e.currentTarget.style.backgroundColor = COLORS.primary;
                 e.currentTarget.style.boxShadow = "none";
               }}
-              onClick={() => {
+              onClick={(e) => {
+                e.stopPropagation();
                 router.push("/admin/dashboard/orders");
               }}
             >
@@ -651,23 +652,30 @@ function AdminDashboardPage() {
         {/* Quick Actions - more compact */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mt-6">
           {/* Add New Product */}
-          <div
-            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-blue-300`}
+          <button
+            type="button"
+            className={`group relative overflow-hidden w-full text-left p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-blue-300`}
             style={{
               backgroundColor: COLORS.background,
               borderColor: COLORS.surfaceLight,
               animationDelay: `0ms`,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
+              (
+                e.currentTarget as HTMLButtonElement
+              ).style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "none";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
             }}
-            onClick={() => setProductModalOpen(true)}
+            onClick={(e) => {
+              e.stopPropagation();
+              setProductModalOpen(true);
+            }}
           >
             <div
-              className={`absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+              aria-hidden="true"
+              className={`absolute inset-0 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
             />
             <div className="relative">
               <div
@@ -701,27 +709,32 @@ function AdminDashboardPage() {
                 />
               </div>
             </div>
-          </div>
+          </button>
           {/* Manage Orders */}
-          <div
-            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-emerald-300`}
+          <button
+            type="button"
+            className={`group relative overflow-hidden w-full text-left p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-emerald-300`}
             style={{
               backgroundColor: COLORS.background,
               borderColor: COLORS.surfaceLight,
               animationDelay: `200ms`,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
+              (
+                e.currentTarget as HTMLButtonElement
+              ).style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "none";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
             }}
-            onClick={() => {
+            onClick={(e) => {
+              e.stopPropagation();
               router.push("/admin/dashboard/orders");
             }}
           >
             <div
-              className={`absolute inset-0 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+              aria-hidden="true"
+              className={`absolute inset-0 bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
             />
             <div className="relative">
               <div
@@ -755,25 +768,32 @@ function AdminDashboardPage() {
                 />
               </div>
             </div>
-          </div>
+          </button>
           {/* View Analytics */}
-          <div
-            className={`group p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-purple-300`}
+          <button
+            type="button"
+            className={`group relative overflow-hidden w-full text-left p-4 rounded-xl border cursor-pointer transition-all duration-500 hover:scale-103 hover:-translate-y-1 hover:shadow-md hover:border-purple-300`}
             style={{
               backgroundColor: COLORS.background,
               borderColor: COLORS.surfaceLight,
               animationDelay: `400ms`,
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
+              (
+                e.currentTarget as HTMLButtonElement
+              ).style.boxShadow = `0 8px 16px ${COLORS.primary}10`;
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow = "none";
+              (e.currentTarget as HTMLButtonElement).style.boxShadow = "none";
             }}
-            // Add onClick if you want analytics navigation
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push("/admin/dashboard/analytics");
+            }}
           >
             <div
-              className={`absolute inset-0 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500`}
+              aria-hidden="true"
+              className={`absolute inset-0 bg-gradient-to-br from-purple-50 to-violet-50 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none`}
             />
             <div className="relative">
               <div
@@ -807,7 +827,7 @@ function AdminDashboardPage() {
                 />
               </div>
             </div>
-          </div>
+          </button>
         </div>
       </div>
 

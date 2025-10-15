@@ -93,7 +93,7 @@ function ProductCard({
           </div>
 
           {/* Product image container */}
-          <div className="relative p-6 pt-12 pb-4 bg-gradient-to-br from-gray-50 to-white">
+          <div className="relative p-6 pt-12 pb-4 bg-white">
             <Image
               src={product.image}
               alt={product.name}

@@ -53,8 +53,7 @@ export default function HeroBanner() {
               </span>
             </h1>
             <p className="text-md md:text-xl text-white/90 font-medium max-w-md leading-relaxed">
-              Elegant timepieces designed for the contemporary woman. Grace and
-              precision in perfect harmony.
+              Elegant timepieces designed for the contemporary woman.
             </p>
           </motion.div>
 

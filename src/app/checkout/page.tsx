@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import { calculateDiscount } from "@/utils/discount";
 import { useAuth } from "@/context/AuthContext";
 
 // --- Mak Watches brand palette (black/white/gold) ---
@@ -36,7 +37,16 @@ interface CartItem {
   price?: number;
   quantity: number;
   size?: string;
-  product?: { name?: string; price?: number; images?: string[] };
+  product?: {
+    name?: string;
+    price?: number;
+    images?: string[];
+    // Discount fields (optional)
+    discountPercentage?: number | null;
+    discountAmount?: number | null;
+    discountStartDate?: string | null;
+    discountEndDate?: string | null;
+  };
 }
 
 interface PlacedOrderItem {
@@ -330,8 +340,21 @@ export default function CheckoutPage() {
 
   const { user } = useAuth();
 
+  // Compute unit price after discount for each item (client-side) to align with server
+  const getUnitPrice = (ci: CartItem) => {
+    const base = ci.price ?? ci.product?.price ?? 0;
+    const info = calculateDiscount(
+      base,
+      ci.product?.discountPercentage,
+      ci.product?.discountAmount,
+      ci.product?.discountStartDate ?? undefined,
+      ci.product?.discountEndDate ?? undefined
+    );
+    return info.finalPrice;
+  };
+
   const localComputedTotal = cart.items.reduce(
-    (s, i) => s + (i.price ?? i.product?.price ?? 0) * i.quantity,
+    (s, i) => s + getUnitPrice(i) * i.quantity,
     0
   );
   const serverTotal = cart.total || 0;
@@ -370,6 +393,10 @@ export default function CheckoutPage() {
               name?: string;
               price?: number;
               images?: string[];
+              discountPercentage?: number | null;
+              discountAmount?: number | null;
+              discountStartDate?: string | null;
+              discountEndDate?: string | null;
             },
           })
         );
@@ -601,7 +628,7 @@ export default function CheckoutPage() {
 
   return (
     <main
-      className="max-w-3xl mx-auto px-4 py-6 sm:py-10 transition-all duration-300"
+      className="max-w-3xl mx-auto px-4 py-6 sm:py-10 mt-18 transition-all duration-300"
       style={{
         backgroundColor: COLORS.background,
         color: COLORS.text,
@@ -725,7 +752,7 @@ export default function CheckoutPage() {
                   className="text-lg font-bold"
                   style={{ color: COLORS.primary }}
                 >
-                  {loadingCart ? "..." : `₹${serverTotal.toFixed(0)}`}
+                  {loadingCart ? "..." : `₹${serverTotal.toFixed(2)}`}
                 </div>
               </div>
             </div>
@@ -993,10 +1020,7 @@ export default function CheckoutPage() {
                       className="text-sm font-semibold"
                       style={{ color: COLORS.primary }}
                     >
-                      ₹
-                      {(
-                        ((ci.price ?? ci.product?.price) || 0) * ci.quantity
-                      ).toFixed(0)}
+                      ₹{(getUnitPrice(ci) * ci.quantity).toFixed(2)}
                     </div>
                   </div>
                 ))}
@@ -1016,13 +1040,7 @@ export default function CheckoutPage() {
                   className="text-lg font-bold"
                   style={{ color: COLORS.primary }}
                 >
-                  ₹{loadingCart ? "..." : serverTotal.toFixed(0)}
-                  {localComputedTotal !== serverTotal && (
-                    <span className="text-xs text-red-500 ml-2">
-                      {" "}
-                      (local mismatch)
-                    </span>
-                  )}
+                  ₹{loadingCart ? "..." : serverTotal.toFixed(2)}
                 </div>
               </div>
             </div>

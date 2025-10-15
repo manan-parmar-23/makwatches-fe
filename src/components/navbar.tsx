@@ -77,52 +77,80 @@ const MobileNavbar = () => {
       <div className="flex items-center justify-between px-4 py-2">
         {/* Logo */}
         <div className="flex items-center">
-          <Image
-            src="/logo.svg"
-            alt="Logo"
-            width={32}
-            height={32}
-            className="h-12 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
-          />
-        </div>
-        {/* Hamburger */}
-        <motion.button
-          ref={burgerRef}
-          className="text-gray-700 focus:outline-none"
-          onClick={() => setOpen(!open)}
-          aria-label="Toggle menu"
-          initial={false}
-          animate={open ? "open" : "closed"}
-          variants={{
-            closed: { rotate: 0, transition: { duration: 0.3 } },
-            open: { rotate: 90, transition: { duration: 0.3 } },
-          }}
-          style={{ originX: 0.5, originY: 0.5 }}
-        >
-          <svg
-            className="h-8 w-8"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+          <button
+            onClick={() => window.location.reload()}
+            aria-label="Refresh page"
+            className="p-0 m-0 bg-transparent border-0"
           >
-            <motion.path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 8h16"
-              animate={open ? { d: "M6 18L18 6" } : { d: "M4 8h16" }}
-              transition={{ duration: 0.3 }}
+            <Image
+              src="/logo.svg"
+              alt="Logo"
+              width={32}
+              height={32}
+              className="h-12 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
             />
-            <motion.path
-              strokeLinecap="round"
-              strokeLinejoin="round"
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          {/* Cart Button */}
+          <Link
+            href="/cart"
+            className="text-gray-700 focus:outline-none"
+            aria-label="Cart"
+          >
+            <svg
+              className="h-7 w-7"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
               strokeWidth={2}
-              d="M4 16h16"
-              animate={open ? { d: "M6 6l12 12" } : { d: "M4 16h16" }}
-              transition={{ duration: 0.3 }}
-            />
-          </svg>
-        </motion.button>
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
+              />
+            </svg>
+          </Link>
+          {/* Hamburger */}
+          <motion.button
+            ref={burgerRef}
+            className="text-gray-700 focus:outline-none"
+            onClick={() => setOpen(!open)}
+            aria-label="Toggle menu"
+            initial={false}
+            animate={open ? "open" : "closed"}
+            variants={{
+              closed: { rotate: 0, transition: { duration: 0.3 } },
+              open: { rotate: 90, transition: { duration: 0.3 } },
+            }}
+            style={{ originX: 0.5, originY: 0.5 }}
+          >
+            <svg
+              className="h-8 w-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <motion.path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 8h16"
+                animate={open ? { d: "M6 18L18 6" } : { d: "M4 8h16" }}
+                transition={{ duration: 0.3 }}
+              />
+              <motion.path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 16h16"
+                animate={open ? { d: "M6 6l12 12" } : { d: "M4 16h16" }}
+                transition={{ duration: 0.3 }}
+              />
+            </svg>
+          </motion.button>
+        </div>
       </div>
       {/* Search removed on mobile; replaced by Shop link in menu */}
       {/* Mobile Menu */}
@@ -381,13 +409,19 @@ const Navbar = () => {
           </div>
           {/* Center logo */}
           <div className="flex-1 flex justify-center">
-            <Image
-              src="/logo.svg"
-              alt="Logo"
-              width={36}
-              height={36}
-              className="h-18 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
-            />
+            <button
+              onClick={() => window.location.reload()}
+              aria-label="Refresh page"
+              className="p-0 m-0 bg-transparent border-0"
+            >
+              <Image
+                src="/logo.svg"
+                alt="Logo"
+                width={36}
+                height={36}
+                className="h-18 w-auto transition duration-200 ease-in-out hover:scale-110 drop-shadow-gold"
+              />
+            </button>
           </div>
           {/* Right menu */}
           <div className="flex gap-10 items-center">

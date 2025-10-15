@@ -10,7 +10,12 @@ import {
   ArrowRightIcon,
 } from "@heroicons/react/24/outline";
 import { useShoppingContext } from "@/context/ShoppingContext";
-import { formatPrice } from "@/utils/formatters";
+// price formatting handled by PriceWithDiscount
+import DiscountBadge, {
+  PriceWithDiscount,
+  SavingsBadge,
+} from "./DiscountBadge";
+import { calculateDiscount } from "@/utils/discount";
 import WishlistButton from "./WishlistButton";
 import { Product } from "@/types";
 
@@ -30,6 +35,14 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
   const { addToCart } = useShoppingContext();
 
   if (!product) return null;
+
+  const discountInfo = calculateDiscount(
+    product.price,
+    product.discountPercentage,
+    product.discountAmount,
+    product.discountStartDate,
+    product.discountEndDate
+  );
 
   const handleAddToCart = async () => {
     await addToCart(product.id, quantity);
@@ -88,6 +101,15 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
                 <div className="w-full md:w-1/2 relative">
                   {/* Main image */}
                   <div className="relative w-full aspect-square bg-gray-100">
+                    {discountInfo.isActive &&
+                      discountInfo.discountPercentage && (
+                        <DiscountBadge
+                          discountPercentage={discountInfo.discountPercentage}
+                          position="top-left"
+                          variant="premium"
+                          size="sm"
+                        />
+                      )}
                     <Image
                       src={
                         displayImages[selectedImageIndex] || "/placeholder.png"
@@ -142,9 +164,16 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
                     {product.name}
                   </h2>
 
-                  <p className="text-xl font-bold text-primary my-3">
-                    {formatPrice(product.price)}
-                  </p>
+                  <div className="flex items-center gap-2 my-3">
+                    <PriceWithDiscount
+                      originalPrice={discountInfo.originalPrice}
+                      finalPrice={discountInfo.finalPrice}
+                      isActive={discountInfo.isActive}
+                    />
+                    {discountInfo.isActive && discountInfo.savingsText && (
+                      <SavingsBadge savingsText={discountInfo.savingsText} />
+                    )}
+                  </div>
 
                   <div className="space-y-4 mt-6">
                     {/* Stock status */}

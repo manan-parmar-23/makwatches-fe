@@ -54,7 +54,6 @@ export default function HeroBanner() {
             </h1>
             <p className="text-lg md:text-xl text-white/90 font-light max-w-md leading-relaxed">
               Sophisticated timepieces crafted for the modern gentleman.
-              Precision meets elegance in every detail.
             </p>
           </motion.div>
 

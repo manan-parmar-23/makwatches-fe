@@ -76,12 +76,12 @@ const GalleryCard: React.FC<CardProps> = ({
         {/* Hover content */}
         <div className="absolute bottom-0 left-0 right-0 p-6 transform translate-y-full group-hover:translate-y-0 transition-transform duration-500">
           <div className="text-white">
-            <h3
+            {/* <h3
               className="text-lg font-semibold mb-1"
               style={{ color: COLORS.accent }}
             >
               Gallery Image {idx + 1}
-            </h3>
+            </h3> */}
             <p className="text-sm opacity-90">
               Click to {isExpanded ? "collapse" : "expand"} view
             </p>

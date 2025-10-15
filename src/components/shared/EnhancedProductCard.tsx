@@ -7,7 +7,11 @@ import { motion } from "framer-motion";
 import { EyeIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import { ShoppingBagIcon as ShoppingBagSolid } from "@heroicons/react/24/solid";
 import WishlistButton from "./WishlistButton";
-import { formatPrice } from "@/utils/formatters";
+import DiscountBadge, {
+  PriceWithDiscount,
+  SavingsBadge,
+} from "./DiscountBadge";
+import { calculateDiscount } from "@/utils/discount";
 import { useShoppingContext } from "@/context/ShoppingContext";
 import { Product } from "@/types";
 
@@ -18,6 +22,13 @@ type ProductCardProps = {
 
 const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
   const { addToCart, isInCart } = useShoppingContext();
+  const discountInfo = calculateDiscount(
+    product.price,
+    product.discountPercentage,
+    product.discountAmount,
+    product.discountStartDate,
+    product.discountEndDate
+  );
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -30,10 +41,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
       whileHover={{ y: -4, scale: 1.02 }}
-      className="group bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
+      className="group bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 border border-gray-100"
     >
       {/* Product Image */}
-      <div className="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden">
+      <div className="relative w-full aspect-[3/4] bg-white overflow-hidden">
         <Link href={`/product_details?id=${product.id}`}>
           <div className="w-full h-full relative cursor-pointer">
             <Image
@@ -44,6 +55,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
               className="object-cover group-hover:scale-105 transition-transform duration-700"
               priority
             />
+
+            {/* Discount badge */}
+            {discountInfo.isActive && discountInfo.discountPercentage && (
+              <div className="absolute top-2 left-2 sm:top-3 sm:left-3 z-10">
+                <DiscountBadge
+                  discountPercentage={discountInfo.discountPercentage}
+                />
+              </div>
+            )}
 
             {/* Out of stock badge (subtle) */}
             {product.stock <= 0 && (
@@ -155,12 +175,18 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
           )}
 
           <div className="flex items-center justify-between mt-2">
-            <p className="text-primary text-sm sm:text-base font-semibold">
-              {formatPrice(product.price)}
-            </p>
-
-            {/* You can add star ratings here if available */}
+            <PriceWithDiscount
+              originalPrice={discountInfo.originalPrice}
+              finalPrice={discountInfo.finalPrice}
+              isActive={discountInfo.isActive}
+            />
+            {/* Ratings placeholder */}
           </div>
+          {discountInfo.isActive && discountInfo.savingsText && (
+            <div className="mt-1">
+              <SavingsBadge savingsText={discountInfo.savingsText} />
+            </div>
+          )}
         </div>
       </Link>
     </motion.div>
