@@ -309,7 +309,7 @@ export default function CustomerAuthPage() {
                   // Redirect to backend Google OAuth start endpoint
                   const base =
                     process.env.NEXT_PUBLIC_API_BASE_URL ||
-                    "https://api.makwatches.in/";
+                    "http://127.0.0.1:8080/";
                   // Ensure trailing slash handling
                   const url = base.endsWith("/")
                     ? `${base}auth/google`

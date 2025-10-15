@@ -26,8 +26,7 @@ interface CartResponse {
   total: number;
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080";
 
 // Color constants
 const COLORS = {
