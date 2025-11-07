@@ -82,19 +82,19 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icon.svg", type: "image/svg+xml" },
-      { url: "/icon.svg", sizes: "any" },
+      { url: "/mak-logo.svg", type: "image/svg+xml" },
+      { url: "/mak-logo.svg", sizes: "any" },
     ],
-    shortcut: ["/icon.svg"],
+    shortcut: ["/mak-logo.svg"],
     apple: [
-      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/mak-logo.svg", type: "image/svg+xml" },
       { url: "/apple-icon.png", sizes: "192x192", type: "image/png" },
       { url: "/apple-icon-180x180.png", sizes: "180x180", type: "image/png" },
     ],
     other: [
       {
         rel: "mask-icon",
-        url: "/icon.svg",
+        url: "/mak-logo.svg",
         color: "#531A1A",
       },
     ],
@@ -124,7 +124,7 @@ export default function RootLayout({
     description:
       "Premium luxury watches collection - Buy authentic designer watches online",
     url: "https://makwatches.in",
-    logo: "https://makwatches.in/icon.svg",
+    logo: "https://makwatches.in/mak-logo.svg",
     image: "https://makwatches.in/og-image.png",
     sameAs: ["https://www.instagram.com/mak_watches.23"],
     potentialAction: {
