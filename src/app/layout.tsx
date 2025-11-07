@@ -11,10 +11,12 @@ import LenisProvider from "@/components/lenis-provider";
 export const metadata: Metadata = {
   metadataBase: new URL("https://makwatches.in"),
   title: {
-    default: "MAK Watches - Premium Luxury Watches Collection | Buy Designer Watches Online",
-    template: "%s | MAK Watches"
+    default:
+      "MAK Watches - Premium Luxury Watches Collection | Buy Designer Watches Online",
+    template: "%s | MAK Watches",
   },
-  description: "Discover MAK Watches - India's premier destination for luxury watches. Shop exclusive collections of men's and women's designer watches, smartwatches, sports watches, and elegant timepieces. Premium quality, authentic brands, best prices.",
+  description:
+    "Discover MAK Watches - India's premier destination for luxury watches. Shop exclusive collections of men's and women's designer watches, smartwatches, sports watches, and elegant timepieces. Premium quality, authentic brands, best prices.",
   keywords: [
     "MAK Watches",
     "luxury watches India",
@@ -32,7 +34,7 @@ export const metadata: Metadata = {
     "branded watches",
     "watch store India",
     "MAK Watches Instagram",
-    "mak_watches.23"
+    "mak_watches.23",
   ],
   authors: [{ name: "MAK Watches" }],
   creator: "MAK Watches",
@@ -48,7 +50,8 @@ export const metadata: Metadata = {
     url: "https://makwatches.in",
     siteName: "MAK Watches",
     title: "MAK Watches - Premium Luxury Watches Collection",
-    description: "Discover India's finest collection of luxury watches. Shop authentic designer watches for men and women with best prices and quality assurance.",
+    description:
+      "Discover India's finest collection of luxury watches. Shop authentic designer watches for men and women with best prices and quality assurance.",
     images: [
       {
         url: "/og-image.png",
@@ -61,7 +64,8 @@ export const metadata: Metadata = {
   twitter: {
     card: "summary_large_image",
     title: "MAK Watches - Premium Luxury Watches Collection",
-    description: "Discover India's finest collection of luxury watches. Shop authentic designer watches for men and women.",
+    description:
+      "Discover India's finest collection of luxury watches. Shop authentic designer watches for men and women.",
     images: ["/og-image.png"],
     creator: "@makwatches",
   },
@@ -78,19 +82,19 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/favicon.ico", sizes: "any" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", sizes: "any" },
     ],
-    shortcut: ["/favicon.svg"],
+    shortcut: ["/icon.svg"],
     apple: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
+      { url: "/icon.svg", type: "image/svg+xml" },
       { url: "/apple-icon.png", sizes: "192x192", type: "image/png" },
       { url: "/apple-icon-180x180.png", sizes: "180x180", type: "image/png" },
     ],
     other: [
       {
         rel: "mask-icon",
-        url: "/favicon.svg",
+        url: "/icon.svg",
         color: "#531A1A",
       },
     ],
@@ -117,23 +121,22 @@ export default function RootLayout({
     "@context": "https://schema.org",
     "@type": "Store",
     name: "MAK Watches",
-    description: "Premium luxury watches collection - Buy authentic designer watches online",
+    description:
+      "Premium luxury watches collection - Buy authentic designer watches online",
     url: "https://makwatches.in",
-    logo: "https://makwatches.in/favicon.svg",
+    logo: "https://makwatches.in/icon.svg",
     image: "https://makwatches.in/og-image.png",
-    sameAs: [
-      "https://www.instagram.com/mak_watches.23"
-    ],
+    sameAs: ["https://www.instagram.com/mak_watches.23"],
     potentialAction: {
       "@type": "SearchAction",
       target: "https://makwatches.in/shop?search={search_term_string}",
-      "query-input": "required name=search_term_string"
+      "query-input": "required name=search_term_string",
     },
     aggregateRating: {
       "@type": "AggregateRating",
       ratingValue: "4.8",
-      reviewCount: "250"
-    }
+      reviewCount: "250",
+    },
   };
 
   return (
