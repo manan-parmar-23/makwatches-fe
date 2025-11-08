@@ -4,62 +4,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import type { HeroSlide } from "@/types/home-content";
 import {
-  fetchPublicProductById,
   fetchPublicProducts,
-  ProductQueryParams,
+  type ProductQueryParams,
+  type Product,
 } from "@/utils/api";
 
-// Fallback static data (preserves existing design)
-const fallbackProducts = [
-  {
-    id: 1,
-    name: "MAK Watches",
-    subtitle: "Supernova",
-    price: "₹450",
-    description:
-      "Circular perfection, a quest essentials, harmonious proportions. Patrimony epitomises stylistic purity, inspired by Vacheron Constantin models from the 1950s.",
-    image: "/black-image.png", // You can replace with different watch images
-    features: ["Water Resistant", "Swiss Movement", "2 Year Warranty"],
-    gradient: "from-amber-600 to-transparent",
-    glowColor: "from-amber-500/20",
-  },
-  {
-    id: 2,
-    name: "MAK Watches",
-    subtitle: "Moonphase",
-    price: "₹650",
-    description:
-      "Elegant sophistication meets lunar precision. This masterpiece captures the eternal dance of celestial bodies, bringing astronomical complexity to your wrist.",
-    image: "/women-watch.png", // You can replace with different watch images
-    features: ["Moonphase Display", "Sapphire Crystal", "3 Year Warranty"],
-    gradient: "from-blue-600 to-transparent",
-    glowColor: "from-blue-500/20",
-  },
-  {
-    id: 3,
-    name: "MAK Watches",
-    subtitle: "Chronograph",
-    price: "₹850",
-    description:
-      "Racing-inspired precision timing. Born from the racetrack, engineered for excellence. Every second counts when you're chasing perfection.",
-    image: "/categories/casual.png", // You can replace with different watch images
-    features: ["Chronograph Function", "Tachymeter Scale", "5 Year Warranty"],
-    gradient: "from-red-600 to-transparent",
-    glowColor: "from-red-500/20",
-  },
-  {
-    id: 4,
-    name: "MAK Watches",
-    subtitle: "Classic",
-    price: "₹350",
-    description:
-      "Timeless elegance in its purest form. A tribute to traditional watchmaking craftsmanship, where simplicity meets sophistication in perfect harmony.",
-    image: "/categories/sports.png", // You can replace with different watch images
-    features: ["Classic Design", "Leather Strap", "1 Year Warranty"],
-    gradient: "from-green-600 to-transparent",
-    glowColor: "from-green-500/20",
-  },
-];
 interface HeroContentProps {
   slides?: HeroSlide[];
 }
@@ -72,12 +21,17 @@ function HeroContent({ slides }: HeroContentProps) {
   const [isMobile, setIsMobile] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  // Pre-fetched catalog products from shop (public products)
+  const [catalogProducts, setCatalogProducts] = useState<Partial<Product>[]>(
+    []
+  );
+  const [catalogLoaded, setCatalogLoaded] = useState(false);
 
   // Map dynamic slides to the local view model used by this component
   const products =
     slides && slides.length
-      ? slides.map((s, i) => ({
-          id: i + 1,
+      ? slides.map((s) => ({
+          id: s.id,
           name: s.title || "MAK Watches",
           subtitle: s.subtitle || "",
           price: s.price || "",
@@ -90,72 +44,20 @@ function HeroContent({ slides }: HeroContentProps) {
           gradient: s.gradient || "from-amber-600 to-transparent",
           glowColor: s.glowColor || "from-amber-500/20",
         }))
-      : fallbackProducts;
-
-  const currentProduct = products[currentIndex];
-  const nextIndex = (currentIndex + 1) % products.length;
-  const nextProduct = products[nextIndex];
-
-  const handleShopNow = async () => {
-    if (isNavigating) return;
-    setIsNavigating(true);
-    try {
-      // Try using hero slide id as product id (verify to avoid 404)
-      const slideId =
-        slides && slides.length
-          ? slides[currentIndex % slides.length]?.id
-          : undefined;
-      if (slideId) {
-        try {
-          await fetchPublicProductById(slideId);
-          router.push(`/product_details?id=${encodeURIComponent(slideId)}`);
-          return;
-        } catch {
-          // fall through to fetch list
-        }
-      }
-
-      // Fallback: fetch first public product and use its id
-      try {
-        const params: ProductQueryParams = { page: 1, limit: 1 };
-        const { data } = await fetchPublicProducts(params);
-        const list = Array.isArray(data?.data)
-          ? (data.data as Array<{ id?: string }>)
-          : [];
-        const first = list.find((p) => typeof p?.id === "string")?.id;
-        if (first) {
-          router.push(`/product_details?id=${encodeURIComponent(first)}`);
-          return;
-        }
-      } catch {
-        // ignore and use generic page
-      }
-
-      // Final fallback: generic product details page
-      router.push(`/product_details`);
-    } finally {
-      setIsNavigating(false);
-    }
-  };
+      : [];
 
   // Enhanced slide functions with faster timing
   const nextSlide = useCallback(() => {
+    if (products.length === 0) return;
     setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % products.length);
   }, [products.length]);
 
   const prevSlide = useCallback(() => {
+    if (products.length === 0) return;
     setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + products.length) % products.length);
   }, [products.length]);
-
-  // const goToSlide = useCallback(
-  //   (index: number) => {
-  //     setDirection(index > currentIndex ? 1 : -1);
-  //     setCurrentIndex(index);
-  //   },
-  //   [currentIndex]
-  // );
 
   // Touch/Swipe handlers
   const handlePanEnd = useCallback(
@@ -190,12 +92,261 @@ function HeroContent({ slides }: HeroContentProps) {
 
   // Auto-play functionality — slowed down for a smoother effect
   useEffect(() => {
+    if (products.length === 0) return;
     const interval = setInterval(nextSlide, 6000); // 6000ms (slower)
     return () => clearInterval(interval);
-  }, [nextSlide]);
+  }, [nextSlide, products.length]);
 
   // Note: Removed pause-on-hover behavior to keep autoplay running on hover
   // (Handlers removed intentionally)
+
+  // Fetch a chunk of catalog products once so we can match against them
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        // Fetch generous page size to improve matching coverage
+        const { data } = await fetchPublicProducts({ page: 1, limit: 200 });
+        if (!cancelled && data?.success && Array.isArray(data.data)) {
+          setCatalogProducts(data.data as Partial<Product>[]);
+        }
+      } catch {
+        if (process.env.NODE_ENV !== "production") {
+          console.warn("Failed to prefetch catalog for hero matching");
+        }
+      } finally {
+        if (!cancelled) setCatalogLoaded(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Return early if no products available (after all hooks)
+  if (products.length === 0) {
+    return null;
+  }
+
+  const currentProduct = products[currentIndex];
+  const nextIndex = (currentIndex + 1) % products.length;
+  const nextProduct = products[nextIndex];
+
+  // --- Matching helpers ---
+  const normalize = (s?: string) =>
+    (s || "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/gi, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  const getBasename = (p?: string) => {
+    if (!p) return "";
+    try {
+      const noQuery = p.split("?")[0];
+      const parts = noQuery.split("/");
+      const file = parts[parts.length - 1] || "";
+      return file.replace(/\.(png|jpg|jpeg|webp|gif|svg)$/i, "").toLowerCase();
+    } catch {
+      return "";
+    }
+  };
+
+  const parsePrice = (s?: string) => {
+    if (!s) return undefined;
+    const m = s.replace(/[,\s₹$]/g, "").match(/\d+(?:\.\d+)?/);
+    return m ? Number(m[0]) : undefined;
+  };
+
+  const tokenOverlap = (a: string, b: string) => {
+    if (!a || !b) return 0;
+    const as = new Set(a.split(" ").filter(Boolean));
+    const bs = new Set(b.split(" ").filter(Boolean));
+    if (as.size === 0 || bs.size === 0) return 0;
+    let inter = 0;
+    as.forEach((t) => {
+      if (bs.has(t)) inter++;
+    });
+    const union = as.size + bs.size - inter;
+    return inter / union;
+  };
+
+  const scoreMatch = (
+    hero: {
+      name: string;
+      subtitle: string;
+      description: string;
+      image: string;
+      price: string;
+    },
+    p: Partial<Product>
+  ) => {
+    // Normalize fields
+    const heroName = normalize(hero.name);
+    const heroSub = normalize(hero.subtitle);
+    const heroDesc = normalize(hero.description);
+    const heroImg = getBasename(hero.image);
+    const heroPrice = parsePrice(hero.price);
+
+    const prodName = normalize(p.name as string);
+    const prodBrand = normalize(p.brand as string);
+    const prodDesc = normalize(p.description as string);
+    const prodImgCandidates = [
+      getBasename(p.imageUrl as string),
+      ...(Array.isArray(p.images) ? p.images.map((x) => getBasename(x)) : []),
+    ].filter(Boolean);
+
+    // Individual component scores
+    const nameScore = Math.max(
+      tokenOverlap(heroName, prodName),
+      tokenOverlap(heroSub, prodName)
+    );
+
+    const brandScore = prodBrand && heroName.includes(prodBrand) ? 0.2 : 0; // small boost
+
+    const descScore =
+      heroDesc && prodDesc ? tokenOverlap(heroDesc, prodDesc) : 0;
+
+    const imageScore = prodImgCandidates.some(
+      (b) =>
+        b &&
+        heroImg &&
+        (b === heroImg || b.includes(heroImg) || heroImg.includes(b))
+    )
+      ? 0.4
+      : 0;
+
+    let priceScore = 0;
+    if (heroPrice != null && typeof p.price === "number" && p.price > 0) {
+      const diff = Math.abs(p.price - heroPrice);
+      const rel = diff / Math.max(1, heroPrice);
+      // 0 diff => 0.4, 10% diff => ~0.25, 20% diff => ~0.1
+      priceScore = Math.max(0, 0.4 - rel * 1.5);
+    }
+
+    // Weighted sum (weights tuned for reliability)
+    const total =
+      nameScore * 0.5 +
+      brandScore * 1 +
+      descScore * 0.2 +
+      imageScore * 1 +
+      priceScore * 1;
+    return {
+      score: total,
+      parts: { nameScore, brandScore, descScore, imageScore, priceScore },
+    };
+  };
+
+  const findBestCatalogMatch = async () => {
+    const hero = {
+      name: currentProduct.name,
+      subtitle: currentProduct.subtitle,
+      description: currentProduct.description,
+      image: currentProduct.image,
+      price: currentProduct.price,
+    };
+
+    let pool = catalogProducts;
+
+    // If catalog isn't loaded yet, fetch a small batch on-demand
+    if (!catalogLoaded || pool.length === 0) {
+      try {
+        const { data } = await fetchPublicProducts({ page: 1, limit: 200 });
+        if (data?.success && Array.isArray(data.data)) {
+          pool = data.data as Partial<Product>[];
+          setCatalogProducts(pool);
+          setCatalogLoaded(true);
+        }
+      } catch {
+        // ignore, we'll try with empty pool
+      }
+    }
+
+    if (!pool || pool.length === 0) return null;
+
+    let best: { item: Partial<Product>; score: number } | null = null;
+    for (const p of pool) {
+      const { score } = scoreMatch(hero, p);
+      if (!best || score > best.score) {
+        best = { item: p, score };
+      }
+    }
+
+    // Require a reasonable threshold to avoid wrong product
+    if (best && best.score >= 0.45 && best.item.id) {
+      if (process.env.NODE_ENV !== "production") {
+        console.log("Hero match score:", best.score, "=>", best.item.name);
+      }
+      return best.item as Partial<Product>;
+    }
+    return null;
+  };
+
+  const handleShopNow = async () => {
+    if (isNavigating) return;
+    setIsNavigating(true);
+    try {
+      const match = await findBestCatalogMatch();
+      if (match?.id) {
+        router.push(`/product_details?id=${encodeURIComponent(match.id)}`);
+        return;
+      }
+
+      // Last attempt: try querying backend by name to reduce the pool, then match again
+      const searchQuery = (
+        currentProduct.subtitle ||
+        currentProduct.name ||
+        ""
+      ).trim();
+      if (searchQuery) {
+        const q: ProductQueryParams = {
+          page: 1,
+          limit: 100,
+          name: searchQuery,
+        } as ProductQueryParams;
+        try {
+          const { data } = await fetchPublicProducts(q);
+          if (data?.success && Array.isArray(data.data) && data.data.length) {
+            const pool = data.data as Partial<Product>[];
+            let best: { item: Partial<Product>; score: number } | null = null;
+            const hero = {
+              name: currentProduct.name,
+              subtitle: currentProduct.subtitle,
+              description: currentProduct.description,
+              image: currentProduct.image,
+              price: currentProduct.price,
+            };
+            for (const p of pool) {
+              const { score } = scoreMatch(hero, p);
+              if (!best || score > best.score) best = { item: p, score };
+            }
+            if (best && best.item.id) {
+              router.push(
+                `/product_details?id=${encodeURIComponent(
+                  best.item.id as string
+                )}`
+              );
+              return;
+            }
+          }
+        } catch {
+          // ignore and continue to final fallback
+        }
+      }
+
+      // Final fallback: stay on page but do not route to shop to avoid wrong product
+      if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "No reliable product match found for hero slide",
+          currentProduct
+        );
+      }
+    } catch (error) {
+      console.error("Error searching for product:", error);
+    } finally {
+      setIsNavigating(false);
+    }
+  };
 
   return (
     <motion.div
@@ -212,57 +363,6 @@ function HeroContent({ slides }: HeroContentProps) {
         <div className="absolute bottom-20 right-20 w-64 h-64 rounded-full border border-white/20"></div>
         <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] rounded-full border border-white/15"></div>
       </div>
-
-      {/* Navigation Arrows (show on all screen sizes for consistent appearance) */}
-      {/* <>
-        <motion.button
-          onClick={prevSlide}
-          className="absolute left-3 md:left-8 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full p-3 md:p-3 transition-all duration-200 group"
-          aria-label="Previous watch"
-          whileHover={{ scale: 1.05, x: -2 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <svg
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-            className="text-white group-hover:text-amber-400 transition-colors duration-200"
-          >
-            <path
-              d="M15 18l-6-6 6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </motion.button>
-
-        <motion.button
-          onClick={nextSlide}
-          className="absolute right-3 md:right-8 top-1/2 transform -translate-y-1/2 z-20 bg-white/10 hover:bg-white/20 backdrop-blur-sm rounded-full p-3 md:p-3 transition-all duration-200 group"
-          aria-label="Next watch"
-          whileHover={{ scale: 1.05, x: 2 }}
-          whileTap={{ scale: 0.95 }}
-        >
-          <svg
-            width="24"
-            height="24"
-            fill="none"
-            viewBox="0 0 24 24"
-            className="text-white group-hover:text-amber-400 transition-colors duration-200"
-          >
-            <path
-              d="M9 18l6-6-6-6"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </motion.button>
-      </> */}
 
       {/* Main Content */}
       <div className="relative z-10 container mx-auto px-4 py-8 md:py-16">
@@ -576,53 +676,7 @@ function HeroContent({ slides }: HeroContentProps) {
           </div>
         </div>
       </div>
-
-      {/* Carousel Indicators
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20">
-        <div className="flex items-center gap-3">
-          {products.map((_, index) => (
-            <button
-              key={index}
-              onClick={() => goToSlide(index)}
-              className={`relative w-12 h-1 transition-all duration-200 ${
-                index === currentIndex
-                  ? "bg-amber-400"
-                  : "bg-white/30 hover:bg-white/50"
-              }`}
-              aria-label={`Go to slide ${index + 1}`}
-            >
-              {index === currentIndex && (
-                <motion.div
-                  className="absolute inset-0 bg-amber-400"
-                  layoutId="activeIndicator"
-                  initial={false}
-                  transition={{ duration: 0.2, ease: [0.25, 0.46, 0.45, 0.94] }}
-                />
-              )}
-            </button>
-          ))}
-        </div>
-      </div> */}
-
-      {/* Progress Bar
-      <div className="absolute bottom-0 left-0 w-full h-1 bg-white/10">
-        <motion.div
-          className="h-full bg-gradient-to-r from-amber-400 to-amber-600"
-          initial={{ width: "0%" }}
-          animate={{
-            width: isPlaying
-              ? "100%"
-              : `${((currentIndex + 1) / products.length) * 100}%`,
-          }}
-          transition={{
-            duration: isPlaying ? 4 : 0,
-            ease: "linear",
-            repeat: isPlaying ? Infinity : 0,
-          }}
-        />
-      </div> */}
     </motion.div>
   );
 }
-
 export default HeroContent;

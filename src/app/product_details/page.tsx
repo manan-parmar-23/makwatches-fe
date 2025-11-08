@@ -22,6 +22,17 @@ interface DisplayProduct {
   discountAmount?: number | null;
   discountStartDate?: string | null;
   discountEndDate?: string | null;
+  dialColor?: string;
+  dialShape?: string;
+  dialType?: string;
+  strapColor?: string;
+  strapMaterial?: string;
+  style?: string;
+  dialThickness?: string;
+  movement?: string;
+  caseMaterial?: string;
+  waterResistance?: string;
+  warranty?: string;
 }
 
 // Professional loading state instead of fallback data
@@ -31,7 +42,7 @@ const FALLBACK: DisplayProduct = {
   price: 12999,
   images: ["/watches/watch1.png", "/watches/watch2.png", "/watches/watch3.png"],
   description:
-    "Precision crafted luxury timepiece with Swiss movement.\n• Premium stainless steel case\n• Sapphire crystal glass\n• Water resistant to 100m\n• 2-year international warranty",
+    "Precision crafted luxury timepiece with Swiss movement.\n• Premium stainless steel case\n• Sapphire crystal glass\n• Water resistant to 100m\n• 1-year international warranty",
   brand: "MAK",
   category: "Men/Luxury",
   stock: 10,
@@ -47,6 +58,7 @@ function ProductDetailsInner() {
   const [adding, setAdding] = useState(false);
   const [addMsg, setAddMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [relatedProducts, setRelatedProducts] = useState<DisplayProduct[]>([]);
 
   // Fetch product by id (public)
   useEffect(() => {
@@ -55,7 +67,29 @@ function ProductDetailsInner() {
     setLoading(true);
     (async () => {
       try {
-        const { data } = await fetchPublicProductById(id);
+        const response = await fetchPublicProductById(id);
+
+        // Debug: Check the exact API response structure
+        console.log("=== DEBUG: Full Axios Response ===");
+        console.log("response.data:", response.data);
+        console.log("response.data.data (product):", response.data.data);
+        console.log(
+          "Product keys:",
+          response.data.data ? Object.keys(response.data.data) : "N/A"
+        );
+
+        // Check each specification field individually
+        const productData = response.data.data;
+        console.log("Checking specification fields:");
+        console.log("  dialColor:", productData?.dialColor);
+        console.log("  dialShape:", productData?.dialShape);
+        console.log("  dialType:", productData?.dialType);
+        console.log("  strapColor:", productData?.strapColor);
+        console.log("  strapMaterial:", productData?.strapMaterial);
+        console.log("  style:", productData?.style);
+        console.log("  dialThickness:", productData?.dialThickness);
+        console.log("=== END DEBUG ===");
+
         type PublicPartial = {
           id?: string;
           name?: string;
@@ -69,10 +103,32 @@ function ProductDetailsInner() {
           discountAmount?: number | null;
           discountStartDate?: string | null;
           discountEndDate?: string | null;
+          dialColor?: string;
+          dialShape?: string;
+          dialType?: string;
+          strapColor?: string;
+          strapMaterial?: string;
+          style?: string;
+          dialThickness?: string;
+          movement?: string;
+          caseMaterial?: string;
+          waterResistance?: string;
+          warranty?: string;
+          gender?: string;
         };
-        const p: PublicPartial = data.data as PublicPartial;
+
+        // Axios wraps the API response, so actual product data is at response.data.data
+        const p: PublicPartial = response.data.data as PublicPartial;
+
         if (!cancelled && p) {
-          setProduct({
+          // Helper function to clean and validate string values
+          const cleanString = (value: string | undefined | null) => {
+            if (!value) return undefined;
+            const trimmed = value.trim();
+            return trimmed.length > 0 ? trimmed : undefined;
+          };
+
+          const productData = {
             id: p.id || id,
             name: p.name || FALLBACK.name,
             price: typeof p.price === "number" ? p.price : FALLBACK.price,
@@ -92,12 +148,95 @@ function ProductDetailsInner() {
               typeof p.discountAmount === "number" ? p.discountAmount : null,
             discountStartDate: p.discountStartDate || null,
             discountEndDate: p.discountEndDate || null,
+            dialColor: cleanString(p.dialColor),
+            dialShape: cleanString(p.dialShape),
+            dialType: cleanString(p.dialType),
+            strapColor: cleanString(p.strapColor),
+            strapMaterial: cleanString(p.strapMaterial),
+            style: cleanString(p.style),
+            dialThickness: cleanString(p.dialThickness),
+            movement: cleanString(p.movement),
+            caseMaterial: cleanString(p.caseMaterial),
+            waterResistance: cleanString(p.waterResistance),
+            warranty: cleanString(p.warranty),
+          };
+
+          // Debug: Log to verify data
+          console.log("Product data being set:", {
+            dialColor: productData.dialColor,
+            dialShape: productData.dialShape,
+            dialType: productData.dialType,
+            strapColor: productData.strapColor,
+            strapMaterial: productData.strapMaterial,
+            style: productData.style,
+            dialThickness: productData.dialThickness,
           });
+
+          setProduct(productData);
         }
       } catch {
         if (!cancelled) setError("Failed to load product details");
       } finally {
         if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
+
+  // Fetch related/random products
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch(
+          `${
+            process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"
+          }/catalog/products`
+        );
+        const json = await response.json();
+        if (!cancelled && json.success && Array.isArray(json.data)) {
+          // Filter out current product and get random 6 products
+          const otherProducts = json.data.filter(
+            (p: { id: string }) => p.id !== id
+          );
+          // Shuffle and take 6 random products
+          const shuffled = otherProducts.sort(() => 0.5 - Math.random());
+          const randomSix = shuffled
+            .slice(0, 6)
+            .map(
+              (p: {
+                id: string;
+                name: string;
+                price: number;
+                images?: string[];
+                imageUrl?: string;
+                brand?: string;
+                category?: string;
+                discountPercentage?: number | null;
+                discountAmount?: number | null;
+                discountStartDate?: string | null;
+                discountEndDate?: string | null;
+              }) => ({
+                id: p.id,
+                name: p.name,
+                price: p.price,
+                images: Array.isArray(p.images)
+                  ? p.images
+                  : [p.imageUrl || "/watches/watch1.png"],
+                brand: p.brand,
+                category: p.category,
+                discountPercentage: p.discountPercentage,
+                discountAmount: p.discountAmount,
+                discountStartDate: p.discountStartDate,
+                discountEndDate: p.discountEndDate,
+              })
+            );
+          setRelatedProducts(randomSix);
+        }
+      } catch (err) {
+        console.error("Failed to fetch related products:", err);
       }
     })();
     return () => {
@@ -123,9 +262,7 @@ function ProductDetailsInner() {
         return;
       }
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
-        }/cart`,
+        `${process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"}/cart`,
         {
           method: "POST",
           headers: {
@@ -181,48 +318,111 @@ function ProductDetailsInner() {
         </div>
       ) : (
         <>
-          <div className="grid md:grid-cols-2 gap-10">
+          <div className="grid md:grid-cols-2 gap-6 md:gap-10">
             {/* Left: Images */}
             <div className="space-y-4">
-              <div className="aspect-square w-full bg-gradient-to-b from-amber-50 to-white flex items-center justify-center border border-amber-200 rounded-xl overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg relative">
-                {/* Discount badge over image */}
-                {discountInfo.isActive && discountInfo.discountPercentage && (
-                  <DiscountBadge
-                    discountPercentage={discountInfo.discountPercentage}
-                    position="top-left"
-                    variant="premium"
-                    size="sm"
-                  />
-                )}
-                <Image
-                  src={product.images[imgIndex]}
-                  alt={product.name}
-                  width={700}
-                  height={700}
-                  className="object-contain w-full h-full transition-opacity duration-300"
-                  priority
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-3">
-                {product.images.slice(0, 4).map((img, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setImgIndex(i)}
-                    className={`aspect-square border rounded-lg overflow-hidden transition-all duration-200 ${
-                      imgIndex === i
-                        ? "ring-2 ring-amber-600 ring-offset-1 shadow-md scale-105 border-amber-400"
-                        : "hover:ring-1 hover:ring-amber-400 hover:scale-[1.02] border-amber-200"
-                    }`}
-                  >
-                    <Image
-                      src={img}
-                      alt={`thumbnail-${i + 1}`}
-                      width={150}
-                      height={150}
-                      className="object-contain w-full h-full"
+              {/* Main scrollable image carousel */}
+              <div className="relative">
+                <div
+                  className="flex gap-0 overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-hide"
+                  style={{
+                    scrollbarWidth: "none",
+                    msOverflowStyle: "none",
+                    WebkitOverflowScrolling: "touch",
+                  }}
+                  onScroll={(e) => {
+                    const scrollLeft = e.currentTarget.scrollLeft;
+                    const width = e.currentTarget.clientWidth;
+                    const newIndex = Math.round(scrollLeft / width);
+                    if (newIndex !== imgIndex) {
+                      setImgIndex(newIndex);
+                    }
+                  }}
+                >
+                  {product.images.map((img, i) => (
+                    <div
+                      key={i}
+                      className="flex-shrink-0 w-full aspect-square bg-gradient-to-b from-amber-50 to-white flex items-center justify-center border border-amber-200 rounded-xl overflow-hidden shadow-md snap-center relative"
+                    >
+                      {/* Discount badge over image - only on first image */}
+                      {i === 0 &&
+                        discountInfo.isActive &&
+                        discountInfo.discountPercentage && (
+                          <DiscountBadge
+                            discountPercentage={discountInfo.discountPercentage}
+                            position="top-left"
+                            variant="premium"
+                            size="sm"
+                          />
+                        )}
+                      <Image
+                        src={img}
+                        alt={`${product.name} - Image ${i + 1}`}
+                        width={700}
+                        height={700}
+                        className="object-contain w-full h-full"
+                        priority={i === 0}
+                      />
+                    </div>
+                  ))}
+                </div>
+                {/* Image indicator dots */}
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2 bg-black/30 px-3 py-2 rounded-full backdrop-blur-sm">
+                  {product.images.map((_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setImgIndex(i);
+                        const container = document.querySelector(".snap-x");
+                        if (container) {
+                          container.scrollTo({
+                            left: i * container.clientWidth,
+                            behavior: "smooth",
+                          });
+                        }
+                      }}
+                      className={`w-2 h-2 rounded-full transition-all ${
+                        imgIndex === i
+                          ? "bg-white w-6"
+                          : "bg-white/50 hover:bg-white/75"
+                      }`}
+                      aria-label={`Go to image ${i + 1}`}
                     />
-                  </button>
-                ))}
+                  ))}
+                </div>
+              </div>
+              {/* Thumbnails - Grid layout with max 2 rows */}
+              <div className="relative">
+                <div className="grid grid-cols-5 gap-2 md:gap-3">
+                  {product.images.map((img, i) => (
+                    <button
+                      key={i}
+                      onClick={() => {
+                        setImgIndex(i);
+                        const container = document.querySelector(".snap-x");
+                        if (container) {
+                          container.scrollTo({
+                            left: i * container.clientWidth,
+                            behavior: "smooth",
+                          });
+                        }
+                      }}
+                      className={`w-full aspect-square border rounded-lg overflow-hidden transition-all duration-200 ${
+                        imgIndex === i
+                          ? "ring-2 ring-amber-600 ring-offset-1 shadow-md scale-105 border-amber-400"
+                          : "hover:ring-1 hover:ring-amber-400 hover:scale-[1.02] border-amber-200"
+                      }`}
+                    >
+                      <Image
+                        src={img}
+                        alt={`thumbnail-${i + 1}`}
+                        width={150}
+                        height={150}
+                        className="object-contain w-full h-full"
+                      />
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -260,32 +460,133 @@ function ProductDetailsInner() {
 
               {/* Watch specifications */}
               <div className="my-6">
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-3">
                   <span className="text-sm font-medium text-amber-900">
                     Specifications
                   </span>
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-gray-600">
-                      Movement: Swiss Automatic
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-gray-600">Case: Stainless Steel</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-gray-600">
-                      Water Resistance: 100m
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                    <span className="text-gray-600">Warranty: 2 Years</span>
-                  </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                  {product.dialColor && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Dial Color:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.dialColor}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.dialShape && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Dial Shape:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.dialShape}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.dialType && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Dial Type:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.dialType}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.dialThickness && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Thickness:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.dialThickness}mm
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.strapMaterial && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Strap Material:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.strapMaterial}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.strapColor && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Strap Color:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.strapColor}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.movement && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Movement:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.movement}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.caseMaterial && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Case Material:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.caseMaterial}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.waterResistance && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Water Resistance:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.waterResistance}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.style && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Style:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.style}
+                        </span>
+                      </span>
+                    </div>
+                  )}
+                  {product.warranty && (
+                    <div className="flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                      <span className="text-gray-600">
+                        Warranty:{" "}
+                        <span className="font-medium text-gray-800">
+                          {product.warranty}
+                        </span>
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -384,49 +685,68 @@ function ProductDetailsInner() {
               )}
 
               {/* Description */}
-              <div className="p-5 bg-gradient-to-r from-amber-50 to-white rounded-lg border border-amber-200 shadow-sm">
-                <h3 className="font-semibold mb-3 text-amber-800">
-                  Timepiece Details
-                </h3>
-                <p className="text-sm leading-relaxed whitespace-pre-line text-gray-700 max-h-60 overflow-auto pr-2">
-                  {product.description}
-                </p>
-              </div>
+              {product.description && (
+                <div className="p-5 bg-gradient-to-r from-amber-50 to-white rounded-lg border border-amber-200 shadow-sm">
+                  <h3 className="font-semibold mb-3 text-amber-800">
+                    Product Description
+                  </h3>
+                  <p className="text-sm leading-relaxed whitespace-pre-line text-gray-700 max-h-60 overflow-auto pr-2 scrollbar-thin scrollbar-thumb-amber-400 scrollbar-track-amber-100">
+                    {product.description}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
           {/* Related products */}
-          <section className="mt-16 pt-8 border-t border-amber-200">
-            <h3 className="text-xl font-semibold mb-6 text-amber-800">
-              Complete Your Collection
-            </h3>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
-              {product.images.slice(0, 5).map((img, i) => (
-                <div key={i} className="flex flex-col group cursor-pointer">
-                  <div className="aspect-square w-full border border-amber-200 rounded-lg flex items-center justify-center overflow-hidden mb-2 transition-all duration-300 group-hover:shadow-md bg-gradient-to-b from-amber-50 to-white">
-                    <Image
-                      src={img}
-                      alt={`related-${i + 1}`}
-                      width={220}
-                      height={220}
-                      className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  <div className="text-center text-sm font-medium truncate w-full group-hover:text-amber-800 transition-colors">
-                    {product.name}
-                  </div>
-                  <div className="text-center text-xs text-amber-700 flex items-center justify-center gap-2">
-                    <PriceWithDiscount
-                      originalPrice={discountInfo.originalPrice}
-                      finalPrice={discountInfo.finalPrice}
-                      isActive={discountInfo.isActive}
-                      size="sm"
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
+          {relatedProducts.length > 0 && (
+            <section className="mt-16 pt-8 border-t border-amber-200">
+              <h3 className="text-xl font-semibold mb-6 text-amber-800">
+                Complete Your Collection
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 md:gap-6">
+                {relatedProducts.map((relatedProduct) => {
+                  const relatedDiscountInfo = calculateDiscount(
+                    relatedProduct.price || 0,
+                    relatedProduct.discountPercentage,
+                    relatedProduct.discountAmount,
+                    relatedProduct.discountStartDate,
+                    relatedProduct.discountEndDate
+                  );
+                  return (
+                    <a
+                      key={relatedProduct.id}
+                      href={`/product_details?id=${relatedProduct.id}`}
+                      className="flex flex-col group cursor-pointer"
+                    >
+                      <div className="aspect-square w-full border border-amber-200 rounded-lg flex items-center justify-center overflow-hidden mb-2 transition-all duration-300 group-hover:shadow-md bg-gradient-to-b from-amber-50 to-white relative">
+                        <Image
+                          src={
+                            relatedProduct.images[0] || "/watches/watch1.png"
+                          }
+                          alt={relatedProduct.name}
+                          width={220}
+                          height={220}
+                          className="object-contain w-full h-full group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="text-center text-xs sm:text-sm font-medium truncate w-full group-hover:text-amber-800 transition-colors px-1">
+                        {relatedProduct.name}
+                      </div>
+                      <div className="text-center text-xs text-amber-700 flex items-center justify-center gap-1 mt-1">
+                        <PriceWithDiscount
+                          originalPrice={relatedDiscountInfo.originalPrice}
+                          finalPrice={relatedDiscountInfo.finalPrice}
+                          isActive={relatedDiscountInfo.isActive}
+                          size="sm"
+                        />
+                      </div>
+                    </a>
+                  );
+                })}
+              </div>
+            </section>
+          )}
 
           {/* FAQs / How to use accordions */}
           <section className="mt-16 space-y-4">
@@ -436,8 +756,8 @@ function ProductDetailsInner() {
                 body: "To maintain your watch's appearance and performance, avoid exposing it to extreme temperatures, magnetic fields, and chemicals. Clean with a soft cloth and store in the provided case when not in use.",
               },
               {
-                title: "Warranty & Service Information",
-                body: "Each MAK timepiece includes a 2-year international warranty. We recommend servicing your mechanical watch every 3-5 years to ensure optimal performance.",
+                title: "Shipping & Returns",
+                body: "We offer complimentary standard shipping on all orders. If you're not satisfied, returns are accepted within 7 days of delivery in original condition. For expedited shipping or international options, please contact our support team.",
               },
             ].map((acc, i) => (
               <details
@@ -471,6 +791,41 @@ function ProductDetailsInner() {
           </section>
         </>
       )}
+
+      {/* Custom scrollbar styles */}
+      <style jsx>{`
+        /* Webkit browsers (Chrome, Safari, Edge) */
+        :global(.scrollbar-thin::-webkit-scrollbar) {
+          height: 6px;
+          width: 6px;
+        }
+        :global(.scrollbar-thin::-webkit-scrollbar-track) {
+          background: #fef3c7;
+          border-radius: 10px;
+        }
+        :global(.scrollbar-thin::-webkit-scrollbar-thumb) {
+          background: #fbbf24;
+          border-radius: 10px;
+        }
+        :global(.scrollbar-thin::-webkit-scrollbar-thumb:hover) {
+          background: #f59e0b;
+        }
+
+        /* Firefox */
+        :global(.scrollbar-thin) {
+          scrollbar-width: thin;
+          scrollbar-color: #fbbf24 #fef3c7;
+        }
+
+        /* Hide scrollbar for main image carousel */
+        :global(.scrollbar-hide::-webkit-scrollbar) {
+          display: none;
+        }
+        :global(.scrollbar-hide) {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </main>
   );
 }
