@@ -3,11 +3,14 @@ import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { fetchPublicProductById } from "@/utils/api";
+import { wishlistApi } from "@/services/api";
 import DiscountBadge, {
   PriceWithDiscount,
   SavingsBadge,
 } from "@/components/shared/DiscountBadge";
 import { calculateDiscount } from "@/utils/discount";
+import { HeartIcon as HeartOutline } from "@heroicons/react/24/outline";
+import { HeartIcon as HeartSolid } from "@heroicons/react/24/solid";
 
 interface DisplayProduct {
   id: string;
@@ -33,6 +36,9 @@ interface DisplayProduct {
   caseMaterial?: string;
   waterResistance?: string;
   warranty?: string;
+  // Home content specific fields
+  features?: string[];
+  source?: string; // "hero_slide" or "collection_feature"
 }
 
 // Professional loading state instead of fallback data
@@ -59,6 +65,8 @@ function ProductDetailsInner() {
   const [addMsg, setAddMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [relatedProducts, setRelatedProducts] = useState<DisplayProduct[]>([]);
+  const [isInWishlist, setIsInWishlist] = useState(false);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   // Fetch product by id (public)
   useEffect(() => {
@@ -67,7 +75,29 @@ function ProductDetailsInner() {
     setLoading(true);
     (async () => {
       try {
-        const response = await fetchPublicProductById(id);
+        // First try to fetch from regular products
+        let response;
+
+        try {
+          response = await fetchPublicProductById(id);
+        } catch (productError) {
+          // If not found in regular products, try home content
+          try {
+            response = await fetch(
+              `${
+                process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+              }/home-content/product/${id}`
+            );
+            const data = await response.json();
+            if (data.success) {
+              response = { data };
+            } else {
+              throw productError;
+            }
+          } catch {
+            throw productError;
+          }
+        }
 
         // Debug: Check the exact API response structure
         console.log("=== DEBUG: Full Axios Response ===");
@@ -93,7 +123,7 @@ function ProductDetailsInner() {
         type PublicPartial = {
           id?: string;
           name?: string;
-          price?: number;
+          price?: number | string; // Can be string from home content
           images?: string[];
           description?: string;
           brand?: string;
@@ -115,6 +145,9 @@ function ProductDetailsInner() {
           waterResistance?: string;
           warranty?: string;
           gender?: string;
+          // Home content specific fields
+          features?: string[];
+          source?: string;
         };
 
         // Axios wraps the API response, so actual product data is at response.data.data
@@ -128,10 +161,23 @@ function ProductDetailsInner() {
             return trimmed.length > 0 ? trimmed : undefined;
           };
 
+          // Parse price if it's a string (from home content)
+          let priceValue = FALLBACK.price;
+          if (typeof p.price === "number") {
+            priceValue = p.price;
+          } else if (p.price && typeof p.price === "string") {
+            const parsed = parseFloat(
+              (p.price as string).replace(/[^0-9.]/g, "")
+            );
+            if (!isNaN(parsed)) {
+              priceValue = parsed;
+            }
+          }
+
           const productData = {
             id: p.id || id,
             name: p.name || FALLBACK.name,
-            price: typeof p.price === "number" ? p.price : FALLBACK.price,
+            price: priceValue,
             images:
               Array.isArray(p.images) && p.images.length > 0
                 ? p.images
@@ -159,6 +205,9 @@ function ProductDetailsInner() {
             caseMaterial: cleanString(p.caseMaterial),
             waterResistance: cleanString(p.waterResistance),
             warranty: cleanString(p.warranty),
+            // Home content specific fields
+            features: Array.isArray(p.features) ? p.features : undefined,
+            source: p.source,
           };
 
           // Debug: Log to verify data
@@ -192,7 +241,7 @@ function ProductDetailsInner() {
       try {
         const response = await fetch(
           `${
-            process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
+            process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"
           }/catalog/products`
         );
         const json = await response.json();
@@ -244,6 +293,40 @@ function ProductDetailsInner() {
     };
   }, [id]);
 
+  // Check if product is in wishlist on load
+  useEffect(() => {
+    if (!product.id) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        // Retrieve customer token
+        const token =
+          typeof window !== "undefined"
+            ? localStorage.getItem("customerToken") ||
+              localStorage.getItem("adminToken") ||
+              sessionStorage.getItem("adminAuthToken") ||
+              localStorage.getItem("auth_token") ||
+              localStorage.getItem("authToken")
+            : null;
+        if (!token) return; // User not logged in, skip check
+
+        const wishlist = await wishlistApi.getWishlist();
+        if (!cancelled && wishlist && Array.isArray(wishlist)) {
+          const found = wishlist.some(
+            (item: { productId?: string; product?: { id?: string } }) =>
+              item.productId === product.id || item.product?.id === product.id
+          );
+          setIsInWishlist(found);
+        }
+      } catch (err) {
+        console.error("Failed to check wishlist status:", err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [product.id]);
+
   async function addToCart() {
     setAdding(true);
     setAddMsg(null);
@@ -262,9 +345,7 @@ function ProductDetailsInner() {
         return;
       }
       const res = await fetch(
-        `${
-          process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
-        }/cart`,
+        `${process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"}/cart`,
         {
           method: "POST",
           headers: {
@@ -293,6 +374,46 @@ function ProductDetailsInner() {
       setAddMsg(message);
     } finally {
       setAdding(false);
+    }
+  }
+
+  async function handleWishlist() {
+    if (wishlistLoading) return;
+    setWishlistLoading(true);
+    setAddMsg(null);
+    try {
+      // Retrieve customer/admin token
+      const token =
+        typeof window !== "undefined"
+          ? localStorage.getItem("customerToken") ||
+            localStorage.getItem("adminToken") ||
+            sessionStorage.getItem("adminAuthToken") ||
+            localStorage.getItem("auth_token") ||
+            localStorage.getItem("authToken")
+          : null;
+      if (!token) {
+        setAddMsg("Please login to add to wishlist.");
+        return;
+      }
+
+      if (isInWishlist) {
+        // Remove from wishlist
+        await wishlistApi.removeFromWishlist(product.id);
+        setIsInWishlist(false);
+        setAddMsg("Removed from wishlist");
+      } else {
+        // Add to wishlist
+        await wishlistApi.addToWishlist(product.id);
+        setIsInWishlist(true);
+        setAddMsg("Added to wishlist!");
+      }
+    } catch (err: unknown) {
+      const message =
+        (err as { message?: string })?.message ||
+        "Failed to update wishlist. Please login.";
+      setAddMsg(message);
+    } finally {
+      setWishlistLoading(false);
     }
   }
 
@@ -460,136 +581,151 @@ function ProductDetailsInner() {
                 </div>
               </div>
 
-              {/* Watch specifications */}
+              {/* Watch specifications or features */}
               <div className="my-6">
                 <div className="flex items-center mb-3">
                   <span className="text-sm font-medium text-amber-900">
-                    Specifications
+                    {product.source ? "Features" : "Specifications"}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-                  {product.dialColor && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Dial Color:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.dialColor}
+                {/* Home content products show features */}
+                {product.source &&
+                product.features &&
+                product.features.length > 0 ? (
+                  <div className="space-y-2">
+                    {product.features.map((feature, index) => (
+                      <div key={index} className="flex items-start gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500 mt-1.5"></div>
+                        <span className="text-gray-700 text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  /* Regular products show specifications */
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                    {product.dialColor && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Dial Color:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.dialColor}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.dialShape && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Dial Shape:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.dialShape}
+                      </div>
+                    )}
+                    {product.dialShape && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Dial Shape:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.dialShape}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.dialType && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Dial Type:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.dialType}
+                      </div>
+                    )}
+                    {product.dialType && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Dial Type:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.dialType}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.dialThickness && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Thickness:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.dialThickness}mm
+                      </div>
+                    )}
+                    {product.dialThickness && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Thickness:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.dialThickness}mm
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.strapMaterial && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Strap Material:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.strapMaterial}
+                      </div>
+                    )}
+                    {product.strapMaterial && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Strap Material:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.strapMaterial}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.strapColor && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Strap Color:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.strapColor}
+                      </div>
+                    )}
+                    {product.strapColor && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Strap Color:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.strapColor}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.movement && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Movement:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.movement}
+                      </div>
+                    )}
+                    {product.movement && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Movement:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.movement}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.caseMaterial && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Case Material:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.caseMaterial}
+                      </div>
+                    )}
+                    {product.caseMaterial && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Case Material:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.caseMaterial}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.waterResistance && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Water Resistance:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.waterResistance}
+                      </div>
+                    )}
+                    {product.waterResistance && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Water Resistance:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.waterResistance}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.style && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Style:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.style}
+                      </div>
+                    )}
+                    {product.style && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Style:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.style}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                  {product.warranty && (
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full bg-amber-500"></div>
-                      <span className="text-gray-600">
-                        Warranty:{" "}
-                        <span className="font-medium text-gray-800">
-                          {product.warranty}
+                      </div>
+                    )}
+                    {product.warranty && (
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 rounded-full bg-amber-500"></div>
+                        <span className="text-gray-600">
+                          Warranty:{" "}
+                          <span className="font-medium text-gray-800">
+                            {product.warranty}
+                          </span>
                         </span>
-                      </span>
-                    </div>
-                  )}
-                </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Qty + Add to cart */}
@@ -649,24 +785,18 @@ function ProductDetailsInner() {
                   )}
                 </button>
                 <button
-                  className="w-12 h-12 rounded-full border border-amber-300 flex items-center justify-center hover:bg-amber-50 transition-colors"
-                  aria-label="Add to wishlist"
+                  onClick={handleWishlist}
+                  disabled={wishlistLoading}
+                  className="w-12 h-12 rounded-full border border-amber-300 flex items-center justify-center hover:bg-amber-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label={
+                    isInWishlist ? "Remove from wishlist" : "Add to wishlist"
+                  }
                 >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="22"
-                    height="22"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="#b45309"
-                    strokeWidth="2"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                    />
-                  </svg>
+                  {isInWishlist ? (
+                    <HeartSolid className="w-5 h-5 text-amber-700" />
+                  ) : (
+                    <HeartOutline className="w-5 h-5 text-amber-700" />
+                  )}
                 </button>
               </div>
 

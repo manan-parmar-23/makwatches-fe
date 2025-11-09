@@ -57,7 +57,7 @@ export const fetchPublicCategories = (name?: string) =>
   api.get<ApiResponse<Category[]>>('/categories', { params: name ? { name } : undefined });
 export const fetchPublicSubcategories = (name: string, strict?: boolean) =>
   api.get<ApiResponse<{ id: string; name: string }[]>>(`/categories/${encodeURIComponent(name)}/subcategories`, { params: strict ? { strict: 1 } : undefined });
-export const fetchProducts = () => api.get<ApiResponse<Product[]>>('/products/');
+export const fetchProducts = () => api.get<ApiResponse<Product[]>>('/products/', { params: { limit: 10000 } });
 // Public lightweight product listing (catalog)
 export interface ProductQueryParams {
   category?: string;

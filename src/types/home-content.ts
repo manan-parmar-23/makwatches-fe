@@ -1,14 +1,44 @@
+export interface Product {
+  id: string;
+  name: string;
+  brand?: string;
+  description: string;
+  price: number;
+  category?: string;
+  mainCategory?: string;
+  subcategory?: string;
+  imageUrl?: string;
+  images: string[];
+  stock: number;
+  gender?: string;
+  dialColor?: string;
+  dialShape?: string;
+  dialType?: string;
+  strapColor?: string;
+  strapMaterial?: string;
+  style?: string;
+  dialThickness?: string;
+  discountPercentage?: number | null;
+  discountAmount?: number | null;
+  discountStartDate?: string | null;
+  discountEndDate?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface HeroSlide {
   id: string;
   title: string;
   subtitle: string;
-  price: string;
+  price?: string; // Deprecated - use product.price instead
   description: string;
   image: string;
   features: string[];
   gradient: string;
   glowColor: string;
   position: number;
+  productId?: string; // Reference to actual product
+  product?: Product; // Populated product details
   createdAt?: string;
   updatedAt?: string;
 }
@@ -39,6 +69,8 @@ export interface HomeCollectionFeature {
   imageAlt: string;
   layout: CollectionLayout;
   position: number;
+  productId?: string; // Reference to actual product
+  product?: Product; // Populated product details
   createdAt?: string;
   updatedAt?: string;
 }

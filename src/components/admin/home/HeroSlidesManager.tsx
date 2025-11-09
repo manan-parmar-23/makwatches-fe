@@ -147,7 +147,7 @@ export default function HeroSlidesManager() {
     setForm({
       title: slide.title,
       subtitle: slide.subtitle,
-      price: slide.price,
+      price: slide.price || "",
       description: slide.description,
       image: slide.image,
       gradient: slide.gradient,
@@ -168,7 +168,7 @@ export default function HeroSlidesManager() {
     const payload = {
       title: form.title.trim(),
       subtitle: form.subtitle.trim(),
-      price: form.price.trim(),
+      price: form.price?.trim() || "",
       description: form.description.trim(),
       image: form.image.trim(),
       gradient: form.gradient.trim(),

@@ -32,9 +32,12 @@ function HeroContent({ slides }: HeroContentProps) {
     slides && slides.length
       ? slides.map((s) => ({
           id: s.id,
+          productId: s.productId || s.product?.id, // Store product ID if available
           name: s.title || "MAK Watches",
           subtitle: s.subtitle || "",
-          price: s.price || "",
+          price: s.product
+            ? `₹${s.product.price.toLocaleString()}`
+            : s.price || "",
           description: s.description || "",
           image: s.image || "/black-image.png",
           features:
@@ -43,6 +46,7 @@ function HeroContent({ slides }: HeroContentProps) {
               : ["Water Resistant", "Swiss Movement", "2 Year Warranty"],
           gradient: s.gradient || "from-amber-600 to-transparent",
           glowColor: s.glowColor || "from-amber-500/20",
+          hasProduct: !!s.product, // Flag to know if product data exists
         }))
       : [];
 
@@ -286,6 +290,15 @@ function HeroContent({ slides }: HeroContentProps) {
     if (isNavigating) return;
     setIsNavigating(true);
     try {
+      // Priority 1: If slide has a direct product ID from backend, use it
+      if (currentProduct.productId) {
+        router.push(
+          `/product_details?id=${encodeURIComponent(currentProduct.productId)}`
+        );
+        return;
+      }
+
+      // Priority 2: Try to find best match from catalog
       const match = await findBestCatalogMatch();
       if (match?.id) {
         router.push(`/product_details?id=${encodeURIComponent(match.id)}`);

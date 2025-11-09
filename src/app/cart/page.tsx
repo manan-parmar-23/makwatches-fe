@@ -40,8 +40,7 @@ interface CartResponse {
   total: number;
 }
 
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080";
 
 // Color constants
 const COLORS = {
@@ -85,6 +84,9 @@ export default function CartPage() {
   const [saving, setSaving] = useState<string | null>(null);
   const [shareModalOpen, setShareModalOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [recommendedProducts, setRecommendedProducts] = useState<CartProduct[]>(
+    []
+  );
 
   const fetchCart = useCallback(async () => {
     if (!user) return;
@@ -157,6 +159,63 @@ export default function CartPage() {
       setLoading(false);
     }
   }, [authLoading, user, fetchCart]);
+
+  // Fetch recommended products
+  useEffect(() => {
+    const fetchRecommendedProducts = async () => {
+      try {
+        const res = await fetch(`${API_BASE}/catalog/products`);
+        const json = await res.json();
+        if (json.success && Array.isArray(json.data)) {
+          // Filter out products in cart and shuffle
+          const cartProductIds = new Set(
+            cart.items.map((item) => item.productId)
+          );
+          const availableProducts = json.data.filter(
+            (p: { id?: string; _id?: string }) => {
+              const pid = p.id || p._id || "";
+              return !cartProductIds.has(pid);
+            }
+          );
+          // Shuffle and take 5 random products
+          const shuffled = availableProducts.sort(() => 0.5 - Math.random());
+          const randomProducts = shuffled
+            .slice(0, 5)
+            .map(
+              (p: {
+                id?: string;
+                _id?: string;
+                name?: string;
+                price?: number;
+                images?: string[];
+                imageUrl?: string;
+                brand?: string;
+                mainCategory?: string;
+              }) => ({
+                id: p.id || p._id,
+                name: p.name,
+                price: p.price,
+                images:
+                  p.images && p.images.length > 0
+                    ? p.images
+                    : p.imageUrl
+                    ? [p.imageUrl]
+                    : [],
+                brand: p.brand,
+                mainCategory: p.mainCategory,
+              })
+            );
+          setRecommendedProducts(randomProducts);
+        }
+      } catch (error) {
+        console.error("Failed to fetch recommended products:", error);
+      }
+    };
+
+    if (cart.items.length > 0) {
+      fetchRecommendedProducts();
+    }
+  }, [cart.items]);
 
   async function updateQuantity(productId: string, delta: number) {
     const item = cart.items.find((i) => i.productId === productId);
@@ -325,15 +384,6 @@ export default function CartPage() {
     0
   );
   const discountTotal = Math.max(0, originalSubtotal - cart.total);
-
-  // Placeholder recommendations (could wire to /recommendations when implemented)
-  const recommendations = (
-    cart.items[0]?.product?.images || [
-      "/tshirt1.png",
-      "/tshirt2.png",
-      "/tshirt3.png",
-    ]
-  ).slice(0, 5);
 
   // Share functionality: try native share first, otherwise fallback to modal
   const handleShare = async () => {
@@ -1003,7 +1053,7 @@ export default function CartPage() {
             )}
 
             {/* Recommendations */}
-            {cart.items.length > 0 && (
+            {cart.items.length > 0 && recommendedProducts.length > 0 && (
               <section className="mt-16">
                 <h2
                   className="text-2xl font-bold mb-6"
@@ -1012,9 +1062,10 @@ export default function CartPage() {
                   You Might Also Like
                 </h2>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
-                  {recommendations.map((img, i) => (
-                    <div
-                      key={i}
+                  {recommendedProducts.map((product) => (
+                    <Link
+                      key={product.id}
+                      href={`/product_details?id=${product.id}`}
                       className="group rounded-2xl overflow-hidden border transition-all hover:shadow-xl hover:scale-105 cursor-pointer"
                       style={{
                         borderColor: COLORS.inputBorder,
@@ -1023,14 +1074,34 @@ export default function CartPage() {
                     >
                       <div className="aspect-square p-4 flex items-center justify-center bg-white">
                         <Image
-                          src={img}
-                          alt={`recommendation-${i}`}
+                          src={product.images?.[0] || "/watches/watch1.png"}
+                          alt={product.name || "Product"}
                           width={200}
                           height={200}
                           className="object-contain transition-transform group-hover:scale-110"
                         />
                       </div>
-                    </div>
+                      <div className="p-3 space-y-1">
+                        <h3
+                          className="text-sm font-medium line-clamp-1"
+                          style={{ color: COLORS.text }}
+                        >
+                          {product.name}
+                        </h3>
+                        <p
+                          className="text-xs"
+                          style={{ color: COLORS.textMuted }}
+                        >
+                          {product.brand}
+                        </p>
+                        <p
+                          className="text-sm font-semibold"
+                          style={{ color: COLORS.accent }}
+                        >
+                          ₹{product.price?.toFixed(2)}
+                        </p>
+                      </div>
+                    </Link>
                   ))}
                 </div>
               </section>

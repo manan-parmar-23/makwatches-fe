@@ -18,7 +18,13 @@ interface CollectionProps {
 const Collection: React.FC<CollectionProps> = ({ features }) => {
   const router = useRouter();
 
-  const handlePreOrder = async (ctaHref?: string) => {
+  const handlePreOrder = async (ctaHref?: string, productId?: string) => {
+    // Priority 1: If feature has a direct product ID from backend, use it
+    if (productId) {
+      router.push(`/product_details?id=${encodeURIComponent(productId)}`);
+      return;
+    }
+
     // Try to honor an explicit /product_details?id=... link if admin set it
     const tryPushCtaIfProduct = async (href: string) => {
       try {
@@ -49,13 +55,13 @@ const Collection: React.FC<CollectionProps> = ({ features }) => {
       return false;
     };
 
-    // 1) If ctaHref points to product_details with id, use it
+    // 2) If ctaHref points to product_details with id, use it
     if (ctaHref) {
       const ok = await tryPushCtaIfProduct(ctaHref);
       if (ok) return;
     }
 
-    // 2) Fallback: fetch first public product and navigate there
+    // 3) Fallback: fetch first public product and navigate there
     try {
       const params: ProductQueryParams = { page: 1, limit: 1 };
       const { data } = await fetchPublicProducts(params);
@@ -71,7 +77,7 @@ const Collection: React.FC<CollectionProps> = ({ features }) => {
       // ignore and use generic page
     }
 
-    // 3) Final fallback: open generic product details page
+    // 4) Final fallback: open generic product details page
     router.push("/product_details");
   };
 
@@ -112,7 +118,12 @@ const Collection: React.FC<CollectionProps> = ({ features }) => {
                 "Available in platinum, rose gold, gray, and black."}
             </p>
             <button
-              onClick={() => handlePreOrder(mapped[0]?.ctaHref)}
+              onClick={() =>
+                handlePreOrder(
+                  mapped[0]?.ctaHref,
+                  mapped[0]?.productId || mapped[0]?.product?.id
+                )
+              }
               className="mt-4 bg-white border border-gray-300 text-gray-800 rounded-full px-8 py-2.5 
               flex items-center justify-center gap-2 hover:bg-gray-100 transition group"
             >
@@ -154,7 +165,12 @@ const Collection: React.FC<CollectionProps> = ({ features }) => {
                 "Available in light blue, black, and silver."}
             </p>
             <button
-              onClick={() => handlePreOrder(mapped[1]?.ctaHref)}
+              onClick={() =>
+                handlePreOrder(
+                  mapped[1]?.ctaHref,
+                  mapped[1]?.productId || mapped[1]?.product?.id
+                )
+              }
               className="mt-4 bg-white border border-gray-300 text-gray-800 rounded-full px-8 py-2.5 
               flex items-center justify-center gap-2 hover:bg-gray-100 transition group"
             >
@@ -214,7 +230,12 @@ const Collection: React.FC<CollectionProps> = ({ features }) => {
                 "Available in white, black, and brown leather options."}
             </p>
             <button
-              onClick={() => handlePreOrder(mapped[2]?.ctaHref)}
+              onClick={() =>
+                handlePreOrder(
+                  mapped[2]?.ctaHref,
+                  mapped[2]?.productId || mapped[2]?.product?.id
+                )
+              }
               className="mt-4 bg-white border border-gray-300 text-gray-800 rounded-full px-8 py-2.5 
               flex items-center justify-center gap-2 hover:bg-gray-100 transition group"
             >

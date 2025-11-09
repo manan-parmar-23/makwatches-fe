@@ -24,6 +24,7 @@ const storeImpl: StateCreator<ProductsState> = (set, get) => ({
   fetchAll: async (): Promise<void> => {
     set({ loading: true, error: null });
     try {
+      // Fetch with a large limit to get all products for admin dashboard
       const { data } = await fetchProducts();
       set({ products: data.data, loading: false });
     } catch (e) {

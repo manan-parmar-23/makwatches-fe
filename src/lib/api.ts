@@ -2,7 +2,7 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.makwatches.in/", // Change to your backend URL
+  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL || "http://127.0.0.1:8080/", // Change to your backend URL
   withCredentials: true, // Allow sending cookies
 });
 

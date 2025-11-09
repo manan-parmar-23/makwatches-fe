@@ -12,6 +12,8 @@ import {
   ChevronRightIcon,
   PhotoIcon,
   ExclamationCircleIcon,
+  MagnifyingGlassIcon,
+  FunnelIcon,
 } from "@heroicons/react/24/outline";
 
 // Enhanced Color constants - luxury theme with rich black and gold
@@ -52,9 +54,52 @@ const ProductsPage: React.FC = () => {
   const [editing, setEditing] = useState<Product | null>(null);
   const [page, setPage] = useState(1);
   const pageSize = 10;
+
+  // Search and Sort state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "price" | "stock" | "date">(
+    "date"
+  );
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("desc");
+
   // Defensive: ensure products is always an array before using .length
   const productList: Product[] = Array.isArray(products) ? products : [];
-  const totalPages = Math.max(1, Math.ceil(productList.length / pageSize));
+
+  // Filter products by search query
+  const filteredProducts = productList.filter((product) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(query) ||
+      (product.brand || "").toLowerCase().includes(query) ||
+      (product.mainCategory || "").toLowerCase().includes(query) ||
+      (product.subcategory || "").toLowerCase().includes(query)
+    );
+  });
+
+  // Sort products
+  const sortedProducts = [...filteredProducts].sort((a, b) => {
+    let comparison = 0;
+
+    switch (sortBy) {
+      case "name":
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case "price":
+        comparison = a.price - b.price;
+        break;
+      case "stock":
+        comparison = a.stock - b.stock;
+        break;
+      case "date":
+        // Assuming newer products are at the end, use index
+        comparison = productList.indexOf(a) - productList.indexOf(b);
+        break;
+    }
+
+    return sortOrder === "asc" ? comparison : -comparison;
+  });
+
+  const totalPages = Math.max(1, Math.ceil(sortedProducts.length / pageSize));
 
   useEffect(() => {
     // Run and catch 401 to redirect like categories page if needed
@@ -67,7 +112,15 @@ const ProductsPage: React.FC = () => {
     });
   }, [fetchAll]);
 
-  const paginated = productList.slice((page - 1) * pageSize, page * pageSize);
+  // Reset to page 1 when search or sort changes
+  useEffect(() => {
+    setPage(1);
+  }, [searchQuery, sortBy, sortOrder]);
+
+  const paginated = sortedProducts.slice(
+    (page - 1) * pageSize,
+    page * pageSize
+  );
 
   const onAdd = () => {
     setEditing(null);
@@ -115,8 +168,103 @@ const ProductsPage: React.FC = () => {
         />
       </div>
 
+      {/* Search and Filter Controls */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-5">
+        {/* Search Bar */}
+        <div className="relative md:col-span-2">
+          <MagnifyingGlassIcon
+            className="w-5 h-5 absolute top-2.5 left-3"
+            style={{ color: COLORS.textMuted }}
+          />
+          <input
+            type="text"
+            placeholder="Search products by name, brand, or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10 pr-4 py-2.5 w-full rounded-lg text-sm transition-all duration-300 focus:ring-2"
+            style={{
+              backgroundColor: COLORS.inputBg,
+              borderColor: COLORS.inputBorder,
+              border: `1px solid ${COLORS.inputBorder}`,
+              color: COLORS.text,
+              outline: "none",
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Sort Dropdown */}
+        <div className="relative">
+          <FunnelIcon
+            className="w-4 h-4 absolute top-3 left-3"
+            style={{ color: COLORS.textMuted }}
+          />
+          <select
+            value={`${sortBy}:${sortOrder}`}
+            onChange={(e) => {
+              const [newSortBy, newSortOrder] = e.target.value.split(":") as [
+                "name" | "price" | "stock" | "date",
+                "asc" | "desc"
+              ];
+              setSortBy(newSortBy);
+              setSortOrder(newSortOrder);
+            }}
+            className="pl-9 pr-4 py-2.5 w-full appearance-none rounded-lg text-sm transition-all duration-300 focus:ring-2"
+            style={{
+              backgroundColor: COLORS.inputBg,
+              borderColor: COLORS.inputBorder,
+              border: `1px solid ${COLORS.inputBorder}`,
+              color: COLORS.text,
+              outline: "none",
+            }}
+          >
+            <option value="date:desc">Newest First</option>
+            <option value="date:asc">Oldest First</option>
+            <option value="name:asc">Name: A to Z</option>
+            <option value="name:desc">Name: Z to A</option>
+            <option value="price:asc">Price: Low to High</option>
+            <option value="price:desc">Price: High to Low</option>
+            <option value="stock:asc">Stock: Low to High</option>
+            <option value="stock:desc">Stock: High to Low</option>
+          </select>
+        </div>
+      </div>
+
       {/* Header Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        {/* Product Count & Results */}
+        <div className="flex items-center gap-2">
+          <p className="text-sm" style={{ color: COLORS.textMuted }}>
+            Showing{" "}
+            <span style={{ color: COLORS.primary, fontWeight: 600 }}>
+              {paginated.length}
+            </span>{" "}
+            of{" "}
+            <span style={{ color: COLORS.primary, fontWeight: 600 }}>
+              {sortedProducts.length}
+            </span>{" "}
+            products
+            {searchQuery && (
+              <span
+                className="ml-2 px-2 py-0.5 rounded text-xs"
+                style={{
+                  backgroundColor: `${COLORS.primary}20`,
+                  color: COLORS.primary,
+                }}
+              >
+                Filtered
+              </span>
+            )}
+          </p>
+        </div>
+
         {/* Enhanced Add Button */}
         <button
           onClick={onAdd}
@@ -371,38 +519,112 @@ const ProductsPage: React.FC = () => {
 
       {/* Enhanced Pagination */}
       {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-3 pt-2">
-          <button
-            disabled={page === 1}
-            onClick={() => setPage((p) => p - 1)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
-            style={{
-              backgroundColor: `${COLORS.primary}10`,
-              color: COLORS.primary,
-            }}
-          >
-            <ChevronLeftIcon className="h-3.5 w-3.5" />
-            <span>Prev</span>
-          </button>
-          <span className="text-xs px-2" style={{ color: COLORS.textMuted }}>
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+          {/* Page Info */}
+          <div className="text-xs" style={{ color: COLORS.textMuted }}>
             Page{" "}
             <span className="font-semibold" style={{ color: COLORS.text }}>
               {page}
             </span>{" "}
-            of {totalPages}
-          </span>
-          <button
-            disabled={page === totalPages}
-            onClick={() => setPage((p) => p + 1)}
-            className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100"
-            style={{
-              backgroundColor: `${COLORS.primary}10`,
-              color: COLORS.primary,
-            }}
-          >
-            <span>Next</span>
-            <ChevronRightIcon className="h-3.5 w-3.5" />
-          </button>
+            of{" "}
+            <span className="font-semibold" style={{ color: COLORS.text }}>
+              {totalPages}
+            </span>
+          </div>
+
+          {/* Pagination Controls */}
+          <div className="flex items-center gap-2">
+            {/* First Page */}
+            <button
+              disabled={page === 1}
+              onClick={() => setPage(1)}
+              className="px-2 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: `${COLORS.primary}10`,
+                color: COLORS.primary,
+              }}
+              title="First Page"
+            >
+              ««
+            </button>
+
+            {/* Previous Page */}
+            <button
+              disabled={page === 1}
+              onClick={() => setPage((p) => p - 1)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: `${COLORS.primary}10`,
+                color: COLORS.primary,
+              }}
+            >
+              <ChevronLeftIcon className="h-3.5 w-3.5" />
+              <span>Prev</span>
+            </button>
+
+            {/* Page Numbers */}
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                let pageNumber;
+                if (totalPages <= 5) {
+                  pageNumber = i + 1;
+                } else if (page <= 3) {
+                  pageNumber = i + 1;
+                } else if (page >= totalPages - 2) {
+                  pageNumber = totalPages - 4 + i;
+                } else {
+                  pageNumber = page - 2 + i;
+                }
+
+                return (
+                  <button
+                    key={pageNumber}
+                    onClick={() => setPage(pageNumber)}
+                    className={`px-2.5 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 ${
+                      page === pageNumber ? "font-bold" : ""
+                    }`}
+                    style={{
+                      backgroundColor:
+                        page === pageNumber
+                          ? COLORS.primary
+                          : `${COLORS.primary}10`,
+                      color: page === pageNumber ? "#FFFFFF" : COLORS.primary,
+                    }}
+                  >
+                    {pageNumber}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Next Page */}
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: `${COLORS.primary}10`,
+                color: COLORS.primary,
+              }}
+            >
+              <span>Next</span>
+              <ChevronRightIcon className="h-3.5 w-3.5" />
+            </button>
+
+            {/* Last Page */}
+            <button
+              disabled={page === totalPages}
+              onClick={() => setPage(totalPages)}
+              className="px-2 py-1.5 text-xs rounded-lg transition-all duration-300 hover:scale-105 disabled:opacity-40 disabled:hover:scale-100 disabled:cursor-not-allowed"
+              style={{
+                backgroundColor: `${COLORS.primary}10`,
+                color: COLORS.primary,
+              }}
+              title="Last Page"
+            >
+              »»
+            </button>
+          </div>
         </div>
       )}
 

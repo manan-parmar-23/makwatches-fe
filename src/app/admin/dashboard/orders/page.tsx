@@ -16,6 +16,7 @@ import {
   DocumentTextIcon,
   UserIcon,
   CalendarIcon,
+  PhotoIcon,
 } from "@heroicons/react/24/outline";
 
 // Enhanced Color constants - luxury theme with rich black and gold
@@ -39,6 +40,8 @@ const COLORS = {
 interface OrderItem {
   productId: string;
   productName: string;
+  brand?: string; // Product brand
+  image?: string; // Product image URL
   price: number;
   quantity: number;
   subtotal: number;
@@ -701,6 +704,12 @@ export default function OrdersPage() {
                         className="px-3 py-2 text-left text-xs font-medium tracking-wider"
                         style={{ color: COLORS.textMuted }}
                       >
+                        Image
+                      </th>
+                      <th
+                        className="px-3 py-2 text-left text-xs font-medium tracking-wider"
+                        style={{ color: COLORS.textMuted }}
+                      >
                         Product
                       </th>
                       <th
@@ -732,11 +741,46 @@ export default function OrdersPage() {
                         key={index}
                         className="hover:bg-gray-50 transition-colors"
                       >
+                        <td className="px-3 py-2">
+                          {item.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={item.image}
+                              alt={item.productName}
+                              className="w-12 h-12 object-cover rounded-lg border"
+                              style={{ borderColor: COLORS.inputBorder }}
+                            />
+                          ) : (
+                            <div
+                              className="w-12 h-12 flex items-center justify-center text-[10px] rounded-lg"
+                              style={{
+                                backgroundColor: `${COLORS.surfaceLight}50`,
+                                color: COLORS.textMuted,
+                              }}
+                            >
+                              <PhotoIcon className="h-5 w-5" />
+                            </div>
+                          )}
+                        </td>
                         <td
-                          className="px-3 py-2 whitespace-nowrap text-xs"
+                          className="px-3 py-2 text-xs"
                           style={{ color: COLORS.text }}
                         >
-                          {item.productName}
+                          <div className="font-medium">{item.productName}</div>
+                          {item.brand && (
+                            <div
+                              className="text-[10px] mt-0.5"
+                              style={{ color: COLORS.textMuted }}
+                            >
+                              Brand: {item.brand}
+                            </div>
+                          )}
+                          <div
+                            className="text-[10px] font-mono mt-0.5"
+                            style={{ color: COLORS.textMuted }}
+                          >
+                            ID: {item.productId}
+                          </div>
                         </td>
                         <td
                           className="px-3 py-2 whitespace-nowrap text-xs text-right"
@@ -762,7 +806,7 @@ export default function OrdersPage() {
                   <tfoot style={{ backgroundColor: `${COLORS.surface}30` }}>
                     <tr>
                       <td
-                        colSpan={3}
+                        colSpan={4}
                         className="px-3 py-2 text-right text-xs font-medium"
                         style={{ color: COLORS.text }}
                       >
