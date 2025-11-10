@@ -85,7 +85,8 @@ function ProductDetailsInner() {
           try {
             response = await fetch(
               `${
-                process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080"
+                process.env.NEXT_PUBLIC_API_URL ||
+                "https://api.makwatches.in/api"
               }/home-content/product/${id}`
             );
             const data = await response.json();
