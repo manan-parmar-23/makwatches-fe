@@ -241,7 +241,7 @@ function ProductDetailsInner() {
       try {
         const response = await fetch(
           `${
-            process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"
+            process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
           }/catalog/products`
         );
         const json = await response.json();
@@ -345,7 +345,9 @@ function ProductDetailsInner() {
         return;
       }
       const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"}/cart`,
+        `${
+          process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
+        }/cart`,
         {
           method: "POST",
           headers: {
