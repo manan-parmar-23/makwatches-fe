@@ -60,7 +60,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
       }
 
       const base =
-        process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
+        process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080";
       const res = await fetch(`${base}/cart`, {
         method: "POST",
         headers: {

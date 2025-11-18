@@ -20,6 +20,7 @@ function HeroContent({ slides }: HeroContentProps) {
   const [direction, setDirection] = useState(1);
   const [isMobile, setIsMobile] = useState(false);
   const [isNavigating, setIsNavigating] = useState(false);
+  const [paused, setPaused] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   // Pre-fetched catalog products from shop (public products)
   const [catalogProducts, setCatalogProducts] = useState<Partial<Product>[]>(
@@ -94,12 +95,12 @@ function HeroContent({ slides }: HeroContentProps) {
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // Auto-play functionality — slowed down for a smoother effect
+  // Auto-play functionality — slowed down; pauses when user interacts
   useEffect(() => {
-    if (products.length === 0) return;
+    if (products.length === 0 || paused) return;
     const interval = setInterval(nextSlide, 6000); // 6000ms (slower)
     return () => clearInterval(interval);
-  }, [nextSlide, products.length]);
+  }, [nextSlide, products.length, paused]);
 
   // Note: Removed pause-on-hover behavior to keep autoplay running on hover
   // (Handlers removed intentionally)
@@ -468,19 +469,23 @@ function HeroContent({ slides }: HeroContentProps) {
 
                 <motion.button
                   onClick={handleShopNow}
-                  className="group relative bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-400 text-gray-700 font-semibold px-8 py-4 rounded-none transition-all duration-200 uppercase tracking-wide text-sm md:text-base shadow-2xl hover:shadow-amber-500/25"
-                  whileHover={{ scale: 1.03, y: -1 }}
+                  onHoverStart={() => setPaused(true)}
+                  onHoverEnd={() => setPaused(false)}
+                  onFocus={() => setPaused(true)}
+                  onBlur={() => setPaused(false)}
+                  className="group relative z-20 overflow-hidden bg-gradient-to-r from-amber-100 to-amber-200 hover:from-amber-200 hover:to-amber-400 text-gray-700 font-semibold px-8 py-4 rounded-none transition-all duration-200 uppercase tracking-wide text-sm md:text-base shadow-2xl transform-gpu will-change-transform cursor-pointer"
+                  whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.97 }}
                   transition={{ duration: 0.15 }}
                 >
-                  <span className="relative z-10 flex items-center gap-3">
+                  <span className="relative z-10 flex items-center gap-3 select-none">
                     BUY NOW
                     <motion.svg
                       width="20"
                       height="20"
                       fill="none"
                       viewBox="0 0 24 24"
-                      className="transition-transform duration-200 group-hover:translate-x-1"
+                 
                     >
                       <path
                         d="M5 12h14M12 5l7 7-7 7"
@@ -491,7 +496,7 @@ function HeroContent({ slides }: HeroContentProps) {
                       />
                     </motion.svg>
                   </span>
-                  <div className="absolute inset-0 bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></div>
+                  {/* <div className="absolute inset-0 z-0 pointer-events-none bg-white/20 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-left"></div> */}
                 </motion.button>
               </motion.div>
             </AnimatePresence>

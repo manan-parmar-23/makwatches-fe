@@ -26,6 +26,26 @@ interface HeroSlideForm
     | "position"
   > {
   featuresInput: string;
+  // Product fields
+  brand: string;
+  productPrice: number;
+  category: string;
+  mainCategory: "Men" | "Women";
+  subcategory: string;
+  images: string[];
+  stock: number;
+  gender: string;
+  dialColor: string;
+  dialShape: string;
+  dialType: string;
+  strapColor: string;
+  strapMaterial: string;
+  style: string;
+  dialThickness: string;
+  discountPercentage: number | null;
+  discountAmount: number | null;
+  discountStartDate: string | null;
+  discountEndDate: string | null;
 }
 
 const defaultForm: HeroSlideForm = {
@@ -38,6 +58,26 @@ const defaultForm: HeroSlideForm = {
   glowColor: "",
   position: 0,
   featuresInput: "",
+  // Product fields
+  brand: "",
+  productPrice: 0,
+  category: "",
+  mainCategory: "Men",
+  subcategory: "",
+  images: [],
+  stock: 0,
+  gender: "",
+  dialColor: "",
+  dialShape: "",
+  dialType: "",
+  strapColor: "",
+  strapMaterial: "",
+  style: "",
+  dialThickness: "",
+  discountPercentage: null,
+  discountAmount: null,
+  discountStartDate: null,
+  discountEndDate: null,
 };
 
 const sectionCardStyles = {
@@ -122,19 +162,22 @@ export default function HeroSlidesManager() {
   };
 
   const handleImageUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     setUploadingImage(true);
     setError("");
     try {
-      const response = await uploadImages([file]);
-      const url = response.data.data?.urls?.[0];
-      if (!url) throw new Error("Image upload failed");
+      const filesArray = Array.from(files);
+      const response = await uploadImages(filesArray);
+      const urls = response.data.data?.urls || [];
+      if (urls.length === 0) throw new Error("Image upload failed");
+      // Add to images array and set first as main image if not set
       setForm((prev) => ({
         ...prev,
-        image: url,
+        images: [...prev.images, ...urls],
+        image: prev.image || urls[0],
       }));
-      setSuccess("Image uploaded successfully");
+      setSuccess(`${urls.length} image(s) uploaded successfully`);
     } catch (err) {
       setError(parseErrorMessage(err, "Failed to upload image"));
     } finally {
@@ -144,6 +187,7 @@ export default function HeroSlidesManager() {
 
   const handleEdit = (slide: HeroSlide) => {
     setEditingId(slide.id);
+    const extra: Record<string, unknown> = slide as unknown as Record<string, unknown>;
     setForm({
       title: slide.title,
       subtitle: slide.subtitle,
@@ -154,6 +198,26 @@ export default function HeroSlidesManager() {
       glowColor: slide.glowColor,
       position: slide.position ?? 0,
       featuresInput: slide.features?.join("\n") || "",
+      // Product fields
+      brand: typeof extra.brand === "string" ? extra.brand : "",
+      productPrice: typeof extra.productPrice === "number" ? extra.productPrice : 0,
+      category: typeof extra.category === "string" ? extra.category : "",
+      mainCategory: typeof extra.mainCategory === "string" && (extra.mainCategory === "Men" || extra.mainCategory === "Women") ? extra.mainCategory : "Men",
+      subcategory: typeof extra.subcategory === "string" ? extra.subcategory : "",
+      images: Array.isArray(extra.images) ? extra.images : [slide.image],
+      stock: typeof extra.stock === "number" ? extra.stock : 0,
+      gender: typeof extra.gender === "string" ? extra.gender : "",
+      dialColor: typeof extra.dialColor === "string" ? extra.dialColor : "",
+      dialShape: typeof extra.dialShape === "string" ? extra.dialShape : "",
+      dialType: typeof extra.dialType === "string" ? extra.dialType : "",
+      strapColor: typeof extra.strapColor === "string" ? extra.strapColor : "",
+      strapMaterial: typeof extra.strapMaterial === "string" ? extra.strapMaterial : "",
+      style: typeof extra.style === "string" ? extra.style : "",
+      dialThickness: typeof extra.dialThickness === "string" ? extra.dialThickness : "",
+      discountPercentage: typeof extra.discountPercentage === "number" ? extra.discountPercentage : null,
+      discountAmount: typeof extra.discountAmount === "number" ? extra.discountAmount : null,
+      discountStartDate: typeof extra.discountStartDate === "string" ? extra.discountStartDate : null,
+      discountEndDate: typeof extra.discountEndDate === "string" ? extra.discountEndDate : null,
     });
     setSuccess("");
     setError("");
@@ -175,10 +239,36 @@ export default function HeroSlidesManager() {
       glowColor: form.glowColor.trim(),
       position: Number(form.position) || 0,
       features: parseListInput(form.featuresInput),
+      // Product fields
+      brand: form.brand.trim(),
+      productPrice: Number(form.productPrice) || 0,
+      category: form.subcategory ? `${form.mainCategory}/${form.subcategory}` : form.mainCategory,
+      mainCategory: form.mainCategory,
+      subcategory: form.subcategory.trim(),
+      images: form.images.length > 0 ? form.images : [form.image.trim()],
+      stock: Number(form.stock) || 0,
+      gender: form.gender.trim(),
+      dialColor: form.dialColor.trim(),
+      dialShape: form.dialShape.trim(),
+      dialType: form.dialType.trim(),
+      strapColor: form.strapColor.trim(),
+      strapMaterial: form.strapMaterial.trim(),
+      style: form.style.trim(),
+      dialThickness: form.dialThickness.trim(),
+      discountPercentage: form.discountPercentage,
+      discountAmount: form.discountAmount,
+      discountStartDate: form.discountStartDate,
+      discountEndDate: form.discountEndDate,
     };
 
     if (!payload.title || !payload.subtitle) {
       setError("Title and subtitle are required");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!payload.brand || payload.productPrice <= 0 || payload.stock < 0) {
+      setError("Brand, product price, and stock are required for product creation");
       setSubmitting(false);
       return;
     }
@@ -366,6 +456,247 @@ export default function HeroSlidesManager() {
             />
           </div>
 
+          {/* Product Information Section */}
+          <div className="pt-4 border-t" style={{ borderColor: `${ADMIN_COLORS.surfaceLight}60` }}>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Product Information (Required)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={form.brand}
+                  onChange={(e) => setForm(prev => ({ ...prev, brand: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="MAK Watches"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Product Price (₹) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.productPrice}
+                  onChange={(e) => setForm(prev => ({ ...prev, productPrice: parseFloat(e.target.value) || 0 }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="450"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Main Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={form.mainCategory}
+                  onChange={(e) => setForm(prev => ({ ...prev, mainCategory: e.target.value as "Men" | "Women" }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                >
+                  <option value="Men">Men</option>
+                  <option value="Women">Women</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  value={form.subcategory}
+                  onChange={(e) => setForm(prev => ({ ...prev, subcategory: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Chronograph"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Stock <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="10"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Gender
+                </label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                >
+                  <option value="">—</option>
+                  <option value="Men">Men</option>
+                  <option value="Women">Women</option>
+                  <option value="Unisex">Unisex</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Watch Attributes (Optional)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Dial Color
+                </label>
+                <input
+                  value={form.dialColor}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialColor: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Dial Shape
+                </label>
+                <input
+                  value={form.dialShape}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialShape: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Round"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Dial Type
+                </label>
+                <input
+                  value={form.dialType}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialType: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Analog"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Strap Color
+                </label>
+                <input
+                  value={form.strapColor}
+                  onChange={(e) => setForm(prev => ({ ...prev, strapColor: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Brown"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Strap Material
+                </label>
+                <input
+                  value={form.strapMaterial}
+                  onChange={(e) => setForm(prev => ({ ...prev, strapMaterial: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Leather"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Style
+                </label>
+                <input
+                  value={form.style}
+                  onChange={(e) => setForm(prev => ({ ...prev, style: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="Luxury"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Dial Thickness
+                </label>
+                <input
+                  value={form.dialThickness}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialThickness: e.target.value }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="8mm"
+                />
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Discount (Optional)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Discount Percentage (%)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.discountPercentage || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountPercentage: e.target.value ? parseFloat(e.target.value) : null }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Discount Amount (₹)
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.discountAmount || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountAmount: e.target.value ? parseFloat(e.target.value) : null }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                  placeholder="50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Discount Start Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.discountStartDate || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountStartDate: e.target.value || null }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Discount End Date
+                </label>
+                <input
+                  type="datetime-local"
+                  value={form.discountEndDate || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountEndDate: e.target.value || null }))}
+                  className={inputBaseClasses}
+                  style={inputStyle}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label
@@ -424,7 +755,7 @@ export default function HeroSlidesManager() {
                 className="text-sm font-medium"
                 style={{ color: ADMIN_COLORS.text }}
               >
-                Image URL
+                Main Image URL
               </label>
               <input
                 name="image"
@@ -435,7 +766,7 @@ export default function HeroSlidesManager() {
                 placeholder="https://..."
               />
               <p className="text-xs" style={{ color: ADMIN_COLORS.textMuted }}>
-                Provide a direct URL or upload using the button.
+                Provide a direct URL or upload using the button below.
               </p>
             </div>
             <div className="space-y-2">
@@ -443,17 +774,84 @@ export default function HeroSlidesManager() {
                 className="text-sm font-medium"
                 style={{ color: ADMIN_COLORS.text }}
               >
-                Upload Image
+                Upload Images
               </label>
               <input
                 type="file"
                 accept="image/*"
+                multiple
                 onChange={handleImageUpload}
                 className="block w-full text-sm"
                 disabled={uploadingImage}
               />
+              <p className="text-xs" style={{ color: ADMIN_COLORS.textMuted }}>
+                Upload multiple product images
+              </p>
             </div>
           </div>
+
+          {/* Uploaded Images Grid */}
+          {form.images.length > 0 && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold" style={{ color: ADMIN_COLORS.text }}>
+                  Uploaded Images ({form.images.length})
+                </p>
+                <p className="text-xs" style={{ color: ADMIN_COLORS.textMuted }}>
+                  First image is main
+                </p>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {form.images.map((url, i) => (
+                  <div
+                    key={i}
+                    className="relative group border-2 rounded-xl overflow-hidden hover:border-[#D4AF37] transition-all duration-200 hover:shadow-md aspect-square"
+                    style={{
+                      borderColor: i === 0 ? "#D4AF37" : "#e5e7eb",
+                    }}
+                  >
+                    {i === 0 && (
+                      <div className="absolute top-0 left-0 right-0 bg-gradient-to-r from-[#D4AF37] to-[#A67C00] text-white text-[10px] px-2 py-1 font-bold z-10 text-center">
+                        MAIN
+                      </div>
+                    )}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Product ${i + 1}`}
+                      className="object-cover w-full h-full group-hover:scale-110 transition-transform duration-300"
+                    />
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setForm(prev => ({
+                          ...prev,
+                          images: prev.images.filter((_, idx) => idx !== i),
+                          image: i === 0 && prev.images.length > 1 ? prev.images[1] : prev.image,
+                        }))
+                      }
+                      className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white w-7 h-7 flex items-center justify-center rounded-full opacity-70 group-hover:opacity-100 transition-all duration-200 shadow-lg hover:scale-110"
+                      title="Remove image"
+                    >
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M6 18L18 6M6 6l12 12"
+                        />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3">
             <button

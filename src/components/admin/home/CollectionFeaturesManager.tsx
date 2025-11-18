@@ -28,7 +28,27 @@ type CollectionForm = Pick<
   | "imageAlt"
   | "layout"
   | "position"
->;
+> & {
+  brand: string;
+  productPrice: number;
+  category: string;
+  mainCategory: "Men" | "Women";
+  subcategory: string;
+  images: string[];
+  stock: number;
+  gender: string;
+  dialColor: string;
+  dialShape: string;
+  dialType: string;
+  strapColor: string;
+  strapMaterial: string;
+  style: string;
+  dialThickness: string;
+  discountPercentage: number | null;
+  discountAmount: number | null;
+  discountStartDate: string | null;
+  discountEndDate: string | null;
+};
 
 const defaultForm: CollectionForm = {
   tagline: "",
@@ -41,6 +61,25 @@ const defaultForm: CollectionForm = {
   imageAlt: "",
   layout: "image-left",
   position: 0,
+  brand: "",
+  productPrice: 0,
+  category: "",
+  mainCategory: "Men",
+  subcategory: "",
+  images: [],
+  stock: 0,
+  gender: "",
+  dialColor: "",
+  dialShape: "",
+  dialType: "",
+  strapColor: "",
+  strapMaterial: "",
+  style: "",
+  dialThickness: "",
+  discountPercentage: null,
+  discountAmount: null,
+  discountStartDate: null,
+  discountEndDate: null,
 };
 
 const layoutOptions = [
@@ -97,16 +136,21 @@ export default function CollectionFeaturesManager() {
   };
 
   const handleUpload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
     setUploading(true);
     setError("");
     try {
-      const response = await uploadImages([file]);
-      const url = response.data.data?.urls?.[0];
-      if (!url) throw new Error("Image upload failed");
-      setForm((prev) => ({ ...prev, image: url }));
-      setSuccess("Image uploaded successfully");
+      const filesArray = Array.from(files);
+      const response = await uploadImages(filesArray);
+      const urls = response.data.data?.urls || [];
+      if (urls.length === 0) throw new Error("Image upload failed");
+      setForm((prev) => ({
+        ...prev,
+        images: [...prev.images, ...urls],
+        image: prev.image || urls[0],
+      }));
+      setSuccess(`${urls.length} image(s) uploaded successfully`);
     } catch (err) {
       setError(parseErrorMessage(err, "Failed to upload image"));
     } finally {
@@ -116,6 +160,7 @@ export default function CollectionFeaturesManager() {
 
   const handleEdit = (feature: HomeCollectionFeature) => {
     setEditingId(feature.id);
+    const extra: Record<string, unknown> = feature as unknown as Record<string, unknown>;
     setForm({
       tagline: feature.tagline,
       title: feature.title,
@@ -127,6 +172,26 @@ export default function CollectionFeaturesManager() {
       imageAlt: feature.imageAlt,
       layout: feature.layout || "image-left",
       position: feature.position ?? 0,
+      // Product fields
+      brand: typeof extra.brand === "string" ? extra.brand : "",
+      productPrice: typeof extra.productPrice === "number" ? extra.productPrice : 0,
+      category: typeof extra.category === "string" ? extra.category : "",
+      mainCategory: typeof extra.mainCategory === "string" && (extra.mainCategory === "Men" || extra.mainCategory === "Women") ? extra.mainCategory : "Men",
+      subcategory: typeof extra.subcategory === "string" ? extra.subcategory : "",
+      images: Array.isArray(extra.images) ? extra.images : [feature.image],
+      stock: typeof extra.stock === "number" ? extra.stock : 0,
+      gender: typeof extra.gender === "string" ? extra.gender : "",
+      dialColor: typeof extra.dialColor === "string" ? extra.dialColor : "",
+      dialShape: typeof extra.dialShape === "string" ? extra.dialShape : "",
+      dialType: typeof extra.dialType === "string" ? extra.dialType : "",
+      strapColor: typeof extra.strapColor === "string" ? extra.strapColor : "",
+      strapMaterial: typeof extra.strapMaterial === "string" ? extra.strapMaterial : "",
+      style: typeof extra.style === "string" ? extra.style : "",
+      dialThickness: typeof extra.dialThickness === "string" ? extra.dialThickness : "",
+      discountPercentage: typeof extra.discountPercentage === "number" ? extra.discountPercentage : null,
+      discountAmount: typeof extra.discountAmount === "number" ? extra.discountAmount : null,
+      discountStartDate: typeof extra.discountStartDate === "string" ? extra.discountStartDate : null,
+      discountEndDate: typeof extra.discountEndDate === "string" ? extra.discountEndDate : null,
     });
     setError("");
     setSuccess("");
@@ -149,10 +214,36 @@ export default function CollectionFeaturesManager() {
       imageAlt: form.imageAlt.trim(),
       layout: form.layout || "image-left",
       position: Number(form.position) || 0,
+      // Product fields
+      brand: form.brand.trim(),
+      productPrice: Number(form.productPrice) || 0,
+      category: form.subcategory ? `${form.mainCategory}/${form.subcategory}` : form.mainCategory,
+      mainCategory: form.mainCategory,
+      subcategory: form.subcategory.trim(),
+      images: form.images.length > 0 ? form.images : [form.image.trim()],
+      stock: Number(form.stock) || 0,
+      gender: form.gender.trim(),
+      dialColor: form.dialColor.trim(),
+      dialShape: form.dialShape.trim(),
+      dialType: form.dialType.trim(),
+      strapColor: form.strapColor.trim(),
+      strapMaterial: form.strapMaterial.trim(),
+      style: form.style.trim(),
+      dialThickness: form.dialThickness.trim(),
+      discountPercentage: form.discountPercentage,
+      discountAmount: form.discountAmount,
+      discountStartDate: form.discountStartDate,
+      discountEndDate: form.discountEndDate,
     };
 
     if (!payload.title || !payload.description) {
       setError("Title and description are required");
+      setSubmitting(false);
+      return;
+    }
+
+    if (!payload.brand || payload.productPrice <= 0 || payload.stock < 0) {
+      setError("Brand, product price, and stock are required for product creation");
       setSubmitting(false);
       return;
     }
@@ -337,6 +428,225 @@ export default function CollectionFeaturesManager() {
             />
           </div>
 
+          {/* Product Information Section */}
+          <div className="pt-4 border-t" style={{ borderColor: `${ADMIN_COLORS.surfaceLight}60` }}>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Product Information (Required)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Brand <span className="text-red-500">*</span>
+                </label>
+                <input
+                  value={form.brand}
+                  onChange={(e) => setForm(prev => ({ ...prev, brand: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="MAK Watches"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Product Price (₹) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.productPrice}
+                  onChange={(e) => setForm(prev => ({ ...prev, productPrice: parseFloat(e.target.value) || 0 }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="450"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Main Category <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={form.mainCategory}
+                  onChange={(e) => setForm(prev => ({ ...prev, mainCategory: e.target.value as "Men" | "Women" }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                >
+                  <option value="Men">Men</option>
+                  <option value="Women">Women</option>
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Subcategory
+                </label>
+                <input
+                  value={form.subcategory}
+                  onChange={(e) => setForm(prev => ({ ...prev, subcategory: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Chronograph"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Stock <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  value={form.stock}
+                  onChange={(e) => setForm(prev => ({ ...prev, stock: parseInt(e.target.value) || 0 }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="10"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Gender
+                </label>
+                <select
+                  value={form.gender}
+                  onChange={(e) => setForm(prev => ({ ...prev, gender: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                >
+                  <option value="">—</option>
+                  <option value="Men">Men</option>
+                  <option value="Women">Women</option>
+                  <option value="Unisex">Unisex</option>
+                </select>
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Watch Attributes (Optional)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dial Color</label>
+                <input
+                  value={form.dialColor}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialColor: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Black"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dial Shape</label>
+                <input
+                  value={form.dialShape}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialShape: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Round"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dial Type</label>
+                <input
+                  value={form.dialType}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialType: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Analog"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Strap Color</label>
+                <input
+                  value={form.strapColor}
+                  onChange={(e) => setForm(prev => ({ ...prev, strapColor: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Brown"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Strap Material</label>
+                <input
+                  value={form.strapMaterial}
+                  onChange={(e) => setForm(prev => ({ ...prev, strapMaterial: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Leather"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Style</label>
+                <input
+                  value={form.style}
+                  onChange={(e) => setForm(prev => ({ ...prev, style: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="Luxury"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Dial Thickness</label>
+                <input
+                  value={form.dialThickness}
+                  onChange={(e) => setForm(prev => ({ ...prev, dialThickness: e.target.value }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="8mm"
+                />
+              </div>
+            </div>
+
+            <h4 className="text-sm font-semibold mt-4 mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Discount (Optional)
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Discount Percentage (%)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.discountPercentage || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountPercentage: e.target.value ? parseFloat(e.target.value) : null }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="10"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Discount Amount (₹)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={form.discountAmount || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountAmount: e.target.value ? parseFloat(e.target.value) : null }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="50"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Discount Start Date</label>
+                <input
+                  type="datetime-local"
+                  value={form.discountStartDate || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountStartDate: e.target.value || null }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">Discount End Date</label>
+                <input
+                  type="datetime-local"
+                  value={form.discountEndDate || ""}
+                  onChange={(e) => setForm(prev => ({ ...prev, discountEndDate: e.target.value || null }))}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                />
+              </div>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label
@@ -378,43 +688,75 @@ export default function CollectionFeaturesManager() {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                style={{ color: ADMIN_COLORS.text }}
-              >
-                Image URL
-              </label>
-              <input
-                name="image"
-                value={form.image}
-                onChange={handleChange}
-                className={inputClasses}
-                style={{
-                  borderColor: `${ADMIN_COLORS.surfaceLight}80`,
-                  backgroundColor: ADMIN_COLORS.background,
-                }}
-                placeholder="https://..."
-              />
-              <p className="text-xs" style={{ color: ADMIN_COLORS.textMuted }}>
-                Provide a URL or upload below.
-              </p>
-            </div>
-            <div className="space-y-2">
-              <label
-                className="text-sm font-medium"
-                style={{ color: ADMIN_COLORS.text }}
-              >
-                Upload Image
-              </label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={handleUpload}
-                className="block w-full text-sm"
-                disabled={uploading}
-              />
+          {/* Multiple Images Section */}
+          <div className="pt-4 border-t" style={{ borderColor: `${ADMIN_COLORS.surfaceLight}60` }}>
+            <h4 className="text-sm font-semibold mb-3" style={{ color: ADMIN_COLORS.primary }}>
+              Product Images
+            </h4>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Upload Images <span className="text-xs font-normal text-gray-500">(Multiple files supported)</span>
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleUpload}
+                  className="block w-full text-sm"
+                  disabled={uploading}
+                />
+                {uploading && <p className="text-sm mt-2" style={{ color: ADMIN_COLORS.primary }}>Uploading...</p>}
+              </div>
+
+              {/* Uploaded Images Grid */}
+              {form.images.length > 0 && (
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Uploaded Images ({form.images.length})
+                  </label>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    {form.images.map((img, idx) => (
+                      <div key={idx} className="relative group">
+                        <img
+                          src={img}
+                          alt={`Product ${idx + 1}`}
+                          className="w-full h-32 object-cover rounded border"
+                          style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80` }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = form.images.filter((_, i) => i !== idx);
+                            setForm(prev => ({ ...prev, images: updated }));
+                          }}
+                          className="absolute top-1 right-1 bg-red-600 text-white px-2 py-1 rounded text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Legacy Image URL field (kept for backwards compatibility) */}
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Or Enter Image URL
+                </label>
+                <input
+                  name="image"
+                  value={form.image}
+                  onChange={handleChange}
+                  className={inputClasses}
+                  style={{ borderColor: `${ADMIN_COLORS.surfaceLight}80`, backgroundColor: ADMIN_COLORS.background }}
+                  placeholder="https://example.com/image.jpg"
+                />
+                <p className="text-xs mt-1" style={{ color: ADMIN_COLORS.textMuted }}>
+                  Legacy field - prefer uploading files above.
+                </p>
+              </div>
             </div>
           </div>
 

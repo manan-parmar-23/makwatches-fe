@@ -25,7 +25,7 @@ export default function ShopPage() {
   // State for filters
   const [filters, setFilters] = useState<ProductFilters>({
     page: 1,
-    limit: 50,
+    limit: 100,
     sortBy: "createdAt",
     order: "desc",
   });
