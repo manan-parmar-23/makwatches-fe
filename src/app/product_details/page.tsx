@@ -83,7 +83,7 @@ function ProductDetailsInner() {
         } catch (productError) {
           // If not found in regular products, try home content
           try {
-            const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+            const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://api.makwatches.in";
             // Remove /api suffix if present since backend routes don't have it
             const baseUrl = apiBaseUrl.replace(/\/api\/?$/, "");
             response = await fetch(
@@ -242,7 +242,7 @@ function ProductDetailsInner() {
       try {
         const response = await fetch(
           `${
-            process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"
+            process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
           }/catalog/products`
         );
         const json = await response.json();
@@ -347,7 +347,7 @@ function ProductDetailsInner() {
       }
       const res = await fetch(
         `${
-          process.env.NEXT_PUBLIC_API_BASE || "http://127.0.0.1:8080"
+          process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in"
         }/cart`,
         {
           method: "POST",
