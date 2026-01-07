@@ -22,6 +22,7 @@ const COLORS = {
 
 // ---- Types ----
 type Address = {
+  name: string;
   street: string;
   city: string;
   state: string;
@@ -314,6 +315,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState<0 | 1 | 2>(0);
   const [mobile, setMobile] = useState("");
   const [address, setAddress] = useState<Address>({
+    name: "",
     street: "",
     city: "",
     state: "",
@@ -453,7 +455,11 @@ export default function CheckoutPage() {
       }
     }
     if (step === 1) {
-      const { street, city, state, zipCode, country } = address;
+      const { name, street, city, state, zipCode, country } = address;
+      if (!name) {
+        showToast("Please enter your full name for delivery", "error");
+        return;
+      }
       if (!street || !city || !state || !zipCode || !country) {
         showToast("Please fill in all required address fields", "error");
         return;
@@ -491,6 +497,8 @@ export default function CheckoutPage() {
           paymentInfo: { method: "cod" },
           clientTotal: localComputedTotal,
           serverReportedTotal: serverTotal,
+          customerPhone: mobile,
+          customerName: address.name,
         }),
       });
       const json = await res.json();
@@ -587,6 +595,8 @@ export default function CheckoutPage() {
                 },
                 clientTotal: localComputedTotal,
                 serverReportedTotal: serverTotal,
+                customerPhone: mobile,
+                customerName: address.name,
               }),
             });
             const json = await res.json();
@@ -849,6 +859,25 @@ export default function CheckoutPage() {
             </h3>
 
             <div className="grid gap-3">
+              <input
+                placeholder="Full Name (for delivery)"
+                value={address.name}
+                onChange={(e) =>
+                  setAddress((a) => ({ ...a, name: e.target.value }))
+                }
+                className="w-full rounded-lg px-4 py-3 border text-sm"
+                style={{
+                  backgroundColor: COLORS.background,
+                  border: `1px solid ${COLORS.surfaceLight}`,
+                  color: COLORS.text,
+                }}
+                onFocus={(e) =>
+                  (e.currentTarget.style.borderColor = COLORS.primary)
+                }
+                onBlur={(e) =>
+                  (e.currentTarget.style.borderColor = `${COLORS.surfaceLight}`)
+                }
+              />
               <input
                 placeholder="Street address"
                 value={address.street}

@@ -62,8 +62,48 @@ interface PaymentInfo {
   razorpayPaymentId?: string;
 }
 
+interface ShippingInfo {
+  waybill?: string;
+  shipmentStatus?: string;
+  currentLocation?: string;
+  expectedDelivery?: string;
+  trackingUrl?: string;
+  shipmentError?: string;
+  courierName?: string;
+}
+
+interface PickupDetails {
+  locationName?: string;
+  sellerName?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  phone?: string;
+  country?: string;
+  gstNumber?: string;
+}
+
+// Tracking API types
+type TrackingScan = {
+  scan_datetime: string;
+  scan_type: string;
+  scanned_location: string;
+  instructions?: string;
+  status_detail?: string;
+};
+
+type TrackingData = {
+  waybill: string;
+  status: string;
+  status_location: string;
+  expected_delivery?: string;
+  scans: TrackingScan[];
+};
+
 interface Order {
   id: string;
+  orderNumber?: string;
   userId: string;
   customerName?: string;
   items: OrderItem[];
@@ -72,9 +112,12 @@ interface Order {
   paymentStatus?: string;
   shippingAddress: Address;
   paymentInfo: PaymentInfo;
+  shippingInfo?: ShippingInfo;
+  pickupDetails?: PickupDetails;
   createdAt: string;
   updatedAt: string;
 }
+
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -85,6 +128,34 @@ export default function OrdersPage() {
   const [newPaymentStatus, setNewPaymentStatus] = useState<string>("");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("");
+  
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  
+  // Tracking state
+  const [trackingData, setTrackingData] = useState<Record<string, TrackingData>>({});
+  const [trackingLoading, setTrackingLoading] = useState<Record<string, boolean>>({});
+
+  // Fetch tracking data for an order
+  const fetchTrackingData = async (orderId: string) => {
+    if (trackingData[orderId] || trackingLoading[orderId]) return;
+    
+    setTrackingLoading(prev => ({ ...prev, [orderId]: true }));
+    try {
+      const res = await api.get(`/shipping/track/${orderId}`);
+      if (res.data.success) {
+        setTrackingData(prev => ({
+          ...prev,
+          [orderId]: res.data.data
+        }));
+      }
+    } catch (error) {
+      console.error("Failed to fetch tracking:", error);
+    } finally {
+      setTrackingLoading(prev => ({ ...prev, [orderId]: false }));
+    }
+  };
 
   // Fetch all orders
   const fetchOrders = async () => {
@@ -150,19 +221,63 @@ export default function OrdersPage() {
     fetchOrders();
   }, []);
 
-  // Filter orders by search term (order ID, customer info, product names)
+  // Filter orders by search term (order number, order ID, customer info, product names)
   const filteredOrders = orders.filter((order) => {
+    const searchLower = search.toLowerCase();
     const matchesSearch =
-      order.id.toLowerCase().includes(search.toLowerCase()) ||
-      order.userId.toLowerCase().includes(search.toLowerCase()) ||
+      (order.orderNumber && order.orderNumber.toLowerCase().includes(searchLower)) ||
+      order.id.toLowerCase().includes(searchLower) ||
+      (order.customerName && order.customerName.toLowerCase().includes(searchLower)) ||
+      order.userId.toLowerCase().includes(searchLower) ||
       order.items.some((item) =>
-        item.productName.toLowerCase().includes(search.toLowerCase())
+        item.productName.toLowerCase().includes(searchLower)
       );
 
     const matchesStatus = !statusFilter || order.status === statusFilter;
 
     return matchesSearch && matchesStatus;
   });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredOrders.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedOrders = filteredOrders.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, statusFilter]);
+
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        for (let i = 1; i <= 4; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1);
+        pages.push('...');
+        for (let i = totalPages - 3; i <= totalPages; i++) pages.push(i);
+      } else {
+        pages.push(1);
+        pages.push('...');
+        for (let i = currentPage - 1; i <= currentPage + 1; i++) pages.push(i);
+        pages.push('...');
+        pages.push(totalPages);
+      }
+    }
+    
+    return pages;
+  };
 
   // Format currency
   const formatCurrency = (amount: number) => {
@@ -257,7 +372,7 @@ export default function OrdersPage() {
           />
           <input
             type="text"
-            placeholder="Search orders by ID, customer, or product"
+            placeholder="Search by Order No. (MAK-...), ID, customer, or product"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10 pr-4 py-2.5 w-full rounded-lg text-sm transition-all duration-300 focus:ring-2"
@@ -269,6 +384,14 @@ export default function OrdersPage() {
               outline: "none",
             }}
           />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute top-2.5 right-3 hover:scale-110 transition-transform"
+            >
+              <XMarkIcon className="w-5 h-5" style={{ color: COLORS.textMuted }} />
+            </button>
+          )}
         </div>
 
         {/* Status filter */}
@@ -359,11 +482,16 @@ export default function OrdersPage() {
           <form onSubmit={handleUpdateStatus} className="p-4">
             <div className="mb-3">
               <p className="text-xs mb-1" style={{ color: COLORS.textMuted }}>
-                Order ID
+                Order
               </p>
-              <p className="text-sm font-mono" style={{ color: COLORS.text }}>
-                {updateOrder}
-              </p>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-bold" style={{ color: COLORS.primary }}>
+                  {orders.find(o => o.id === updateOrder)?.orderNumber || updateOrder}
+                </p>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ backgroundColor: COLORS.surface, color: COLORS.textMuted }}>
+                  {updateOrder.substring(0, 12)}...
+                </span>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 items-end">
@@ -509,9 +637,17 @@ export default function OrdersPage() {
                 <div className="space-y-1.5 text-xs">
                   <div className="flex">
                     <span className="w-24" style={{ color: COLORS.textMuted }}>
+                      Order No:
+                    </span>
+                    <span className="font-bold" style={{ color: COLORS.primary }}>
+                      {viewOrder.orderNumber || viewOrder.id}
+                    </span>
+                  </div>
+                  <div className="flex">
+                    <span className="w-24" style={{ color: COLORS.textMuted }}>
                       Order ID:
                     </span>
-                    <span className="font-mono" style={{ color: COLORS.text }}>
+                    <span className="font-mono text-[10px]" style={{ color: COLORS.textMuted }}>
                       {viewOrder.id}
                     </span>
                   </div>
@@ -664,6 +800,76 @@ export default function OrdersPage() {
                     <p>{viewOrder.shippingAddress.country}</p>
                   </div>
                 </div>
+
+                {/* Pickup/Seller Details */}
+                {viewOrder.pickupDetails && (
+                  <div
+                    className="p-3 rounded-lg border"
+                    style={{
+                      borderColor: `${COLORS.surfaceLight}80`,
+                      backgroundColor: COLORS.surface,
+                    }}
+                  >
+                    <div className="flex items-center space-x-2 mb-2">
+                      <svg
+                        className="w-4 h-4"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke={COLORS.primary}
+                        strokeWidth={2}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                        />
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
+                        />
+                      </svg>
+                      <h4
+                        className="text-sm font-medium"
+                        style={{ color: COLORS.text }}
+                      >
+                        Pickup/Seller Location
+                      </h4>
+                    </div>
+
+                    <div className="text-xs space-y-1" style={{ color: COLORS.text }}>
+                      {viewOrder.pickupDetails.locationName && (
+                        <p className="font-medium">{viewOrder.pickupDetails.locationName}</p>
+                      )}
+                      {viewOrder.pickupDetails.sellerName && (
+                        <p>{viewOrder.pickupDetails.sellerName}</p>
+                      )}
+                      {viewOrder.pickupDetails.address && (
+                        <p>{viewOrder.pickupDetails.address}</p>
+                      )}
+                      {(viewOrder.pickupDetails.city || viewOrder.pickupDetails.state || viewOrder.pickupDetails.pincode) && (
+                        <p>
+                          {viewOrder.pickupDetails.city && `${viewOrder.pickupDetails.city}, `}
+                          {viewOrder.pickupDetails.state && `${viewOrder.pickupDetails.state} `}
+                          {viewOrder.pickupDetails.pincode}
+                        </p>
+                      )}
+                      {viewOrder.pickupDetails.country && (
+                        <p>{viewOrder.pickupDetails.country}</p>
+                      )}
+                      {viewOrder.pickupDetails.phone && (
+                        <p className="mt-1.5" style={{ color: COLORS.textMuted }}>
+                          📞 {viewOrder.pickupDetails.phone}
+                        </p>
+                      )}
+                      {viewOrder.pickupDetails.gstNumber && (
+                        <p style={{ color: COLORS.textMuted }}>
+                          GST: {viewOrder.pickupDetails.gstNumber}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -824,6 +1030,164 @@ export default function OrdersPage() {
               </div>
             </div>
 
+            {/* Delhivery Shipping/Tracking Section */}
+            {viewOrder.shippingInfo && (
+              <div
+                className="mt-4 rounded-lg border overflow-hidden"
+                style={{ borderColor: `${COLORS.surfaceLight}80` }}
+              >
+                <div
+                  className="px-3 py-2 border-b flex items-center justify-between"
+                  style={{
+                    backgroundColor: viewOrder.shippingInfo.waybill 
+                      ? `${COLORS.primary}10`
+                      : `${COLORS.error}10`,
+                    borderColor: `${COLORS.surfaceLight}80`,
+                  }}
+                >
+                  <div className="flex items-center space-x-2">
+                    <span className="text-base">🚚</span>
+                    <h4 className="text-sm font-medium" style={{ color: COLORS.text }}>
+                      Delhivery Shipping
+                    </h4>
+                  </div>
+                  {viewOrder.shippingInfo.waybill && !trackingData[viewOrder.id] && (
+                    <button
+                      onClick={() => fetchTrackingData(viewOrder.id)}
+                      disabled={trackingLoading[viewOrder.id]}
+                      className="px-2 py-1 text-xs rounded flex items-center gap-1 transition-colors hover:opacity-80"
+                      style={{ backgroundColor: COLORS.primary, color: "#FFF" }}
+                    >
+                      {trackingLoading[viewOrder.id] ? (
+                        <>
+                          <ArrowPathIcon className="w-3 h-3 animate-spin" />
+                          Loading...
+                        </>
+                      ) : (
+                        <>
+                          <ArrowPathIcon className="w-3 h-3" />
+                          Fetch Live Tracking
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+
+                <div className="p-3 space-y-3">
+                  {/* Waybill & Basic Info */}
+                  {viewOrder.shippingInfo.waybill ? (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
+                        <p className="text-[10px] mb-0.5" style={{ color: COLORS.textMuted }}>Waybill</p>
+                        <p className="text-xs font-mono font-medium" style={{ color: COLORS.text }}>
+                          {viewOrder.shippingInfo.waybill}
+                        </p>
+                      </div>
+                      <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
+                        <p className="text-[10px] mb-0.5" style={{ color: COLORS.textMuted }}>Shipment Status</p>
+                        <p className="text-xs font-medium" style={{ color: COLORS.primary }}>
+                          {trackingData[viewOrder.id]?.status || 
+                            viewOrder.shippingInfo.shipmentStatus?.replace(/_/g, " ").toUpperCase() || 
+                            "PENDING"}
+                        </p>
+                      </div>
+                      <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
+                        <p className="text-[10px] mb-0.5" style={{ color: COLORS.textMuted }}>Current Location</p>
+                        <p className="text-xs font-medium" style={{ color: COLORS.text }}>
+                          {trackingData[viewOrder.id]?.status_location || 
+                            viewOrder.shippingInfo.currentLocation || 
+                            "—"}
+                        </p>
+                      </div>
+                      <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
+                        <p className="text-[10px] mb-0.5" style={{ color: COLORS.textMuted }}>Expected Delivery</p>
+                        <p className="text-xs font-medium" style={{ color: COLORS.success }}>
+                          {trackingData[viewOrder.id]?.expected_delivery || 
+                            viewOrder.shippingInfo.expectedDelivery || 
+                            "—"}
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 rounded" style={{ backgroundColor: `${COLORS.error}10` }}>
+                      <span>⚠️</span>
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: COLORS.error }}>
+                          Shipment Creation Failed
+                        </p>
+                        {viewOrder.shippingInfo.shipmentError && (
+                          <p className="text-[10px]" style={{ color: COLORS.error }}>
+                            {viewOrder.shippingInfo.shipmentError}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Live Tracking Timeline */}
+                  {trackingData[viewOrder.id]?.scans && trackingData[viewOrder.id].scans.length > 0 && (
+                    <div className="mt-3 pt-3 border-t" style={{ borderColor: COLORS.surfaceLight }}>
+                      <p className="text-xs font-medium mb-2 flex items-center gap-1" style={{ color: COLORS.text }}>
+                        <span>📋</span> Live Tracking History
+                      </p>
+                      <div className="relative pl-4 space-y-2 max-h-48 overflow-y-auto">
+                        <div 
+                          className="absolute left-1.5 top-2 bottom-2 w-0.5 rounded"
+                          style={{ backgroundColor: COLORS.surfaceLight }}
+                        />
+                        {trackingData[viewOrder.id].scans.map((scan, idx) => (
+                          <div key={idx} className="relative">
+                            <div 
+                              className="absolute -left-2.5 top-1 w-2 h-2 rounded-full border-2"
+                              style={{ 
+                                backgroundColor: idx === 0 ? COLORS.primary : COLORS.background,
+                                borderColor: idx === 0 ? COLORS.primary : COLORS.surfaceLight
+                              }}
+                            />
+                            <div className="ml-1">
+                              <p 
+                                className="text-xs font-medium" 
+                                style={{ color: idx === 0 ? COLORS.text : COLORS.textMuted }}
+                              >
+                                {scan.status_detail || scan.scan_type}
+                              </p>
+                              <div className="flex flex-wrap items-center gap-2 text-[10px]" style={{ color: COLORS.textMuted }}>
+                                <span>
+                                  {new Date(scan.scan_datetime).toLocaleDateString("en-IN", { 
+                                    day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" 
+                                  })}
+                                </span>
+                                {scan.scanned_location && <span>• {scan.scanned_location}</span>}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tracking URL */}
+                  {viewOrder.shippingInfo.trackingUrl && (
+                    <div className="pt-2">
+                      <a
+                        href={viewOrder.shippingInfo.trackingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 px-3 py-1.5 rounded text-xs font-medium transition-colors hover:opacity-80"
+                        style={{ 
+                          backgroundColor: COLORS.surface,
+                          color: COLORS.primary,
+                          border: `1px solid ${COLORS.primary}`
+                        }}
+                      >
+                        Open Delhivery Tracking →
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => {
@@ -896,7 +1260,7 @@ export default function OrdersPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredOrders.length === 0 ? (
+                {paginatedOrders.length === 0 ? (
                   <tr>
                     <td
                       colSpan={7}
@@ -916,25 +1280,35 @@ export default function OrdersPage() {
                           />
                         </div>
                         <p className="text-sm">No orders found</p>
+                        {search && (
+                          <p className="text-xs" style={{ color: COLORS.textMuted }}>
+                            Try adjusting your search or filters
+                          </p>
+                        )}
                       </div>
                     </td>
                   </tr>
                 ) : (
-                  filteredOrders.map((order) => (
+                  paginatedOrders.map((order) => (
                     <tr
                       key={order.id}
                       className="border-b transition-all duration-300 hover:bg-gray-50 group"
                       style={{ borderColor: `${COLORS.surfaceLight}60` }}
                     >
                       <td className="px-3 py-3">
-                        <div
-                          className="font-mono text-xs px-2 py-1 rounded-lg inline-block transition-all duration-300 group-hover:scale-105"
-                          style={{
-                            backgroundColor: `${COLORS.primary}15`,
-                            color: COLORS.primary,
-                          }}
-                        >
-                          #{order.id.substring(0, 8)}...
+                        <div className="flex flex-col gap-0.5">
+                          <div
+                            className="font-bold text-xs px-2 py-1 rounded-lg inline-block transition-all duration-300 group-hover:scale-105"
+                            style={{
+                              backgroundColor: `${COLORS.primary}15`,
+                              color: COLORS.primary,
+                            }}
+                          >
+                            {order.orderNumber || order.id}
+                          </div>
+                          <span className="text-[9px] font-mono px-2" style={{ color: COLORS.textMuted }}>
+                            ID: {order.id.substring(0, 10)}...
+                          </span>
                         </div>
                       </td>
                       <td className="px-3 py-3">
@@ -994,15 +1368,41 @@ export default function OrdersPage() {
                         </span>
                       </td>
                       <td className="px-3 py-3">
-                        <span
-                          className="px-2 py-1 rounded-full text-xs font-medium inline-block"
-                          style={{
-                            backgroundColor: getStatusColor(order.status).bg,
-                            color: getStatusColor(order.status).text,
-                          }}
-                        >
-                          {order.status}
-                        </span>
+                        <div className="flex flex-col gap-1">
+                          <span
+                            className="px-2 py-1 rounded-full text-xs font-medium inline-block"
+                            style={{
+                              backgroundColor: getStatusColor(order.status).bg,
+                              color: getStatusColor(order.status).text,
+                            }}
+                          >
+                            {order.status}
+                          </span>
+                          {/* Shipping indicator */}
+                          {order.shippingInfo?.waybill ? (
+                            <span 
+                              className="px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1"
+                              style={{ 
+                                backgroundColor: `${COLORS.success}15`, 
+                                color: COLORS.success 
+                              }}
+                              title={`AWB: ${order.shippingInfo.waybill}`}
+                            >
+                              🚚 {order.shippingInfo.shipmentStatus?.replace(/_/g, " ") || "Shipped"}
+                            </span>
+                          ) : order.shippingInfo?.shipmentError ? (
+                            <span 
+                              className="px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1"
+                              style={{ 
+                                backgroundColor: `${COLORS.error}15`, 
+                                color: COLORS.error 
+                              }}
+                              title={order.shippingInfo.shipmentError}
+                            >
+                              ⚠️ Ship Failed
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       <td className="px-3 py-3">
                         <div className="flex gap-1.5 justify-end">
@@ -1041,6 +1441,113 @@ export default function OrdersPage() {
               </tbody>
             </table>
           </div>
+
+          {/* Professional Pagination */}
+          {filteredOrders.length > 0 && (
+            <div
+              className="px-4 py-4 border-t flex flex-col sm:flex-row items-center justify-between gap-4"
+              style={{ borderColor: `${COLORS.surfaceLight}60`, backgroundColor: COLORS.surface }}
+            >
+              {/* Results info */}
+              <div className="flex items-center gap-4">
+                <p className="text-xs" style={{ color: COLORS.textMuted }}>
+                  Showing <span className="font-semibold" style={{ color: COLORS.text }}>{startIndex + 1}</span> to{" "}
+                  <span className="font-semibold" style={{ color: COLORS.text }}>{Math.min(endIndex, filteredOrders.length)}</span> of{" "}
+                  <span className="font-semibold" style={{ color: COLORS.text }}>{filteredOrders.length}</span> orders
+                </p>
+
+                {/* Items per page selector */}
+                <div className="flex items-center gap-2">
+                  <label className="text-xs" style={{ color: COLORS.textMuted }}>
+                    Per page:
+                  </label>
+                  <select
+                    value={itemsPerPage}
+                    onChange={(e) => {
+                      setItemsPerPage(Number(e.target.value));
+                      setCurrentPage(1);
+                    }}
+                    className="px-2 py-1 rounded border text-xs"
+                    style={{
+                      backgroundColor: COLORS.inputBg,
+                      borderColor: COLORS.inputBorder,
+                      color: COLORS.text,
+                    }}
+                  >
+                    <option value={5}>5</option>
+                    <option value={10}>10</option>
+                    <option value={20}>20</option>
+                    <option value={50}>50</option>
+                    <option value={100}>100</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Pagination controls */}
+              <div className="flex items-center gap-1">
+                {/* Previous button */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                  style={{
+                    backgroundColor: currentPage === 1 ? COLORS.surfaceLight : COLORS.primary,
+                    color: currentPage === 1 ? COLORS.textMuted : 'white',
+                  }}
+                >
+                  Previous
+                </button>
+
+                {/* Page numbers */}
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((page, idx) => {
+                    if (page === '...') {
+                      return (
+                        <span
+                          key={`ellipsis-${idx}`}
+                          className="px-2 py-1 text-xs"
+                          style={{ color: COLORS.textMuted }}
+                        >
+                          ...
+                        </span>
+                      );
+                    }
+                    
+                    const pageNum = page as number;
+                    const isActive = pageNum === currentPage;
+                    
+                    return (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className="min-w-[32px] h-8 rounded-lg text-xs font-medium transition-all duration-300 hover:scale-110"
+                        style={{
+                          backgroundColor: isActive ? COLORS.primary : COLORS.surface,
+                          color: isActive ? 'white' : COLORS.text,
+                          border: isActive ? 'none' : `1px solid ${COLORS.surfaceLight}`,
+                        }}
+                      >
+                        {pageNum}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Next button */}
+                <button
+                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105"
+                  style={{
+                    backgroundColor: currentPage === totalPages ? COLORS.surfaceLight : COLORS.primary,
+                    color: currentPage === totalPages ? COLORS.textMuted : 'white',
+                  }}
+                >
+                  Next
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

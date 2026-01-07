@@ -88,13 +88,29 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = useCallback(async () => {
     try {
+      console.log("[AuthContext] Fetching profile...");
+      // Ensure we have a token before making the request
+      const customerToken = localStorage.getItem("customerToken");
+      const adminToken = localStorage.getItem("adminToken");
+      const token = customerToken || adminToken;
+      
+      if (!token) {
+        console.warn("[AuthContext] No token found in localStorage, skipping profile fetch");
+        setUser(null);
+        setRole(null);
+        setLoading(false);
+        return;
+      }
+      
+      console.log("[AuthContext] Token found, fetching /me");
       const res = await api.get("/me");
       const backendUser = res.data.data;
       const frontendUser = normalizeUser(backendUser);
       setUser(frontendUser);
       setRole(normalizeRole(frontendUser.role));
+      console.log("[AuthContext] Profile fetched successfully:", frontendUser);
     } catch (error) {
-      console.error("Error fetching profile:", error);
+      console.error("[AuthContext] Error fetching profile:", error);
       setUser(null);
       setRole(null);
     } finally {
@@ -106,9 +122,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const customerToken = Cookies.get("customerToken");
     const adminToken = Cookies.get("adminToken");
     const token = customerToken || adminToken;
+    
+    console.log("[AuthContext] useEffect - Checking for tokens");
+    console.log("[AuthContext] Cookie token:", token ? "exists" : "missing");
+    
     if (token) {
+      // Ensure localStorage is in sync with cookies
+      const localCustomerToken = localStorage.getItem("customerToken");
+      const localAdminToken = localStorage.getItem("adminToken");
+      const localToken = localCustomerToken || localAdminToken;
+      
+      if (!localToken) {
+        console.log("[AuthContext] Syncing cookie token to localStorage");
+        const tokenKey = customerToken ? "customerToken" : "adminToken";
+        localStorage.setItem(tokenKey, token);
+      }
+      
       fetchProfile();
     } else {
+      console.log("[AuthContext] No token found, user not authenticated");
       setRole(null);
       setUser(null);
       setLoading(false);
