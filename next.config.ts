@@ -8,6 +8,16 @@ const nextConfig: NextConfig = {
   // Image optimization
   images: {
     remotePatterns: [
+      {                                                                                                                                                                                                      
+          protocol: 'https',                                                                                                                                                                                   
+          hostname: 'api.makwatches.in',                                                                                                                                                                       
+          pathname: '/uploads/**',                                                                                                                                                                             
+        },                                                                                                                                                                                                     
+        {                                                                                                                                                                                                      
+          protocol: 'https',                                                                                                                                                                                   
+          hostname: 'storage.googleapis.com',                                                                                                                                                                  
+          pathname: '/mak-watches.firebasestorage.app/**',                                                                                                                                                     
+        },     
       {
         protocol: "http",
         hostname: "localhost",
