@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { getApiBaseUrl } from "@/lib/env";
 
 export default function GoogleCallbackProxyPage() {
   const [processing, setProcessing] = useState(true);
@@ -12,7 +13,7 @@ export default function GoogleCallbackProxyPage() {
       const search =
         typeof window !== "undefined" ? window.location.search : "";
       const base =
-        process.env.NEXT_PUBLIC_API_BASE_URL || "https://api.makwatches.in";
+        getApiBaseUrl();
       const url = `${base.replace(/\/$/, "")}/auth/google/callback${search}`;
       window.location.replace(url);
     } catch (e) {

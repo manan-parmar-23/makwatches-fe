@@ -1,5 +1,5 @@
 import React from "react";
-import Image from "next/image";
+import ProductImage from "./ProductImage";
 import { motion } from "framer-motion";
 import { EyeIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
 import DiscountBadge, {
@@ -47,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onClick }) => {
         className="relative w-full aspect-[3/4] bg-gray-100 overflow-hidden cursor-pointer"
         onClick={onClick}
       >
-        <Image
+        <ProductImage
           src={product.image || "/placeholder.png"}
           alt={product.name || "Product"}
           fill

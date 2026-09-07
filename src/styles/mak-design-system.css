@@ -1,0 +1,214 @@
+/**
+ * MAK Watches design system — Tailwind v4 token layer.
+ *
+ * Derived from the approved Reference UI/UX "Modernist" system: a warm light
+ * ground, near-black ink, one restrained accent, 2px rules and zero radius.
+ *
+ * Tokens are namespaced `mak-*` on purpose. The legacy storefront still defines
+ * its own `--color-accent`, `--color-primary` and shadcn variables in
+ * globals.css; namespacing keeps the two systems side by side without either
+ * overriding the other, so the existing storefront keeps rendering exactly as
+ * it did while the reconstruction is built alongside it.
+ *
+ * Usage: `bg-mak-bg`, `text-mak-ink`, `border-mak-line`, `font-display`, etc.
+ * Never hardcode a hex in a component -- the accent in particular must stay
+ * swappable from this file alone.
+ */
+
+@theme {
+  /* ── Core roles ─────────────────────────────────────────────────────── */
+  --color-mak-bg: #f3f2f2;
+  --color-mak-surface: #eae9e9;
+  --color-mak-ink: #201e1d;
+  --color-mak-on-ink: #f3f2f2;
+  --color-mak-accent: #ec3013;
+  --color-mak-on-accent: #ffffff;
+
+  /* Rules and dividers. `line` is the 2px structural rule; `divider` is the
+     40%-alpha hairline used inside grids. */
+  --color-mak-line: #201e1d;
+  --color-mak-divider: rgba(32, 30, 29, 0.4);
+
+  /* Text tiers, expressed as solid colors so they survive on any ground. */
+  --color-mak-muted: rgba(32, 30, 29, 0.62);
+  --color-mak-subtle: rgba(32, 30, 29, 0.45);
+
+  /* ── Neutral ramp (OKLCH-derived, shared lightness scale) ───────────── */
+  --color-mak-neutral-100: #f8f4f4;
+  --color-mak-neutral-200: #eae7e7;
+  --color-mak-neutral-300: #d7d3d3;
+  --color-mak-neutral-400: #bab6b6;
+  --color-mak-neutral-500: #9b9797;
+  --color-mak-neutral-600: #7d7979;
+  --color-mak-neutral-700: #605d5d;
+  --color-mak-neutral-800: #444141;
+  --color-mak-neutral-900: #2d2b2b;
+
+  /* ── Accent ramp ────────────────────────────────────────────────────── */
+  --color-mak-accent-100: #fff2ef;
+  --color-mak-accent-200: #ffe0d9;
+  --color-mak-accent-300: #ffc4b8;
+  --color-mak-accent-400: #ff9783;
+  --color-mak-accent-500: #ff563c;
+  --color-mak-accent-600: #dd2b0f;
+  --color-mak-accent-700: #ae1800;
+  --color-mak-accent-800: #7c1405;
+  --color-mak-accent-900: #4d170e;
+
+  /* ── Status ─────────────────────────────────────────────────────────── */
+  --color-mak-success: #1f7a43;
+  --color-mak-warning: #a86400;
+  --color-mak-error: #ae1800;
+
+  /* ── Typography ─────────────────────────────────────────────────────── */
+  /* Both roles are Archivo, per the reference. The display role carries the
+     800 weight and tight tracking; body stays at 400. */
+  --font-display: var(--font-archivo), "Archivo", system-ui, sans-serif;
+  --font-body: var(--font-archivo), "Archivo", system-ui, sans-serif;
+
+  /* Responsive type scale. Hero and section sizes come straight from the
+     reference; the clamp floors keep them readable at 390px. */
+  --text-mak-hero: clamp(2.75rem, 7.4vw, 6.75rem); /* 44 -> 108px */
+  --text-mak-display: clamp(2.125rem, 4.4vw, 3.5rem); /* 34 -> 56px */
+  --text-mak-title: clamp(1.5rem, 2.6vw, 2.125rem); /* 24 -> 34px */
+  --text-mak-heading: 1.3125rem; /* 21px */
+  --text-mak-body: 1rem;
+  --text-mak-small: 0.875rem;
+  --text-mak-label: 0.75rem; /* 12px uppercase micro-label */
+  --text-mak-micro: 0.625rem; /* 10px uppercase micro-label */
+
+  /* ── Motion ─────────────────────────────────────────────────────────── */
+  /* One house easing, used by every transition in the system. */
+  --ease-mak: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* ── Geometry ───────────────────────────────────────────────────────── */
+  /* Zero radius is a design rule, not an oversight. Do not round a corner. */
+  --radius-mak: 0px;
+
+  /* Structural rule weights. */
+  --spacing-mak-rule: 2px;
+}
+
+/**
+ * Base primitives.
+ *
+ * Scoped under `.mak` so they apply only inside the reconstruction and never
+ * leak into the legacy storefront or the admin panel.
+ */
+@layer components {
+  /**
+   * The design-system context: typography, ink colour, focus and selection.
+   *
+   * Deliberately paints NO background. `.mak` is applied to overlay roots as
+   * well as page roots -- a closed search overlay is a `fixed inset-0` element,
+   * and a modal's root sits above its own translucent scrim. Giving this class
+   * a background made every one of those an opaque sheet over the page.
+   *
+   * Page-level containers ask for the ground explicitly with `bg-mak-bg`.
+   */
+  .mak {
+    color: var(--color-mak-ink);
+    font-family: var(--font-body);
+    font-size: var(--text-mak-body);
+    line-height: 1.55;
+  }
+
+  .mak h1,
+  .mak h2,
+  .mak h3,
+  .mak h4,
+  .mak h5,
+  .mak h6 {
+    font-family: var(--font-display);
+    font-weight: 800;
+    line-height: 1.08;
+    letter-spacing: -0.025em;
+    margin: 0;
+  }
+
+  /* Keyboard focus is always the accent ring, never the browser default. */
+  .mak :focus-visible {
+    outline: 2px solid var(--color-mak-accent);
+    outline-offset: 2px;
+  }
+
+  .mak ::selection {
+    background: color-mix(in srgb, var(--color-mak-accent) 28%, transparent);
+  }
+
+  /**
+   * The signature hairline grid.
+   *
+   * The 2px gap *is* the rule: the container paints the divider color, each
+   * cell repaints the ground on top, and what shows through between cells reads
+   * as a crisp 2px line. Cells must therefore set their own background --
+   * `.mak-rule-grid > *` does that by default.
+   */
+  .mak-rule-grid {
+    display: grid;
+    gap: var(--spacing-mak-rule);
+    background-color: var(--color-mak-divider);
+    border: var(--spacing-mak-rule) solid var(--color-mak-line);
+  }
+
+  .mak-rule-grid > * {
+    background-color: var(--color-mak-bg);
+  }
+
+  /* Photography prints in black and white, per the reference. */
+  .mak-grayscale {
+    filter: grayscale(1) contrast(1.08);
+  }
+}
+
+/**
+ * Reduced motion.
+ *
+ * The motion primitives each check `prefers-reduced-motion` in JS so they can
+ * skip work entirely rather than animate invisibly. This block is the backstop
+ * for CSS-driven motion (marquee, pulse, hover scale).
+ */
+@media (prefers-reduced-motion: reduce) {
+  .mak *,
+  .mak *::before,
+  .mak *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Keyframes ────────────────────────────────────────────────────────── */
+
+@keyframes mak-marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes mak-cue {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(8px);
+    opacity: 1;
+  }
+}
+
+@keyframes mak-rise {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

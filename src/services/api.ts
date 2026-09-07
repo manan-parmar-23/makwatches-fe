@@ -1,37 +1,10 @@
-// API service for making requests to the backend
-import axios from "axios";
-import Cookies from "js-cookie";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://api.makwatches.in";
-
-// Create axios instance
-const api = axios.create({
-  baseURL: API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-// Add auth token to requests if available
-api.interceptors.request.use((config) => {
-  if (typeof window !== "undefined") {
-    // Support multiple token storage keys used across the app:
-    // - auth_token (legacy)
-    // - customerToken / adminToken (set by AuthProvider)
-    const token =
-      localStorage.getItem("auth_token") ||
-      localStorage.getItem("customerToken") ||
-      localStorage.getItem("adminToken") ||
-      Cookies.get("customerToken") ||
-      Cookies.get("adminToken");
-
-    if (token) {
-      config.headers = config.headers || {};
-      config.headers.Authorization = `Bearer ${token}`;
-    }
-  }
-  return config;
-});
+// Feature-level API helpers.
+//
+// These build on the canonical shared client in src/lib/api. This module used
+// to construct its own axios instance with its own base URL and a hardcoded
+// `|| "https://api.makwatches.in"` fallback; both are gone. The exported
+// helpers below are unchanged, so existing callers keep working.
+import api from "@/lib/api";
 
 // Product API
 export const productApi = {

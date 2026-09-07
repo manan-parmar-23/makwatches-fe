@@ -52,6 +52,21 @@ interface BackendUser {
   // Add other backend fields as needed
 }
 
+/**
+ * The `?redirect=` destination, when it is safe to honour.
+ *
+ * Only same-origin, absolute paths are accepted. A protocol-relative value
+ * ("//evil.example") is a real open-redirect: the browser treats it as another
+ * host, so requiring a leading "/" is not enough on its own.
+ */
+function safeRedirectTarget(): string | null {
+  if (typeof window === "undefined") return null;
+  const target = new URLSearchParams(window.location.search).get("redirect");
+  if (!target) return null;
+  if (!target.startsWith("/") || target.startsWith("//")) return null;
+  return target;
+}
+
 // Utility to convert backend user shape to frontend User
 const normalizeUser = (backendUser: BackendUser): User => ({
   id: backendUser.ID || backendUser.id || "",
@@ -190,7 +205,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setRole(userRole);
       setUser(loggedInUser);
       if (userRole === "customer") {
-        router.replace("/");
+        // Come back to where they were sent from -- someone who was asked to
+        // sign in partway through checkout should land back on checkout, not
+        // the homepage, with their bag still in front of them.
+        router.replace(safeRedirectTarget() ?? "/");
       } else {
         router.replace("/admin/dashboard");
       }

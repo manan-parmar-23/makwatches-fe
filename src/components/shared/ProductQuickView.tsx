@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import Image from "next/image";
+import ProductImage from "./ProductImage";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -110,7 +110,7 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
                           size="sm"
                         />
                       )}
-                    <Image
+                    <ProductImage
                       src={
                         displayImages[selectedImageIndex] || "/placeholder.png"
                       }
@@ -140,7 +140,7 @@ const ProductQuickView: React.FC<ProductQuickViewProps> = ({
                               : "border-transparent"
                           }`}
                         >
-                          <Image
+                          <ProductImage
                             src={image || "/placeholder.png"}
                             alt={`${product.name} - image ${index + 1}`}
                             fill

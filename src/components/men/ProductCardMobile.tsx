@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import ProductImage from "@/components/shared/ProductImage";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -118,7 +118,7 @@ export default function ProductCardMobile({
       {/* Product Image */}
       <div className="relative h-48 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
         {product.image && (
-          <Image
+          <ProductImage
             src={product.image}
             alt={product.name}
             fill

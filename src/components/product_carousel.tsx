@@ -1,6 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState } from "react";
-import Image from "next/image";
+import ProductImage from "./shared/ProductImage";
 import { fetchPublicProducts, ProductQueryParams } from "@/utils/api";
 import { useRouter } from "next/navigation";
 
@@ -94,7 +94,7 @@ function ProductCard({
 
           {/* Product image container */}
           <div className="relative p-6 pt-12 pb-4 bg-white">
-            <Image
+            <ProductImage
               src={product.image}
               alt={product.name}
               width={280}
@@ -206,7 +206,7 @@ function ProductCardMobile({
 
           {/* Product image container */}
           <div className="relative p-4 pt-10 pb-3 bg-gradient-to-br from-gray-50 to-white">
-            <Image
+            <ProductImage
               src={product.image}
               alt={product.name}
               width={200}

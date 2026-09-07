@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
+import { fontVariables } from "@/lib/fonts";
 import { AuthProvider } from "@/context/AuthContext";
+import { ToastProvider } from "@/design-system";
 import ShoppingLayout from "./ShoppingLayout";
 import NavGuard from "@/components/NavGuard";
 import FooterGuard from "@/components/FooterGuard";
+import { Footer as MakFooter } from "@/components/layout/Footer";
+import { fetchStorefront } from "@/lib/api/server";
+import { FALLBACK_STOREFRONT } from "@/lib/api/storefront";
 import PageTransition from "@/components/page-transition";
 import LenisProvider from "@/components/lenis-provider";
 
@@ -112,11 +117,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Navigation and footer copy are admin-managed. Fetched here (cached, 60s)
+  // and handed to the guards, which are client components and cannot fetch
+  // themselves. Falls back to the shipped defaults if the endpoint is
+  // unreachable, so a settings outage never costs the site its menus.
+  const storefront = await fetchStorefront().catch(() => FALLBACK_STOREFRONT);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -140,7 +150,7 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" className={fontVariables}>
       <head>
         <script
           type="application/ld+json"
@@ -166,9 +176,16 @@ export default function RootLayout({
       <body className="antialiased min-h-screen flex flex-col">
         <LenisProvider>
           <AuthProvider>
+            {/*
+              The toast queue lives here rather than inside MakChrome: the
+              chrome renders as a *sibling* of the page, so a provider mounted
+              there never wrapped page content and any page calling useToast
+              threw. Feedback is app-wide, so its provider belongs above both.
+            */}
+            <ToastProvider>
             <ShoppingLayout>
               {/* NavGuard will hide Navbar on /login */}
-              <NavGuard />
+              <NavGuard navigation={storefront.navigation} />
 
               {/* Page transition wrapper */}
               <main className="flex-grow pt-0 md:pt-0">
@@ -176,8 +193,17 @@ export default function RootLayout({
               </main>
 
               {/* FooterGuard will hide Footer on /login */}
-              <FooterGuard />
+              <FooterGuard
+                makFooter={
+                  <MakFooter
+                    tagline={storefront.footer.tagline || undefined}
+                    social={storefront.footer.social}
+                    columns={storefront.navigation.footer}
+                  />
+                }
+              />
             </ShoppingLayout>
+            </ToastProvider>
           </AuthProvider>
         </LenisProvider>
       </body>

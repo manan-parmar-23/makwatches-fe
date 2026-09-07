@@ -1,12 +1,13 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import Image from "next/image";
+import ProductImage from "./ProductImage";
 import {
   XMarkIcon,
   MinusIcon,
   PlusIcon,
   ShoppingCartIcon,
 } from "@heroicons/react/24/outline";
+import { getApiBaseUrl } from "@/lib/env";
 
 type ProductModalProps = {
   isOpen: boolean;
@@ -60,7 +61,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
       }
 
       const base =
-        process.env.NEXT_PUBLIC_API_BASE || "https://api.makwatches.in";
+        getApiBaseUrl();
       const res = await fetch(`${base}/cart`, {
         method: "POST",
         headers: {
@@ -142,7 +143,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
               {/* Product Images */}
               <div className="space-y-4">
                 <div className="relative w-full aspect-square bg-gray-50 rounded-lg overflow-hidden border border-amber-200 shadow-md">
-                  <Image
+                  <ProductImage
                     src={selectedImage}
                     alt={product.name || "Product"}
                     fill
@@ -165,7 +166,7 @@ const ProductDetailModal: React.FC<ProductModalProps> = ({
                             : "border-amber-200"
                         }`}
                       >
-                        <Image
+                        <ProductImage
                           src={img}
                           alt={`Product view ${i + 1}`}
                           fill

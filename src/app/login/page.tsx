@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useAuth } from "@/context/AuthContext";
+import { apiUrl } from "@/lib/env";
 
 // Mak Watches brand palette (black/gold/off-white)
 const COLORS = {
@@ -306,15 +307,10 @@ export default function CustomerAuthPage() {
               <button
                 type="button"
                 onClick={() => {
-                  // Redirect to backend Google OAuth start endpoint
-                  const base =
-                    process.env.NEXT_PUBLIC_API_BASE_URL ||
-                    "https://api.makwatches.in";
-                  // Ensure trailing slash handling
-                  const url = base.endsWith("/")
-                    ? `${base}auth/google`
-                    : `${base}/auth/google`;
-                  window.location.href = url;
+                  // Redirect to backend Google OAuth start endpoint.
+                  // apiUrl normalizes the origin, so no trailing-slash handling
+                  // is needed here.
+                  window.location.href = apiUrl("/auth/google");
                 }}
                 className="w-full py-3 font-semibold rounded-lg flex items-center justify-center space-x-3 border transition-all duration-200 hover:shadow-lg"
                 style={{

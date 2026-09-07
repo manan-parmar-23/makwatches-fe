@@ -1,6 +1,6 @@
 // src/components/shared/ProductList.tsx
 import React from "react";
-import Image from "next/image";
+import ProductImage from "./ProductImage";
 import { Product } from "@/utils/api";
 import { useProducts } from "@/hooks/useProducts";
 import GridProductCard from "./GridProductCard";
@@ -46,7 +46,7 @@ const ListProductCard: React.FC<{
     >
       {/* Product Image */}
       <div className="relative w-20 h-20 flex-shrink-0 rounded-lg overflow-hidden bg-gray-100">
-        <Image
+        <ProductImage
           src={getImageSrc()}
           alt={product.name}
           fill

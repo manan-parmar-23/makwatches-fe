@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useMemo, useState, useRef } from "react";
 import { motion } from "framer-motion";
-import { Category } from "@/lib/women-api";
+import type { Category } from "@/lib/api";
 import { fetchPublicSubcategories } from "@/utils/api";
 import { getImageForSubcategory } from "@/config/subcategoryImages";
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import Image from "next/image";
+import ProductImage from "./ProductImage";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { EyeIcon, ShoppingBagIcon } from "@heroicons/react/24/outline";
@@ -47,7 +47,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onQuickView }) => {
       <div className="relative w-full aspect-[3/4] bg-white overflow-hidden">
         <Link href={`/product_details?id=${product.id}`}>
           <div className="w-full h-full relative cursor-pointer">
-            <Image
+            <ProductImage
               src={product.imageUrl || product.images[0] || "/placeholder.png"}
               alt={product.name}
               fill

@@ -12,6 +12,7 @@ import {
   FiPackage,
   FiShoppingBag,
   FiHome,
+  FiLayout,
 } from "react-icons/fi";
 
 // Enhanced Color constants - luxury theme with rich black and gold
@@ -44,6 +45,12 @@ const navLinks = [
     href: "/admin/dashboard/home",
     icon: <FiHome />,
     description: "Manage homepage sections",
+  },
+  {
+    name: "Storefront",
+    href: "/admin/dashboard/storefront",
+    icon: <FiLayout />,
+    description: "Navigation, tiles & sections",
   },
   {
     name: "Categories",

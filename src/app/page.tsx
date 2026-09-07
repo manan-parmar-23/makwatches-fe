@@ -1,62 +1,245 @@
-"use client";
+import type { Metadata } from "next";
 
-import ProductCarousel from "@/components/product_carousel";
+import { Container, ErrorState, Marquee, Section } from "@/design-system";
+import {
+  CraftScroller,
+  EditorialGallery,
+  StatGrid,
+  StoryBlock,
+  TrustStrip,
+} from "@/components/marketing";
+import { isRenderableHero } from "@/lib/api/home-content";
+import {
+  fetchCategories,
+  fetchCategoryCounts,
+  fetchHomeContent,
+  fetchProductById,
+  fetchRailProducts,
+  fetchStorefront,
+  isApiConfigured,
+} from "@/lib/api/server";
+import { toMediaRef } from "@/lib/media";
 
-import Gallery from "@/components/gallery";
-import HeroContent from "@/components/hero-content";
-import TechShowcase from "@/components/tech-showcase";
-import Collection from "@/components/collection";
-import { LogoLoop } from "@/components/LogoLoop";
-import { useHomeContent } from "@/hooks/useHomeContent";
+import { HomeHero } from "./(home)/HomeHero";
+import { HomeCategories } from "./(home)/HomeCategories";
+import { HomeStory } from "./(home)/HomeStory";
+import { HomeNewsletter } from "./(home)/HomeNewsletter";
+import { CollectionSection } from "./(home)/CollectionSection";
+import { ProductSection } from "./(home)/ProductSection";
 
-import Category from "@/components/category";
+/**
+ * The MAK Watches homepage.
+ *
+ * Nothing on this page is hard-wired to the current catalogue. Which sections
+ * appear, what they say, and which slice of the catalogue each product rail
+ * shows all come from the admin-managed storefront document
+ * (GET /api/v1/storefront). Rails name a selection *rule* — "latest",
+ * "category: Men" — never a fixed list of product ids, so they keep showing the
+ * right thing as stock turns over.
+ *
+ * A server component. The only client JavaScript comes from the interactive
+ * islands the components carry themselves.
+ */
 
-const demoLogos = [
-  { src: "/1Balmain 1.png", alt: "Brand 1" },
-  { src: "/1Balmain 2.png", alt: "Brand 2" },
-  { src: "/1Balmain 3.png", alt: "Brand 3" },
-  { src: "/1Balmain 4.png", alt: "Brand 4" },
-  { src: "/1Balmain 5.png", alt: "Brand 5" },
-];
+export const metadata: Metadata = {
+  title: "MAK Watches — Premium Timepieces",
+  description:
+    "Explore the MAK Watches collection. Browse timepieces for men and women across leather, metal, gold and silver.",
+  alternates: { canonical: "/" },
+};
 
-export default function Home() {
-  const { data } = useHomeContent();
+export const revalidate = 300;
+
+export default async function HomePage() {
+  if (!isApiConfigured()) {
+    return (
+      <div className="mak bg-mak-bg">
+        <Section spacing="loose">
+          <Container>
+            <ErrorState
+              title="The storefront is not configured."
+              description="NEXT_PUBLIC_API_BASE_URL is not set, so the catalog cannot be reached. Set it in .env.local and restart."
+            />
+          </Container>
+        </Section>
+      </div>
+    );
+  }
+
+  // The storefront config decides what to fetch, so it is read first.
+  const storefront = await fetchStorefront();
+
+  const [homeContent, categories, ...railPages] = await Promise.all([
+    fetchHomeContent(),
+    fetchCategories(),
+    ...storefront.rails.map((rail) => fetchRailProducts(rail)),
+  ]);
+
+  const counts = await fetchCategoryCounts(categories.map((c) => c.name));
+
+  const [heroSlide, ...remainingSlides] = homeContent.heroSlides;
+
+  // The CMS holds several slides that share a subtitle across different
+  // products, so the first remaining slide often repeats the hero's headline.
+  const heroHeadline = (heroSlide?.subtitle || heroSlide?.title || "")
+    .trim()
+    .toLowerCase();
+  const storySlide = remainingSlides.find((slide) => {
+    const headline = (slide.subtitle || slide.title || "").trim().toLowerCase();
+    return headline && headline !== heroHeadline;
+  });
+
+  const heroProduct = heroSlide?.productId
+    ? await fetchProductById(heroSlide.productId)
+    : null;
+
+  // Marquee vocabulary: live category names when the admin wants it to track
+  // the catalogue, otherwise their own terms. Deduplicated case-insensitively —
+  // several subcategory names exist under both Men and Women.
+  const categoryTerms = Array.from(
+    new Map(
+      categories
+        .flatMap((category) => (category.subcategories ?? []).map((s) => s.name))
+        .filter((name): name is string => Boolean(name?.trim()))
+        .map((name) => [name.trim().toLowerCase(), name.trim()] as const)
+    ).values()
+  );
+  const marqueeTerms = storefront.marquee.useCategoryNames
+    ? categoryTerms
+    : storefront.marquee.terms;
+
+  const totalPieces = Object.values(counts).reduce((sum, n) => sum + n, 0);
+
+  const heroProvidesHeading =
+    storefront.hero.enabled &&
+    (isRenderableHero(heroSlide) || storefront.hero.headlineLines.length > 0);
+
+  const craftImages = homeContent.gallery
+    .map((image) => toMediaRef(image.url, ""))
+    .filter((media): media is NonNullable<typeof media> => media !== null);
 
   return (
-    <>
-      <section id="hero" className="relative">
-        <HeroContent slides={data?.heroSlides} />
-      </section>
-      <section className="px-4 py-8">
-        <Category items={data?.categories} />
-      </section>
+    <div className="mak bg-mak-bg">
+      {!heroProvidesHeading ? (
+        <h1 className="sr-only">MAK Watches — premium timepieces</h1>
+      ) : null}
 
-      <section id="tech-showcase">
-        <TechShowcase
-          cards={data?.techCards}
-          highlight={data?.highlight || undefined}
+      {storefront.hero.enabled ? (
+        <HomeHero
+          content={storefront.hero}
+          trust={storefront.trust}
+          slide={heroSlide}
+          linkedProduct={heroProduct}
         />
-      </section>
-      <section id="collections" className="px-4 py-8">
-        <Collection features={data?.collections} />
-      </section>
-      <section id="brands-logo" className="px-4 pt-8">
-        <LogoLoop
-          logos={demoLogos}
-          speed={120}
-          logoHeight={48}
-          gap={32}
-          fadeOut
-          pauseOnHover
-        />
-      </section>
-      <section id="products" className="px-4 pt-8">
-        <ProductCarousel />
-      </section>
+      ) : null}
 
-      <section id="gallery" className="px-2">
-        <Gallery images={data?.gallery} />
-      </section>
-    </>
+      {storefront.marquee.enabled && marqueeTerms.length > 0 ? (
+        <Marquee duration={storefront.marquee.durationSeconds}>
+          {marqueeTerms.map((term) => (
+            <span key={term}>{term.toUpperCase()} ·</span>
+          ))}
+        </Marquee>
+      ) : null}
+
+      {storefront.stats.enabled && storefront.stats.items.length > 0 ? (
+        <Section spacing="default">
+          <Container>
+            <StatGrid stats={storefront.stats.items} />
+          </Container>
+        </Section>
+      ) : null}
+
+      {storefront.trust.enabled && storefront.trust.items.length > 0 ? (
+        <Section spacing="tight">
+          <TrustStrip
+            items={storefront.trust.items.map((title) => ({ title }))}
+            variant="bare"
+          />
+        </Section>
+      ) : null}
+
+      <HomeCategories
+        content={storefront.categoryTiles}
+        categories={categories}
+        counts={counts}
+      />
+
+      {/*
+        Product rails, in the admin's configured order. The first is rendered
+        with filter chips when marked filterable, matching the reference's
+        collection band; the rest are plain grids.
+      */}
+      {storefront.rails.map((rail, index) => {
+        const page = railPages[index];
+        if (!page) return null;
+
+        return rail.filterable ? (
+          <CollectionSection
+            key={rail.id}
+            eyebrow={rail.eyebrow}
+            title={rail.title}
+            products={page.items}
+            failed={page.failed}
+            total={totalPieces || page.meta?.total}
+            viewAll={rail.viewAll.href ? rail.viewAll : undefined}
+            priorityCount={index === 0 ? 4 : 0}
+          />
+        ) : (
+          <ProductSection
+            key={rail.id}
+            eyebrow={rail.eyebrow}
+            title={rail.title}
+            products={page.items}
+            failed={page.failed}
+            total={page.meta?.total}
+            viewAll={rail.viewAll.href ? rail.viewAll : undefined}
+            priorityCount={index === 0 ? 4 : 0}
+            tone={rail.tone === "surface" ? "surface" : "default"}
+          />
+        );
+      })}
+
+      {storefront.craft.enabled && storefront.craft.panels.length > 0 ? (
+        <CraftScroller
+          panels={storefront.craft.panels.map((panel, index) => ({
+            number: panel.number,
+            title: panel.title,
+            body: panel.body,
+            specs: panel.specs,
+            image:
+              toMediaRef(panel.image, "") ??
+              craftImages[index] ??
+              craftImages[0] ??
+              null,
+          }))}
+        />
+      ) : null}
+
+      {storefront.house.enabled ? (
+        <StoryBlock
+          eyebrow={storefront.house.eyebrow}
+          headline={storefront.house.title}
+          body={storefront.house.body}
+          cta={storefront.house.cta}
+          image={toMediaRef(storefront.house.image, "") ?? craftImages[0] ?? null}
+          imageAlt=""
+        />
+      ) : (
+        <HomeStory
+          feature={homeContent.collections[0]}
+          fallbackSlide={storySlide}
+        />
+      )}
+
+      <EditorialGallery
+        images={homeContent.gallery
+          .filter((image) => image.url)
+          .map((image) => ({ url: image.url!, alt: image.alt }))}
+      />
+
+      {storefront.poster.enabled ? (
+        <HomeNewsletter content={storefront.poster} />
+      ) : null}
+    </div>
   );
 }

@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" width="400" height="400" role="img" aria-label="Image unavailable">
+  <!--
+    MAK Watches media placeholder.
+
+    Deliberately abstract: a ruled surface with the monogram and an explicit
+    "NO IMAGE" label. It must never be mistaken for product photography, so it
+    carries no watch silhouette, no rendering and no styling that would read as
+    a real product shot.
+  -->
+  <rect width="400" height="400" fill="#eae9e9"/>
+  <rect x="1" y="1" width="398" height="398" fill="none" stroke="#201e1d" stroke-width="2"/>
+  <line x1="0" y1="200" x2="400" y2="200" stroke="#201e1d" stroke-opacity="0.12" stroke-width="1"/>
+  <line x1="200" y1="0" x2="200" y2="400" stroke="#201e1d" stroke-opacity="0.12" stroke-width="1"/>
+  <text x="200" y="196" text-anchor="middle"
+        font-family="Archivo, system-ui, sans-serif" font-weight="800" font-size="52"
+        letter-spacing="-1" fill="#201e1d">MAK</text>
+  <text x="200" y="228" text-anchor="middle"
+        font-family="Archivo, system-ui, sans-serif" font-weight="600" font-size="11"
+        letter-spacing="5" fill="#ec3013">NO IMAGE</text>
+</svg>

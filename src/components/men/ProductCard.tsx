@@ -1,5 +1,5 @@
 "use client";
-import Image from "next/image";
+import ProductImage from "@/components/shared/ProductImage";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useState } from "react";
@@ -126,7 +126,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
       {/* Product Image */}
       <div className="relative h-64 bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
-        <Image
+        <ProductImage
           src={product.image}
           alt={product.name}
           fill
